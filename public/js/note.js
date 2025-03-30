@@ -80,10 +80,38 @@ class Note {
     markdownPreview.className = "markdown-preview";
     markdownPreview.innerHTML = this.renderMarkdown(this.text);
 
+    // 创建独立的编辑提示元素（注意：之前这里有重复定义）
+    const editHint = document.createElement("div");
+    editHint.className = "edit-hint";
+    editHint.textContent = "双击编辑";
+    editHint.style.position = "absolute";
+    editHint.style.right = "10px";
+    editHint.style.bottom = "10px";
+    editHint.style.fontSize = "11px";
+    editHint.style.color = "rgba(0, 0, 0, 0.3)";
+    editHint.style.backgroundColor = "rgba(255, 255, 255, 0.5)";
+    editHint.style.padding = "2px 5px";
+    editHint.style.borderRadius = "3px";
+    editHint.style.opacity = "0";
+    editHint.style.transition = "opacity 0.3s";
+    editHint.style.pointerEvents = "none";
+    editHint.style.zIndex = "100";
+
     // 为预览区域添加双击事件，切换回编辑模式
     markdownPreview.addEventListener("dblclick", () => {
       this.editMode = true;
       this.toggleEditPreviewMode(textarea, markdownPreview);
+      setTimeout(() => textarea.focus(), 10); // 聚焦到文本区域
+    });
+
+    // 为编辑提示也添加点击事件（可选，提高可用性）
+    editHint.addEventListener("click", (e) => {
+      if (!this.editMode) {
+        e.stopPropagation();
+        this.editMode = true;
+        this.toggleEditPreviewMode(textarea, markdownPreview);
+        setTimeout(() => textarea.focus(), 10);
+      }
     });
 
     // 添加文本区域事件监听
@@ -143,6 +171,8 @@ class Note {
     body.appendChild(textarea);
     body.appendChild(markdownPreview);
     body.appendChild(scrollbarContainer);
+    // 添加编辑提示到便签主体，而不是预览区域内部
+    body.appendChild(editHint);
     note.appendChild(header);
     note.appendChild(body);
     note.appendChild(resizeHandle);
@@ -170,6 +200,31 @@ class Note {
     if (this.text === "") {
       setTimeout(() => textarea.focus(), 0);
     }
+
+    // 添加悬停事件显示编辑提示
+    note.addEventListener("mouseenter", () => {
+      editHint.style.opacity = "1";
+    });
+    note.addEventListener("mouseleave", () => {
+      editHint.style.opacity = "0";
+    });
+
+    // 预览模式下应该更新编辑提示的位置
+    this.updateEditHintVisibility = () => {
+      if (this.editMode) {
+        editHint.style.opacity = "0";
+        editHint.style.pointerEvents = "none";
+      } else {
+        editHint.style.pointerEvents = "auto"; // 预览模式下可点击
+      }
+    };
+
+    // 监听窗口调整大小事件，更新提示位置
+    window.addEventListener("resize", () => {
+      if (!this.editMode && this.element) {
+        this.updateEditHintVisibility();
+      }
+    });
   }
 
   // 渲染 Markdown
@@ -219,6 +274,11 @@ class Note {
       // 更新滚动条
       const scrollbarThumb = this.element.querySelector(".scrollbar-thumb");
       this.updateScrollbar(preview, scrollbarThumb);
+    }
+
+    // 更新编辑提示可见性
+    if (this.updateEditHintVisibility) {
+      this.updateEditHintVisibility();
     }
   }
 

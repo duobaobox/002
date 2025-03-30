@@ -426,24 +426,39 @@ button {
   scrollbar-width: none; /* Firefox */
   cursor: text; /* 使用文本光标提示可编辑 */
   position: relative;
+  z-index: 1; /* 较低的层级，确保编辑提示在上层 */
 }
 
+/* 移除原来的 :after 伪元素样式 */
 .markdown-preview:after {
-  content: "双击编辑";
-  position: absolute;
-  right: 10px;
-  bottom: 5px;
-  font-size: 11px;
-  color: rgba(0, 0, 0, 0.3);
-  background-color: rgba(255, 255, 255, 0.5);
-  padding: 2px 5px;
-  border-radius: 3px;
-  opacity: 0;
-  transition: opacity 0.3s;
+  display: none; /* 完全移除旧的提示元素 */
 }
 
-.markdown-preview:hover:after {
-  opacity: 1;
+.note:hover .markdown-preview:after {
+  display: none;
+}
+
+/* 添加独立的编辑提示按钮样式 */
+.edit-hint {
+  position: absolute !important;
+  right: 10px !important;
+  bottom: 10px !important;
+  font-size: 11px !important;
+  color: rgba(0, 0, 0, 0.5) !important;
+  background-color: rgba(255, 255, 255, 0.7) !important;
+  padding: 3px 8px !important;
+  border-radius: 4px !important;
+  opacity: 0;
+  transition: opacity 0.3s, background-color 0.2s !important;
+  pointer-events: none !important; /* 不干扰其他交互 */
+  z-index: 100 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  user-select: none !important;
+  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+.note:hover .edit-hint {
+  opacity: 0.9 !important;
 }
 
 .markdown-preview h1,
