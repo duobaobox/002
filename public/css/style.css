@@ -16,6 +16,7 @@ body {
   flex-direction: column;
   height: 100vh;
   position: relative;
+  background-color: #fcfcfc;
 }
 
 /* 按钮基本样式 */
@@ -34,76 +35,166 @@ button {
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  align-items: center;
+  flex-direction: column;
   background-color: #ffffff;
   border-radius: 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  padding: 4px;
-  max-width: 800px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+  padding: 16px;
+  max-width: 850px;
   width: 80%;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #e8e8e8;
+  overflow: hidden;
+}
+
+/* 底部操作区域 */
+.bottom-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
 }
 
 /* AI模型标识样式 */
 .ai-model {
-  background-color: #f0f0f0;
-  color: #555;
-  padding: 6px 12px;
-  border-radius: 16px;
+  background-color: #eef3ff;
+  color: #666666;
+  padding: 8px 16px;
+  border-radius: 30px;
   font-size: 14px;
-  margin-left: 6px;
   font-weight: 500;
+  letter-spacing: 0.2px;
 }
 
 /* 输入区域样式 */
 .input-container {
-  flex: 1;
-  padding: 0 10px;
+  width: 100%;
 }
 
 #ai-prompt {
   width: 100%;
-  padding: 10px 15px;
-  border: none;
-  border-radius: 20px;
+  padding: 16px 20px;
+  border: 1px solid transparent; /* 默认透明边框，避免布局跳动 */
+  border-radius: 12px;
   resize: none;
   outline: none;
-  height: 40px;
+  height: 80px;
   font-family: inherit;
   font-size: 16px;
   color: #333;
-  background-color: transparent;
+  background-color: #f5f5f5;
+  transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s; /* 添加过渡效果 */
+}
+
+#ai-prompt:focus {
+  background-color: #f1f1f1;
+  border-color: rgba(26, 115, 232, 0.4); /* 使用主蓝色但半透明 */
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1); /* 添加微妙的外发光效果 */
 }
 
 #ai-prompt::placeholder {
-  color: #aaa;
+  color: #999;
+  font-size: 14px;
 }
 
 /* 操作按钮区域 */
 .action-buttons {
-  margin-right: 6px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 /* AI生成按钮样式 */
 .ai-button {
-  background-color: #4285f4;
+  background-color: #1a73e8;
   color: white;
-  padding: 8px 16px;
-  border-radius: 16px;
+  padding: 8px 24px;
+  border-radius: 30px;
   font-size: 14px;
-  transition: background-color 0.3s;
   font-weight: 500;
+  letter-spacing: 0.3px;
+  transition: all 0.3s;
+  box-shadow: 0 2px 5px rgba(26, 115, 232, 0.2);
+  display: none; /* 默认隐藏AI按钮 */
 }
 
 .ai-button:hover {
-  background-color: #3367d6;
+  background-color: #1557b0;
+  box-shadow: 0 3px 8px rgba(26, 115, 232, 0.3);
+  transform: translateY(-1px);
+}
+
+/* 添加便笺按钮样式 */
+.add-button {
+  background-color: #34a853;
+  color: white;
+  padding: 8px 24px;
+  border-radius: 30px;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  transition: all 0.3s;
+  box-shadow: 0 2px 5px rgba(52, 168, 83, 0.2);
+}
+
+.add-button:hover {
+  background-color: #2d8e47;
+  box-shadow: 0 3px 8px rgba(52, 168, 83, 0.3);
+  transform: translateY(-1px);
 }
 
 .canvas-container {
   flex: 1;
-  background-color: #f5f5f5;
+  background-color: #fcfcfc;
   position: relative;
   overflow: hidden;
+  /* 移除原来的单调背景 */
+}
+
+/* 添加画布背景样式 */
+#note-canvas {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background-color: #f8f9fd;
+  background-image: linear-gradient(
+      rgba(200, 210, 230, 0.1) 1px,
+      transparent 1px
+    ),
+    linear-gradient(90deg, rgba(200, 210, 230, 0.1) 1px, transparent 1px);
+  background-size: 40px 40px;
+  /* 添加微妙的阴影效果 */
+  box-shadow: inset 0 0 100px rgba(220, 230, 250, 0.4);
+}
+
+/* 添加设计感背景元素 */
+.canvas-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none; /* 确保不影响交互 */
+}
+
+/* 背景元素：点阵装饰 */
+.bg-dots {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: rgba(26, 115, 232, 0.05);
+  opacity: 0.5;
+}
+
+/* 背景渐变气泡装饰 */
+.bg-gradient-bubble {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.1;
+  z-index: -1;
 }
 
 #note-canvas {
@@ -112,42 +203,338 @@ button {
   position: relative;
 }
 
+/* ===== 便签样式回退到原始设计 ===== */
 .note {
   position: absolute;
   width: 200px;
-  min-height: 200px;
-  background-color: #f1c40f;
-  border-radius: 2px;
-  padding: 15px;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
-  cursor: move;
-  user-select: none;
-  overflow: hidden;
+  height: 200px;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+  /* 添加缩放相关样式 */
+  resize: both;
+  min-width: 150px;
+  min-height: 150px;
+  max-width: 500px;
+  max-height: 500px;
 }
 
+.note:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* 便签头部 - 调整内边距 */
 .note-header {
-  margin-bottom: 10px;
-  cursor: move;
+  height: 30px;
+  padding: 0 2px 0 12px; /* 调整右侧内边距，使关闭按钮有更多空间 */
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: space-between; /* 修改为两端对齐，左侧标题，右侧关闭按钮 */
+  background-color: rgba(0, 0, 0, 0.05);
+  cursor: move;
+  user-select: none;
+  z-index: 1;
 }
 
-.note-content {
-  flex: 1;
+/* 启用便签标题 */
+.note-title {
+  display: block; /* 显示标题 */
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.6);
+  max-width: 70%; /* 限制标题宽度，避免过长 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 可编辑状态的标题 */
+.note-title.editing {
+  cursor: text;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 3px;
+  padding: 0 5px;
+  min-width: 60px;
+  white-space: nowrap;
   outline: none;
-  background: transparent;
-  border: none;
-  resize: none;
-  font-family: inherit;
 }
 
+/* 关闭按钮 - 调整位置和边距 */
 .note-close {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.6);
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
   cursor: pointer;
-  font-weight: bold;
+  transition: all 0.2s;
+  margin-right: 5px; /* 添加右边距，使关闭按钮与边缘有一定距离 */
 }
 
 .note-close:hover {
+  background-color: rgba(255, 255, 255, 0.9);
   color: #e74c3c;
+}
+
+/* 便签内容区域容器 */
+.note-body {
+  position: relative;
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* 文本区域 */
+.note-content {
+  width: 100%;
+  height: 100%;
+  padding: 10px 12px;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(0, 0, 0, 0.8);
+  background-color: transparent;
+  overflow-y: auto;
+  /* 隐藏原生滚动条 */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* 隐藏Webkit浏览器的原生滚动条 */
+.note-content::-webkit-scrollbar {
+  display: none;
+}
+
+/* 自定义滚动条容器 */
+.custom-scrollbar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* 便签悬停或文本区域聚焦时显示滚动条 */
+.note:hover .custom-scrollbar,
+.note-content:focus ~ .custom-scrollbar {
+  opacity: 1;
+}
+
+/* 滚动条滑块 */
+.scrollbar-thumb {
+  position: absolute;
+  right: 1px;
+  width: 4px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+  transition: background-color 0.2s ease;
+}
+
+.scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* 调整大小控件 - 优化外观 */
+.note-resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  background-color: transparent; /* 移除灰色背景 */
+  cursor: nwse-resize;
+  border-radius: 0 0 4px 0;
+  transition: opacity 0.2s;
+  z-index: 3;
+  /* 添加调整大小图标 */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='rgba(0,0,0,0.25)' d='M0 10L10 0L10 10'/%3E%3C/svg%3E");
+  background-position: bottom right;
+  background-repeat: no-repeat;
+  opacity: 0.4; /* 默认半透明 */
+}
+
+.note-resize-handle:hover {
+  background-color: transparent; /* 悬停时也保持透明 */
+  opacity: 0.7; /* 悬停时增加不透明度 */
+}
+
+/* 便签颜色 - 恢复原来的简单颜色 */
+.note-yellow {
+  background-color: #fff8c5;
+}
+.note-blue {
+  background-color: #d6eaf8;
+}
+.note-green {
+  background-color: #d5f5e3;
+}
+.note-pink {
+  background-color: #fdedec;
+}
+.note-purple {
+  background-color: #e8daef;
+}
+
+/* 错误消息样式 */
+.error-message {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background-color: #ff3333;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 1000;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  max-width: 80%;
+}
+
+.error-message.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Markdown 渲染容器样式 */
+.markdown-preview {
+  width: 100%;
+  height: 100%;
+  padding: 10px 12px;
+  overflow-y: auto;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(0, 0, 0, 0.8);
+  background-color: transparent;
+  display: none; /* 默认隐藏预览 */
+  scrollbar-width: none; /* Firefox */
+  cursor: text; /* 使用文本光标提示可编辑 */
+  position: relative;
+}
+
+.markdown-preview:after {
+  content: "双击编辑";
+  position: absolute;
+  right: 10px;
+  bottom: 5px;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.3);
+  background-color: rgba(255, 255, 255, 0.5);
+  padding: 2px 5px;
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.markdown-preview:hover:after {
+  opacity: 1;
+}
+
+.markdown-preview h1,
+.markdown-preview h2,
+.markdown-preview h3 {
+  margin-top: 16px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.markdown-preview h1 {
+  font-size: 20px;
+}
+
+.markdown-preview h2 {
+  font-size: 18px;
+}
+
+.markdown-preview h3 {
+  font-size: 16px;
+}
+
+.markdown-preview p {
+  margin-bottom: 10px;
+}
+
+.markdown-preview ul,
+.markdown-preview ol {
+  margin-left: 20px;
+  margin-bottom: 10px;
+}
+
+.markdown-preview code {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+.markdown-preview pre {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 10px;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin-bottom: 10px;
+}
+
+.markdown-preview pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+.markdown-preview blockquote {
+  border-left: 4px solid rgba(0, 0, 0, 0.1);
+  padding-left: 10px;
+  margin-left: 0;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.markdown-preview a {
+  color: #1a73e8;
+  text-decoration: none;
+}
+
+.markdown-preview a:hover {
+  text-decoration: underline;
+}
+
+.markdown-preview img {
+  max-width: 100%;
+}
+
+.markdown-preview table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.markdown-preview table,
+.markdown-preview th,
+.markdown-preview td {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.markdown-preview th,
+.markdown-preview td {
+  padding: 5px;
+  text-align: left;
+}
+
+/* 添加便签模式切换按钮样式 */
+.note-toggle-button {
+  display: none; /* 隐藏切换按钮 */
 }

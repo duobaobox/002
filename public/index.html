@@ -12,6 +12,11 @@
     <title>AI 便签画布</title>
     <!-- 引入外部CSS样式文件 -->
     <link rel="stylesheet" href="css/style.css">
+    <!-- 添加 marked.js 库 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@3.0.8/marked.min.js"></script>
+    <!-- 添加 highlight.js 用于代码高亮（可选） -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.3.1/styles/github.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.3.1/highlight.min.js"></script>
 </head>
 
 <body>
@@ -20,22 +25,28 @@
         <!-- 画布容器区域 -->
         <div class="canvas-container">
             <!-- 便签展示的画布区域 -->
-            <div id="note-canvas"></div>
+            <div id="note-canvas">
+                <!-- 背景元素将通过JS动态添加 -->
+            </div>
         </div>
 
         <!-- 底部控制栏 -->
         <div class="bottom-bar">
-            <!-- AI模型标识 -->
-            <div class="ai-model">deepseek-chat</div>
-
             <!-- 输入区域 -->
             <div class="input-container">
-                <textarea id="ai-prompt" placeholder="输入内容..."></textarea>
+                <textarea id="ai-prompt" placeholder="请输入文本"></textarea>
             </div>
 
-            <!-- 操作按钮 -->
-            <div class="action-buttons">
-                <button id="ai-generate" class="ai-button">AI生成便签</button>
+            <!-- 底部操作区域 -->
+            <div class="bottom-actions">
+                <!-- AI模型标识 -->
+                <div class="ai-model">deepseek-chat</div>
+
+                <!-- 操作按钮区域 -->
+                <div class="action-buttons">
+                    <button id="add-note" class="add-button">添加便笺</button>
+                    <button id="ai-generate" class="ai-button">AI生成便笺</button>
+                </div>
             </div>
         </div>
     </div>

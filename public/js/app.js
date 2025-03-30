@@ -5,9 +5,15 @@ class App {
     this.nextId = 1;
 
     this.initEventListeners();
+    this.updateButtonVisibility();
   }
 
   initEventListeners() {
+    // 添加普通便签按钮
+    document.getElementById("add-note").addEventListener("click", () => {
+      this.addEmptyNote();
+    });
+
     // AI生成便签按钮
     document.getElementById("ai-generate").addEventListener("click", () => {
       this.generateAiNote();
@@ -17,10 +23,56 @@ class App {
     document.addEventListener("note-removed", (e) => {
       this.removeNote(e.detail.id);
     });
+
+    // 监听输入框内容变化
+    const promptElement = document.getElementById("ai-prompt");
+    promptElement.addEventListener("input", () => {
+      this.updateButtonVisibility();
+    });
+
+    // 监听Enter键提交
+    promptElement.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        const hasText = promptElement.value.trim().length > 0;
+        if (hasText) {
+          this.generateAiNote();
+        } else {
+          this.addEmptyNote();
+        }
+      }
+    });
   }
 
-  addNote(text = "", x = 50, y = 50) {
-    const note = new Note(this.nextId++, text, x, y);
+  // 根据输入内容更新按钮可见性
+  updateButtonVisibility() {
+    const promptElement = document.getElementById("ai-prompt");
+    const hasText = promptElement.value.trim().length > 0;
+
+    const addButton = document.getElementById("add-note");
+    const aiButton = document.getElementById("ai-generate");
+
+    if (hasText) {
+      addButton.style.display = "none";
+      aiButton.style.display = "block";
+    } else {
+      addButton.style.display = "block";
+      aiButton.style.display = "none";
+    }
+  }
+
+  // 添加空白便签
+  addEmptyNote() {
+    // 随机位置
+    const x = 100 + Math.random() * 200;
+    const y = 100 + Math.random() * 200;
+    this.addNote("", x, y);
+    console.log("空白便签已添加");
+  }
+
+  addNote(text = "", x = 50, y = 50, title = "") {
+    // 添加默认标题参数
+    const note = new Note(this.nextId++, text, x, y, title);
     this.notes.push(note);
     return note;
   }
@@ -30,12 +82,18 @@ class App {
   }
 
   async generateAiNote() {
-    const prompt = document.getElementById("ai-prompt").value;
+    const promptElement = document.getElementById("ai-prompt");
+    const prompt = promptElement.value;
     const generateButton = document.getElementById("ai-generate");
     const originalText = generateButton.textContent;
 
     if (!prompt.trim()) {
-      alert("请输入内容!");
+      // 使用更友好的提示方式
+      promptElement.focus();
+      promptElement.placeholder = "请输入内容后再生成便笺...";
+      setTimeout(() => {
+        promptElement.placeholder = "请输入文本";
+      }, 2000);
       return;
     }
 
@@ -65,14 +123,37 @@ class App {
         // 随机位置
         const x = 100 + Math.random() * 200;
         const y = 100 + Math.random() * 200;
-        this.addNote(data.text, x, y);
+
+        // 为AI生成的便签创建特殊标题
+        const aiTitle =
+          prompt.length > 15 ? prompt.substring(0, 15) + "..." : prompt;
+        this.addNote(data.text, x, y, `AI: ${aiTitle}`);
+
         console.log("便签已添加");
+
+        // 清空输入框
+        promptElement.value = "";
+        this.updateButtonVisibility(); // 更新按钮状态
       } else {
         throw new Error("服务器返回了无效的数据");
       }
     } catch (error) {
       console.error("生成AI便签出错:", error);
-      alert(`生成便签失败: ${error.message}`);
+      // 显示更友好的错误提示
+      const errorMsg = document.createElement("div");
+      errorMsg.className = "error-message";
+      errorMsg.textContent = `生成失败: ${error.message}`;
+      document.body.appendChild(errorMsg);
+
+      setTimeout(() => {
+        errorMsg.classList.add("show");
+        setTimeout(() => {
+          errorMsg.classList.remove("show");
+          setTimeout(() => {
+            document.body.removeChild(errorMsg);
+          }, 300);
+        }, 3000);
+      }, 10);
     } finally {
       // 恢复按钮状态
       generateButton.disabled = false;
