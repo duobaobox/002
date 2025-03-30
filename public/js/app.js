@@ -38,6 +38,8 @@ class App {
 
   async generateAiNote() {
     const prompt = document.getElementById("ai-prompt").value;
+    const generateButton = document.getElementById("generate-ai-note");
+    const originalText = generateButton.textContent;
 
     if (!prompt.trim()) {
       alert("请输入AI提示!");
@@ -45,6 +47,12 @@ class App {
     }
 
     try {
+      // 禁用按钮并显示加载状态
+      generateButton.disabled = true;
+      generateButton.textContent = "生成中...";
+
+      console.log("发送AI生成请求，提示:", prompt);
+
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: {
@@ -53,21 +61,29 @@ class App {
         body: JSON.stringify({ prompt }),
       });
 
-      if (!response.ok) {
-        throw new Error("服务器响应错误");
-      }
-
       const data = await response.json();
 
-      if (data.text) {
+      if (!response.ok) {
+        console.error("服务器响应错误:", data);
+        throw new Error(data.message || `服务器响应错误: ${response.status}`);
+      }
+
+      if (data.success && data.text) {
         // 随机位置
         const x = 100 + Math.random() * 200;
         const y = 100 + Math.random() * 200;
         this.addNote(data.text, x, y);
+        console.log("便签已添加");
+      } else {
+        throw new Error("服务器返回了无效的数据");
       }
     } catch (error) {
       console.error("生成AI便签出错:", error);
-      alert("生成便签失败: " + error.message);
+      alert(`生成便签失败: ${error.message}`);
+    } finally {
+      // 恢复按钮状态
+      generateButton.disabled = false;
+      generateButton.textContent = originalText;
     }
   }
 }

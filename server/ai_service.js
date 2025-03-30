@@ -1,58 +1,61 @@
-const axios = require("axios");
-const config = require("../config/ai_config");
+import OpenAI from "openai";
+import config from "../config/ai_config.js";
 
 class AIService {
   constructor() {
+    this.openai = new OpenAI({
+      baseURL: config.baseURL,
+      apiKey: config.apiKey,
+    });
     this.config = config;
   }
 
   async generateText(prompt) {
     try {
-      const response = await axios.post(
-        this.config.api_url,
-        {
-          model: this.config.model,
-          messages: [
-            {
-              role: "system",
-              content:
-                "你是一个便签生成助手，根据用户的提示生成简短、有帮助的便签内容。",
-            },
-            {
-              role: "user",
-              content: prompt,
-            },
-          ],
-          max_tokens: this.config.max_tokens,
-          temperature: 0.7,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${this.config.api_key}`,
+      console.log("使用OpenAI SDK发送请求");
+      console.log("基础URL:", config.baseURL);
+      console.log("使用模型:", config.model);
+
+      const completion = await this.openai.chat.completions.create({
+        model: config.model,
+        messages: [
+          {
+            role: "system",
+            content:
+              "你是一个便签生成助手，根据用户的提示生成简短、有帮助的便签内容。",
           },
-        }
-      );
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        max_tokens: config.maxTokens,
+        temperature: config.temperature,
+      });
 
-      // 从响应中提取生成的文本
-      if (
-        response.data &&
-        response.data.choices &&
-        response.data.choices.length > 0 &&
-        response.data.choices[0].message
-      ) {
-        return response.data.choices[0].message.content.trim();
+      console.log("API响应成功");
+
+      if (completion.choices && completion.choices.length > 0) {
+        const generatedText = completion.choices[0].message.content.trim();
+        console.log("生成的文本预览:", generatedText.substring(0, 50) + "...");
+        return generatedText;
+      } else {
+        console.error("API响应格式异常:", completion);
+        throw new Error("API响应格式无效");
       }
-
-      throw new Error("AI响应格式无效");
     } catch (error) {
-      console.error("调用AI API出错:", error);
+      console.error("调用AI API出错:");
+
       if (error.response) {
-        console.error("API响应:", error.response.data);
+        console.error("状态码:", error.response.status);
+        console.error("错误信息:", error.response.data);
+      } else {
+        console.error("错误详情:", error.message);
       }
-      throw new Error(`AI生成失败: ${error.message}`);
+
+      throw new Error(`AI生成失败: ${error.message || "未知错误"}`);
     }
   }
 }
 
-module.exports = new AIService();
+export default new AIService();

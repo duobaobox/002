@@ -1,7 +1,8 @@
 // AI API配置文件
-module.exports = {
-    api_key: "your_api_key_here", // 替换为你的API密钥
-    api_url: "https://api.openai.com/v1/chat/completions", // 替换为实际API URL
-    model: "gpt-3.5-turbo", // 使用的AI模型
-    max_tokens: 300 // 生成文本的最大长度
+export default {
+  apiKey: "sk-519c5e87bb66414ca9d870fffbeac330", // API密钥
+  baseURL: "https://api.deepseek.com", // Deepseek API基础URL
+  model: "deepseek-chat", // 使用的AI模型
+  maxTokens: 300, // 生成文本的最大长度
+  temperature: 0.7, // 温度参数
 };
