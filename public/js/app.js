@@ -207,12 +207,12 @@ class App {
 
     // 如果没有标签了，自动添加一个新标签
     if (document.querySelectorAll(".tab").length === 0) {
-      this.addNewTab("https://www.baidu.com", "百度", "🔍");
+      this.addNewTab("https://kimi.moonshot.cn/", "Kimi AI", "🤖");
     }
   }
 
   // 添加新标签
-  addNewTab(url = "https://www.bing.com", title = "必应", icon = "🔍") {
+  addNewTab(url = "https://kimi.moonshot.cn/", title = "Kimi AI", icon = "🤖") {
     // 生成唯一ID
     const tabCount = document.querySelectorAll(".tab").length;
     const tabId = `tab-${tabCount + 1}`;
@@ -238,7 +238,8 @@ class App {
     newContent.className = "iframe-container";
     newContent.id = tabId;
     newContent.innerHTML = `
-      <iframe class="web-frame" src="${url}" title="${title}" loading="lazy"></iframe>
+      <iframe class="web-frame" src="${url}" title="${title}" loading="lazy"
+        onerror="this.srcdoc='<div style=\"padding:20px;font-family:sans-serif;color:#333;text-align:center;\"><h2>连接失败</h2><p>无法加载 ${title} 网页，可能是由于内容安全策略限制。</p><p><a href=\"${url}\" target=\"_blank\" style=\"color:#1a73e8;text-decoration:none;\">在新窗口中打开</a></p></div>'"></iframe>
     `;
 
     // 添加内容到抽屉

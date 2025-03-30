@@ -1,0 +1,99 @@
+/* 抽屉相关样式 */
+
+/* 网页抽屉样式 - 修改为从底部弹出 */
+.web-drawer {
+  position: fixed;
+  bottom: -95vh; /* 初始位置在屏幕底部以下 */
+  left: 10px; /* 左侧边距10px */
+  right: 10px; /* 右侧边距10px */
+  width: calc(100% - 20px); /* 宽度为屏幕宽度减去两侧各10px的边距 */
+  max-width: none; /* 移除最大宽度限制 */
+  transform: none; /* 移除水平居中变换 */
+  height: 95vh; /* 高度为视口高度的95% */
+  background-color: white;
+  box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.1);
+  z-index: 10000;
+  transition: bottom 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px 16px 0 0;
+}
+
+.web-drawer.open {
+  bottom: 0; /* 打开时显示在底部 */
+}
+
+/* 抽屉头部样式 */
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px; /* 减少上下内边距 */
+  border-bottom: 1px solid #e8e8e8;
+  height: 40px; /* 显式设置较小的高度 */
+}
+
+.drawer-title {
+  font-size: 16px; /* 略微减小字体大小 */
+  font-weight: 500;
+  color: #333;
+}
+
+.drawer-close {
+  width: 24px; /* 减小关闭按钮尺寸 */
+  height: 24px; /* 减小关闭按钮尺寸 */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background-color: #f5f5f5;
+  color: #666;
+  border: none;
+  font-size: 14px; /* 减小关闭按钮文字大小 */
+  transition: background-color 0.2s;
+  padding: 0; /* 确保没有内边距影响圆形 */
+  line-height: 1; /* 确保文本垂直居中 */
+}
+
+.drawer-close:hover {
+  background-color: #e0e0e0;
+}
+
+/* 添加顶部拖动指示器 */
+.drawer-drag-indicator {
+  width: 40px;
+  height: 4px; /* 减小拖动指示器高度 */
+  background-color: #ddd;
+  border-radius: 2px;
+  margin: 4px auto; /* 减少上下间距 */
+}
+
+/* 抽屉内容样式 */
+.drawer-content {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 抽屉遮罩 */
+.drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease;
+}
+
+.drawer-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}

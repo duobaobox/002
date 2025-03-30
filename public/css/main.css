@@ -1,0 +1,15 @@
+/* 主样式文件，引入所有模块 */
+
+/* 引入基础样式 */
+@import url("base.css");
+
+/* 引入组件样式 */
+@import url("bottom-bar.css");
+@import url("drawer.css");
+@import url("tabs.css");
+@import url("canvas.css");
+@import url("notes.css");
+@import url("markdown.css");
+
+/* 引入工具类 */
+@import url("utils.css");

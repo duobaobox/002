@@ -1,0 +1,55 @@
+/* 画布相关样式 */
+
+.canvas-container {
+  flex: 1;
+  background-color: #fcfcfc;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 添加画布背景样式 */
+#note-canvas {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background-color: #f8f9fd;
+  background-image: linear-gradient(
+      rgba(200, 210, 230, 0.1) 1px,
+      transparent 1px
+    ),
+    linear-gradient(90deg, rgba(200, 210, 230, 0.1) 1px, transparent 1px);
+  background-size: 40px 40px;
+  /* 添加微妙的阴影效果 */
+  box-shadow: inset 0 0 100px rgba(220, 230, 250, 0.4);
+}
+
+/* 添加设计感背景元素 */
+.canvas-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none; /* 确保不影响交互 */
+}
+
+/* 背景元素：点阵装饰 */
+.bg-dots {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: rgba(26, 115, 232, 0.05);
+  opacity: 0.5;
+}
+
+/* 背景渐变气泡装饰 */
+.bg-gradient-bubble {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.1;
+  z-index: -1;
+}

@@ -87,6 +87,7 @@ button {
   transition: all 0.2s ease;
   border: none;
   font-size: 16px;
+  padding: 0; /* 确保没有内边距影响按钮形状 */
 }
 
 .web-button:hover {
@@ -102,13 +103,13 @@ button {
 /* 网页抽屉样式 - 修改为从底部弹出 */
 .web-drawer {
   position: fixed;
-  bottom: -90vh; /* 初始位置在屏幕底部以下 - 修改为90vh */
+  bottom: -95vh; /* 初始位置在屏幕底部以下 - 修改为90vh */
   left: 10px; /* 左侧边距10px */
   right: 10px; /* 右侧边距10px */
   width: calc(100% - 20px); /* 宽度为屏幕宽度减去两侧各10px的边距 */
   max-width: none; /* 移除最大宽度限制 */
   transform: none; /* 移除水平居中变换 */
-  height: 90vh; /* 高度为视口高度的90% - 从80vh修改为90vh */
+  height: 95vh; /* 高度为视口高度的90% - 从80vh修改为90vh */
   background-color: white;
   box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.1);
   z-index: 10000;
@@ -127,19 +128,20 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
+  padding: 8px 16px; /* 减少上下内边距 */
   border-bottom: 1px solid #e8e8e8;
+  height: 40px; /* 显式设置较小的高度 */
 }
 
 .drawer-title {
-  font-size: 18px;
+  font-size: 16px; /* 略微减小字体大小 */
   font-weight: 500;
   color: #333;
 }
 
 .drawer-close {
-  width: 28px;
-  height: 28px;
+  width: 24px; /* 减小关闭按钮尺寸 */
+  height: 24px; /* 减小关闭按钮尺寸 */
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -148,17 +150,23 @@ button {
   background-color: #f5f5f5;
   color: #666;
   border: none;
-  font-size: 16px;
+  font-size: 14px; /* 减小关闭按钮文字大小 */
   transition: background-color 0.2s;
+  padding: 0; /* 确保没有内边距影响圆形 */
+  line-height: 1; /* 确保文本垂直居中 */
+}
+
+.drawer-close:hover {
+  background-color: #e0e0e0;
 }
 
 /* 添加顶部拖动指示器 */
 .drawer-drag-indicator {
   width: 40px;
-  height: 5px;
+  height: 4px; /* 减小拖动指示器高度 */
   background-color: #ddd;
-  border-radius: 3px;
-  margin: 8px auto;
+  border-radius: 2px;
+  margin: 4px auto; /* 减少上下间距 */
 }
 
 /* 抽屉内容样式 */

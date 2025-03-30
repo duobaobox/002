@@ -1,0 +1,25 @@
+/* 工具类和辅助样式 */
+
+/* 错误消息样式 */
+.error-message {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background-color: #ff3333;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 1000;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  max-width: 80%;
+}
+
+.error-message.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}

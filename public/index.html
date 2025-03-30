@@ -10,8 +10,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- 网页标题 -->
     <title>AI 便签画布</title>
-    <!-- 引入外部CSS样式文件 -->
-    <link rel="stylesheet" href="css/style.css">
+    <!-- 引入外部CSS样式文件，更新为模块化CSS -->
+    <link rel="stylesheet" href="css/main.css">
     <!-- 添加 marked.js 库 -->
     <script src="https://cdn.jsdelivr.net/npm/marked@3.0.8/marked.min.js"></script>
     <!-- 添加 highlight.js 用于代码高亮（可选） -->
@@ -43,10 +43,8 @@
                 <div class="bottom-left-actions">
                     <!-- AI模型标识 -->
                     <div class="ai-model">deepseek-chat</div>
-                    <!-- 网页按钮 -->
-                    <button id="web-button" class="web-button" title="打开网页">
-                        <i>🌐</i>
-                    </button>
+                    <!-- 网页按钮 - 简化按钮内容，移除多余样式 -->
+                    <button id="web-button" class="web-button" title="打开网页">🌐</button>
                 </div>
 
                 <!-- 操作按钮区域 -->
@@ -68,15 +66,17 @@
                 <!-- 标签页导航 -->
                 <div class="tabs-container">
                     <button class="tab active" data-tab-id="tab-1">
-                        <span class="tab-icon">🔍</span>
-                        百度
+                        <span class="tab-icon">🤖</span>
+                        Kimi AI
                         <span class="tab-close">&times;</span>
                     </button>
                     <button class="add-tab" id="add-tab">+</button>
                 </div>
                 <!-- 页面内容区域 -->
                 <div class="iframe-container active" id="tab-1">
-                    <iframe class="web-frame" src="https://www.baidu.com" title="百度" loading="lazy"></iframe>
+                    <iframe class="web-frame" src="https://kimi.moonshot.cn/" title="Kimi AI" loading="lazy"
+                        onerror="this.srcdoc='<div style=\'padding:20px;font-family:sans-serif;color:#333;text-align:center;\'><h2>连接失败</h2><p>无法加载 Kimi AI 网页，可能是由于内容安全策略限制。</p><p><a href=\'https://kimi.moonshot.cn/\' target=\'_blank\' style=\'color:#1a73e8;text-decoration:none;\'>在新窗口中打开</a></p></div>'">
+                    </iframe>
                 </div>
             </div>
         </div>
