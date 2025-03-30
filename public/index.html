@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 便签画布</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>AI 便签画布</h1>
+            <div class="controls">
+                <button id="add-note">添加便签</button>
+                <button id="generate-ai-note">AI生成便签</button>
+                <div class="ai-prompt-container">
+                    <textarea id="ai-prompt" placeholder="输入AI提示..."></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="canvas-container">
+            <div id="note-canvas"></div>
+        </div>
+    </div>
+
+    <script src="js/note.js"></script>
+    <script src="js/canvas.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
