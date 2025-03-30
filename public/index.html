@@ -17,26 +17,26 @@
 <body>
     <!-- 主容器 -->
     <div class="container">
-        <!-- 侧边栏区域 -->
-        <div class="sidebar">
-            <!-- 页面标题 -->
-            <h1>AI 便签画布</h1>
-            <!-- 控制按钮区域 -->
-            <div class="controls">
-                <!-- 添加普通便签的按钮 -->
-                <button id="add-note">添加便签</button>
-                <!-- 生成AI便签的按钮 -->
-                <button id="generate-ai-note">AI生成便签</button>
-                <!-- AI提示输入区域 -->
-                <div class="ai-prompt-container">
-                    <textarea id="ai-prompt" placeholder="输入AI提示..."></textarea>
-                </div>
-            </div>
-        </div>
         <!-- 画布容器区域 -->
         <div class="canvas-container">
             <!-- 便签展示的画布区域 -->
             <div id="note-canvas"></div>
+        </div>
+
+        <!-- 底部控制栏 -->
+        <div class="bottom-bar">
+            <!-- AI模型标识 -->
+            <div class="ai-model">deepseek-chat</div>
+
+            <!-- 输入区域 -->
+            <div class="input-container">
+                <textarea id="ai-prompt" placeholder="输入内容..."></textarea>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="action-buttons">
+                <button id="ai-generate" class="ai-button">AI生成便签</button>
+            </div>
         </div>
     </div>
 

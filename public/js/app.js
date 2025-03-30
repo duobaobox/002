@@ -8,17 +8,10 @@ class App {
   }
 
   initEventListeners() {
-    // 添加便签按钮
-    document.getElementById("add-note").addEventListener("click", () => {
-      this.addNote();
-    });
-
     // AI生成便签按钮
-    document
-      .getElementById("generate-ai-note")
-      .addEventListener("click", () => {
-        this.generateAiNote();
-      });
+    document.getElementById("ai-generate").addEventListener("click", () => {
+      this.generateAiNote();
+    });
 
     // 监听便签删除事件
     document.addEventListener("note-removed", (e) => {
@@ -38,11 +31,11 @@ class App {
 
   async generateAiNote() {
     const prompt = document.getElementById("ai-prompt").value;
-    const generateButton = document.getElementById("generate-ai-note");
+    const generateButton = document.getElementById("ai-generate");
     const originalText = generateButton.textContent;
 
     if (!prompt.trim()) {
-      alert("请输入AI提示!");
+      alert("请输入内容!");
       return;
     }
 
