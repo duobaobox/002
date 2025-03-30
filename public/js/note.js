@@ -1,5 +1,5 @@
 class Note {
-  constructor(id, text = "", x = 50, y = 50, title = "") {
+  constructor(id, text = "", x = 50, y = 50, title = "", colorClass = null) {
     this.id = id;
     this.text = text;
     this.x = x;
@@ -16,6 +16,8 @@ class Note {
     this.resizeStartY = 0;
     this.editMode = true; // 默认为编辑模式
     this.updateTimer = null; // 用于防抖渲染
+    // 保存便签的颜色类名
+    this.colorClass = colorClass;
 
     // 便签颜色类名
     this.colorClasses = [
@@ -32,7 +34,13 @@ class Note {
   create() {
     // 创建便签元素
     const note = document.createElement("div");
-    note.className = "note " + this.getRandomColorClass();
+
+    // 使用保存的颜色类或随机生成一个
+    const colorClass = this.colorClass || this.getRandomColorClass();
+    // 保存选择的颜色类
+    this.colorClass = colorClass;
+
+    note.className = "note " + colorClass;
     note.style.left = `${this.x}px`;
     note.style.top = `${this.y}px`;
 
@@ -337,6 +345,12 @@ class Note {
     });
 
     window.addEventListener("mouseup", () => {
+      if (this.isDragging) {
+        // 便签移动完成后触发事件，通知服务器更新数据
+        document.dispatchEvent(
+          new CustomEvent("note-moved", { detail: { id: this.id } })
+        );
+      }
       this.isDragging = false;
     });
   }
@@ -384,6 +398,12 @@ class Note {
     });
 
     window.addEventListener("mouseup", () => {
+      if (this.isResizing) {
+        // 便签调整大小完成后触发事件，通知服务器更新数据
+        document.dispatchEvent(
+          new CustomEvent("note-resized", { detail: { id: this.id } })
+        );
+      }
       this.isResizing = false;
     });
   }
@@ -419,6 +439,11 @@ class Note {
         this.toggleEditPreviewMode(textarea, preview);
       }
     }
+
+    // 发送更新事件
+    document.dispatchEvent(
+      new CustomEvent("note-updated", { detail: { id: this.id } })
+    );
   }
 
   // 编辑标题方法
@@ -449,6 +474,11 @@ class Note {
 
       this.title = newTitle;
       titleElement.textContent = this.title;
+
+      // 触发标题更新事件
+      document.dispatchEvent(
+        new CustomEvent("note-updated", { detail: { id: this.id } })
+      );
     };
 
     // 处理按键事件
