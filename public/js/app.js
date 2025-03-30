@@ -9,6 +9,7 @@ class App {
 
     this.initEventListeners();
     this.updateButtonVisibility();
+    this.initWebDrawer();
   }
 
   initEventListeners() {
@@ -60,6 +61,215 @@ class App {
         }
       }
     });
+  }
+
+  // 初始化网页抽屉功能
+  initWebDrawer() {
+    const webButton = document.getElementById("web-button");
+    const webDrawer = document.getElementById("web-drawer");
+    const drawerClose = document.getElementById("drawer-close");
+    const drawerOverlay = document.getElementById("drawer-overlay");
+    const dragIndicator = document.querySelector(".drawer-drag-indicator");
+    const addTabButton = document.getElementById("add-tab");
+
+    // 打开抽屉
+    webButton.addEventListener("click", () => {
+      webDrawer.classList.add("open");
+      drawerOverlay.classList.add("visible");
+      document.body.style.overflow = "hidden"; // 防止背景滚动
+    });
+
+    // 关闭抽屉的两种方式
+    drawerClose.addEventListener("click", this.closeDrawer);
+    drawerOverlay.addEventListener("click", this.closeDrawer);
+
+    // 初始化标签页功能
+    this.initTabsSystem();
+
+    // 添加新标签页
+    addTabButton.addEventListener("click", () => {
+      this.addNewTab();
+    });
+
+    // 支持拖动关闭
+    let startY = 0;
+    let currentY = 0;
+
+    // 拖动开始
+    dragIndicator.addEventListener("touchstart", (e) => {
+      startY = e.touches[0].clientY;
+    });
+    dragIndicator.addEventListener("mousedown", (e) => {
+      startY = e.clientY;
+      document.addEventListener("mousemove", handleDrag);
+      document.addEventListener("mouseup", endDrag);
+    });
+
+    // 拖动进行中
+    const handleDrag = (e) => {
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      currentY = clientY - startY;
+
+      // 只允许向下拖动
+      if (currentY > 0) {
+        webDrawer.style.bottom = `-${currentY}px`;
+      }
+    };
+
+    dragIndicator.addEventListener("touchmove", handleDrag);
+
+    // 拖动结束
+    const endDrag = (e) => {
+      document.removeEventListener("mousemove", handleDrag);
+      document.removeEventListener("mouseup", endDrag);
+
+      // 如果拖动超过150px，则关闭抽屉
+      if (currentY > 150) {
+        this.closeDrawer();
+      } else {
+        // 否则回到原位
+        webDrawer.style.bottom = "0";
+      }
+    };
+
+    dragIndicator.addEventListener("touchend", endDrag);
+
+    // 按ESC键关闭抽屉
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && webDrawer.classList.contains("open")) {
+        this.closeDrawer();
+      }
+    });
+  }
+
+  // 初始化标签页系统
+  initTabsSystem() {
+    // 为所有标签添加点击事件
+    document.querySelectorAll(".tab").forEach((tab) => {
+      // 标签点击事件 - 切换标签
+      tab.addEventListener("click", (e) => {
+        // 忽略关闭按钮点击
+        if (e.target.classList.contains("tab-close")) return;
+
+        const tabId = tab.getAttribute("data-tab-id");
+        this.activateTab(tabId);
+      });
+
+      // 标签关闭按钮点击事件
+      const closeBtn = tab.querySelector(".tab-close");
+      if (closeBtn) {
+        closeBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const tabId = tab.getAttribute("data-tab-id");
+          this.closeTab(tabId);
+        });
+      }
+    });
+  }
+
+  // 激活特定标签
+  activateTab(tabId) {
+    // 移除所有标签和内容区域的active类
+    document
+      .querySelectorAll(".tab")
+      .forEach((t) => t.classList.remove("active"));
+    document
+      .querySelectorAll(".iframe-container")
+      .forEach((c) => c.classList.remove("active"));
+
+    // 激活选中的标签和内容
+    document
+      .querySelector(`.tab[data-tab-id="${tabId}"]`)
+      ?.classList.add("active");
+    document.getElementById(tabId)?.classList.add("active");
+  }
+
+  // 关闭标签页
+  closeTab(tabId) {
+    const tab = document.querySelector(`.tab[data-tab-id="${tabId}"]`);
+    const container = document.getElementById(tabId);
+
+    // 如果是当前激活的标签，激活相邻标签
+    if (tab.classList.contains("active")) {
+      const nextTab = tab.nextElementSibling;
+      const prevTab = tab.previousElementSibling;
+
+      if (nextTab && !nextTab.classList.contains("add-tab")) {
+        this.activateTab(nextTab.getAttribute("data-tab-id"));
+      } else if (prevTab) {
+        this.activateTab(prevTab.getAttribute("data-tab-id"));
+      }
+    }
+
+    // 移除标签和内容
+    tab.remove();
+    container?.remove();
+
+    // 如果没有标签了，自动添加一个新标签
+    if (document.querySelectorAll(".tab").length === 0) {
+      this.addNewTab("https://www.baidu.com", "百度", "🔍");
+    }
+  }
+
+  // 添加新标签
+  addNewTab(url = "https://www.bing.com", title = "必应", icon = "🔍") {
+    // 生成唯一ID
+    const tabCount = document.querySelectorAll(".tab").length;
+    const tabId = `tab-${tabCount + 1}`;
+
+    // 创建新标签
+    const tabsContainer = document.querySelector(".tabs-container");
+    const addTabButton = document.getElementById("add-tab");
+
+    const newTab = document.createElement("button");
+    newTab.className = "tab";
+    newTab.setAttribute("data-tab-id", tabId);
+    newTab.innerHTML = `
+      <span class="tab-icon">${icon}</span>
+      ${title}
+      <span class="tab-close">&times;</span>
+    `;
+
+    // 插入新标签
+    tabsContainer.insertBefore(newTab, addTabButton);
+
+    // 创建新内容
+    const newContent = document.createElement("div");
+    newContent.className = "iframe-container";
+    newContent.id = tabId;
+    newContent.innerHTML = `
+      <iframe class="web-frame" src="${url}" title="${title}" loading="lazy"></iframe>
+    `;
+
+    // 添加内容到抽屉
+    document.querySelector(".drawer-content").appendChild(newContent);
+
+    // 添加标签事件
+    newTab.addEventListener("click", (e) => {
+      if (!e.target.classList.contains("tab-close")) {
+        this.activateTab(tabId);
+      }
+    });
+
+    // 添加关闭按钮事件
+    newTab.querySelector(".tab-close").addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.closeTab(tabId);
+    });
+
+    // 激活新标签
+    this.activateTab(tabId);
+  }
+
+  // 关闭抽屉方法
+  closeDrawer() {
+    const webDrawer = document.getElementById("web-drawer");
+    const drawerOverlay = document.getElementById("drawer-overlay");
+
+    webDrawer.style.bottom = ""; // 重置内联样式
+    webDrawer.classList.remove("open");
+    drawerOverlay.classList.remove("visible");
+    document.body.style.overflow = ""; // 恢复背景滚动
   }
 
   // 根据输入内容更新按钮可见性
@@ -152,7 +362,7 @@ class App {
             noteData.x || 50,
             noteData.y || 50,
             noteData.title || `便签 ${noteData.id}`,
-            noteData.colorClass // 传递保存的颜色类
+            noteData.colorClass
           );
 
           // 设置自定义尺寸
@@ -166,6 +376,16 @@ class App {
               note.element.querySelector(".scrollbar-thumb");
             if (textarea && scrollbarThumb) {
               note.updateScrollbar(textarea, scrollbarThumb);
+            }
+          }
+
+          // 有内容的便签应默认显示为预览模式
+          if (noteData.text && noteData.text.trim() !== "") {
+            note.editMode = false;
+            const textarea = note.element.querySelector(".note-content");
+            const preview = note.element.querySelector(".markdown-preview");
+            if (textarea && preview) {
+              note.toggleEditPreviewMode(textarea, preview);
             }
           }
 

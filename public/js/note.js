@@ -14,7 +14,8 @@ class Note {
     this.resizeStartHeight = 0;
     this.resizeStartX = 0;
     this.resizeStartY = 0;
-    this.editMode = true; // 默认为编辑模式
+    // 如果文本不为空，默认设置为预览模式
+    this.editMode = text.trim() === "";
     this.updateTimer = null; // 用于防抖渲染
     // 保存便签的颜色类名
     this.colorClass = colorClass;
@@ -198,13 +199,16 @@ class Note {
     // 设置初始z-index
     note.style.zIndex = getHighestZIndex() + 1;
 
-    // 初始切换模式
+    // 初始切换模式 - 有内容的便签默认显示预览模式
     this.toggleEditPreviewMode(textarea, markdownPreview);
 
     // 初始化滚动条
-    this.updateScrollbar(textarea, scrollbarThumb);
+    this.updateScrollbar(
+      this.editMode ? textarea : markdownPreview,
+      scrollbarThumb
+    );
 
-    // 聚焦到文本区域
+    // 聚焦到文本区域 (仅对空白便签)
     if (this.text === "") {
       setTimeout(() => textarea.focus(), 0);
     }
@@ -276,7 +280,7 @@ class Note {
       textarea.style.display = "none";
       preview.style.display = "block";
 
-      // 更新预览内容
+      // 确保预览内容是最新的
       preview.innerHTML = this.renderMarkdown(this.text);
 
       // 更新滚动条
@@ -340,8 +344,19 @@ class Note {
       const x = e.clientX - this.dragOffsetX;
       const y = e.clientY - this.dragOffsetY;
 
+      // 检查底部控制栏位置，防止便签移动到底部控制栏下方
+      const bottomBar = document.querySelector(".bottom-bar");
+      const bottomBarRect = bottomBar.getBoundingClientRect();
+
+      // 避免便签头部与底部控制栏重叠
+      const noteHeight = note.offsetHeight;
+      const headerHeight = 30; // 便签头部高度
+      const safeBottomPosition = window.innerHeight - bottomBarRect.height - 40; // 保留安全间距
+
+      const finalY = Math.min(y, safeBottomPosition - headerHeight);
+
       note.style.left = `${x}px`;
-      note.style.top = `${y}px`;
+      note.style.top = `${finalY}px`;
     });
 
     window.addEventListener("mouseup", () => {

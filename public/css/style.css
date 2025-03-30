@@ -44,6 +44,7 @@ button {
   width: 80%;
   border: 1px solid #e8e8e8;
   overflow: hidden;
+  z-index: 9999; /* 添加极高的z-index确保控制栏永远在最上层 */
 }
 
 /* 底部操作区域 */
@@ -52,6 +53,13 @@ button {
   justify-content: space-between;
   align-items: center;
   margin-top: 15px;
+}
+
+/* 左侧功能区域 (包含AI模型标识和网页按钮) */
+.bottom-left-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px; /* 按钮之间的间隔 */
 }
 
 /* AI模型标识样式 */
@@ -63,6 +71,232 @@ button {
   font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.2px;
+}
+
+/* 网页按钮样式 */
+.web-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #f0f4ff;
+  color: #1a73e8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  font-size: 16px;
+}
+
+.web-button:hover {
+  background-color: #e8f0fe;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(26, 115, 232, 0.2);
+}
+
+.web-button:active {
+  transform: translateY(0);
+}
+
+/* 网页抽屉样式 - 修改为从底部弹出 */
+.web-drawer {
+  position: fixed;
+  bottom: -90vh; /* 初始位置在屏幕底部以下 - 修改为90vh */
+  left: 10px; /* 左侧边距10px */
+  right: 10px; /* 右侧边距10px */
+  width: calc(100% - 20px); /* 宽度为屏幕宽度减去两侧各10px的边距 */
+  max-width: none; /* 移除最大宽度限制 */
+  transform: none; /* 移除水平居中变换 */
+  height: 90vh; /* 高度为视口高度的90% - 从80vh修改为90vh */
+  background-color: white;
+  box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.1);
+  z-index: 10000;
+  transition: bottom 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px 16px 0 0;
+}
+
+.web-drawer.open {
+  bottom: 0; /* 打开时显示在底部 */
+}
+
+/* 抽屉头部样式 */
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.drawer-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: #333;
+}
+
+.drawer-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background-color: #f5f5f5;
+  color: #666;
+  border: none;
+  font-size: 16px;
+  transition: background-color 0.2s;
+}
+
+/* 添加顶部拖动指示器 */
+.drawer-drag-indicator {
+  width: 40px;
+  height: 5px;
+  background-color: #ddd;
+  border-radius: 3px;
+  margin: 8px auto;
+}
+
+/* 抽屉内容样式 */
+.drawer-content {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 添加标签页样式 */
+.tabs-container {
+  display: flex;
+  border-bottom: 1px solid #e8e8e8;
+  background-color: #f5f5f5;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.tabs-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.tab {
+  padding: 12px 16px;
+  font-size: 14px;
+  border: none;
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  color: #666;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tab.active {
+  border-bottom-color: #1a73e8;
+  color: #1a73e8;
+  background-color: #fff;
+}
+
+.tab:hover:not(.active) {
+  background-color: #eee;
+}
+
+.tab-icon {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab-close {
+  margin-left: 6px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+  color: #666;
+  background-color: transparent;
+}
+
+.tab:hover .tab-close {
+  opacity: 1;
+}
+
+.tab-close:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* 添加新标签按钮 */
+.add-tab {
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  color: #666;
+  cursor: pointer;
+  margin: 6px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.add-tab:hover {
+  background-color: #e0e0e0;
+}
+
+/* IFrame容器 */
+.iframe-container {
+  flex: 1;
+  overflow: hidden;
+}
+
+.web-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* 隐藏不活跃的iframe */
+.iframe-container:not(.active) {
+  display: none;
+}
+
+/* 抽屉遮罩 */
+.drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease;
+}
+
+.drawer-overlay.visible {
+  opacity: 1;
+  visibility: visible;
 }
 
 /* 输入区域样式 */
@@ -447,7 +681,7 @@ button {
   color: rgba(0, 0, 0, 0.5) !important;
   background-color: rgba(255, 255, 255, 0.7) !important;
   padding: 3px 8px !important;
-  border-radius: 4px !important;
+  border-radius: 4px !important; /* 修正：从 !重要 改为 !important */
   opacity: 0;
   transition: opacity 0.3s, background-color 0.2s !important;
   pointer-events: none !important; /* 不干扰其他交互 */
@@ -458,7 +692,7 @@ button {
 }
 
 .note:hover .edit-hint {
-  opacity: 0.9 !important;
+  opacity: 0.9 !important; /* 修正：从 !重要 改为 !important */
 }
 
 .markdown-preview h1,

@@ -39,8 +39,15 @@
 
             <!-- 底部操作区域 -->
             <div class="bottom-actions">
-                <!-- AI模型标识 -->
-                <div class="ai-model">deepseek-chat</div>
+                <!-- 左侧功能区域 -->
+                <div class="bottom-left-actions">
+                    <!-- AI模型标识 -->
+                    <div class="ai-model">deepseek-chat</div>
+                    <!-- 网页按钮 -->
+                    <button id="web-button" class="web-button" title="打开网页">
+                        <i>🌐</i>
+                    </button>
+                </div>
 
                 <!-- 操作按钮区域 -->
                 <div class="action-buttons">
@@ -49,6 +56,33 @@
                 </div>
             </div>
         </div>
+
+        <!-- 网页抽屉 -->
+        <div class="web-drawer" id="web-drawer">
+            <div class="drawer-drag-indicator"></div>
+            <div class="drawer-header">
+                <div class="drawer-title">网页收藏</div>
+                <button class="drawer-close" id="drawer-close">&times;</button>
+            </div>
+            <div class="drawer-content">
+                <!-- 标签页导航 -->
+                <div class="tabs-container">
+                    <button class="tab active" data-tab-id="tab-1">
+                        <span class="tab-icon">🔍</span>
+                        百度
+                        <span class="tab-close">&times;</span>
+                    </button>
+                    <button class="add-tab" id="add-tab">+</button>
+                </div>
+                <!-- 页面内容区域 -->
+                <div class="iframe-container active" id="tab-1">
+                    <iframe class="web-frame" src="https://www.baidu.com" title="百度" loading="lazy"></iframe>
+                </div>
+            </div>
+        </div>
+
+        <!-- 抽屉遮罩 -->
+        <div class="drawer-overlay" id="drawer-overlay"></div>
     </div>
 
     <!-- 引入JavaScript文件 -->
