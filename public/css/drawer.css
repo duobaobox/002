@@ -3,13 +3,13 @@
 /* 网页抽屉样式 - 修改为从底部弹出 */
 .web-drawer {
   position: fixed;
-  bottom: -95vh; /* 初始位置在屏幕底部以下 */
+  bottom: -98vh; /* 初始位置在屏幕底部以下 */
   left: 10px; /* 左侧边距10px */
   right: 10px; /* 右侧边距10px */
   width: calc(100% - 20px); /* 宽度为屏幕宽度减去两侧各10px的边距 */
   max-width: none; /* 移除最大宽度限制 */
   transform: none; /* 移除水平居中变换 */
-  height: 95vh; /* 高度为视口高度的95% */
+  height: 98vh; /* 高度为视口高度的95% */
   background-color: white;
   box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.1);
   z-index: 10000;
