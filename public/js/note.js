@@ -192,9 +192,9 @@ class Note {
     // 设置调整大小事件
     this.setupResizeEvents(note, resizeHandle);
 
-    // 添加到DOM
+    // 添加到DOM - 修改为添加到便签容器而不是画布
     this.element = note;
-    document.getElementById("note-canvas").appendChild(note);
+    document.getElementById("note-container").appendChild(note);
 
     // 设置初始z-index
     note.style.zIndex = getHighestZIndex() + 1;

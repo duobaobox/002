@@ -6,10 +6,38 @@ class Canvas {
     this.currentPoint = { x: 0, y: 0 };
     this.offset = { x: 0, y: 0 };
 
+    // 添加画布缩放相关属性
+    this.scale = 1.0; // 默认缩放比例为100%
+    this.minScale = 0.3; // 最小缩放比例30%
+    this.maxScale = 2.0; // 最大缩放比例200%
+
+    // 创建便签容器元素
+    this.createNoteContainer();
+
     // 添加背景元素容器
     this.createBackgroundElements();
 
+    // 初始化缩放控制器
+    this.createZoomControls();
+
     this.setupEvents();
+  }
+
+  // 创建便签容器
+  createNoteContainer() {
+    // 创建一个新的便签容器，作为画布的子元素
+    this.noteContainer = document.createElement("div");
+    this.noteContainer.id = "note-container";
+    this.noteContainer.className = "note-container";
+    this.canvas.appendChild(this.noteContainer);
+
+    // 应用初始样式
+    this.noteContainer.style.position = "absolute";
+    this.noteContainer.style.width = "100%";
+    this.noteContainer.style.height = "100%";
+    this.noteContainer.style.top = "0";
+    this.noteContainer.style.left = "0";
+    this.noteContainer.style.transformOrigin = "center center";
   }
 
   createBackgroundElements() {
@@ -88,6 +116,88 @@ class Canvas {
     }
   }
 
+  // 创建缩放控制器
+  createZoomControls() {
+    // 创建缩放控制器容器
+    const zoomControls = document.createElement("div");
+    zoomControls.className = "zoom-controls";
+
+    // 创建缩小按钮
+    const zoomOutBtn = document.createElement("button");
+    zoomOutBtn.className = "zoom-btn zoom-out";
+    zoomOutBtn.innerHTML = "−";
+    zoomOutBtn.title = "缩小画布";
+    zoomOutBtn.addEventListener("click", () => this.zoomOut());
+
+    // 创建缩放显示
+    const zoomDisplay = document.createElement("div");
+    zoomDisplay.className = "zoom-display";
+    zoomDisplay.id = "zoom-level";
+    zoomDisplay.textContent = "100%";
+
+    // 创建放大按钮
+    const zoomInBtn = document.createElement("button");
+    zoomInBtn.className = "zoom-btn zoom-in";
+    zoomInBtn.innerHTML = "+";
+    zoomInBtn.title = "放大画布";
+    zoomInBtn.addEventListener("click", () => this.zoomIn());
+
+    // 创建重置按钮
+    const zoomResetBtn = document.createElement("button");
+    zoomResetBtn.className = "zoom-btn zoom-reset";
+    zoomResetBtn.innerHTML = "↻";
+    zoomResetBtn.title = "重置缩放";
+    zoomResetBtn.addEventListener("click", () => this.resetZoom());
+
+    // 组装控制器
+    zoomControls.appendChild(zoomOutBtn);
+    zoomControls.appendChild(zoomDisplay);
+    zoomControls.appendChild(zoomInBtn);
+    zoomControls.appendChild(zoomResetBtn);
+
+    // 添加到DOM
+    document.querySelector(".canvas-container").appendChild(zoomControls);
+  }
+
+  // 缩小画布
+  zoomOut() {
+    if (this.scale > this.minScale) {
+      this.scale = Math.max(this.scale - 0.1, this.minScale);
+      this.applyZoom();
+    }
+  }
+
+  // 放大画布
+  zoomIn() {
+    if (this.scale < this.maxScale) {
+      this.scale = Math.min(this.scale + 0.1, this.maxScale);
+      this.applyZoom();
+    }
+  }
+
+  // 重置缩放
+  resetZoom() {
+    this.scale = 1.0;
+    this.applyZoom();
+  }
+
+  // 应用缩放
+  applyZoom() {
+    // 更新显示
+    document.getElementById("zoom-level").textContent = `${Math.round(
+      this.scale * 100
+    )}%`;
+
+    // 只缩放便签容器，不缩放背景网格
+    this.noteContainer.style.transform = `scale(${this.scale})`;
+
+    // 更新所有便签的z-index以防止缩放时层级问题
+    const notes = document.querySelectorAll(".note");
+    notes.forEach((note) => {
+      note.style.zIndex = parseInt(note.style.zIndex || 1);
+    });
+  }
+
   setupEvents() {
     // 鼠标按下事件 - 开始平移画布
     this.canvas.addEventListener("mousedown", (e) => {
@@ -142,6 +252,26 @@ class Canvas {
     this.canvas.addEventListener("contextmenu", (e) => {
       e.preventDefault();
     });
+
+    // 添加鼠标滚轮缩放事件
+    this.canvas.addEventListener(
+      "wheel",
+      (e) => {
+        // 只在按住Ctrl键时进行缩放
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault(); // 防止页面滚动
+
+          if (e.deltaY < 0) {
+            // 向上滚动，放大
+            this.zoomIn();
+          } else {
+            // 向下滚动，缩小
+            this.zoomOut();
+          }
+        }
+      },
+      { passive: false }
+    );
   }
 
   // 添加背景元素移动方法 - 创造视差效果
