@@ -14,13 +14,14 @@ class Canvas {
     // 创建便签容器元素
     this.createNoteContainer();
 
-    // 添加背景元素容器
-    this.createBackgroundElements();
+    // 添加简单的网格背景
+    this.createGridBackground();
 
     // 初始化缩放控制器
     this.createZoomControls();
 
-    this.setupEvents();
+    // 初始化性能优化的事件处理
+    this.setupOptimizedEvents();
   }
 
   // 创建便签容器
@@ -40,80 +41,22 @@ class Canvas {
     this.noteContainer.style.transformOrigin = "center center";
   }
 
-  createBackgroundElements() {
-    // 创建背景容器
-    this.bgContainer = document.createElement("div");
-    this.bgContainer.className = "canvas-background";
-    this.canvas.appendChild(this.bgContainer);
+  // 创建简单网格背景
+  createGridBackground() {
+    // 创建网格容器
+    const gridContainer = document.createElement("div");
+    gridContainer.className = "grid-background";
 
-    // 创建随机点阵背景
-    this.createDotPattern();
+    // 添加实际网格元素
+    const grid = document.createElement("div");
+    grid.className = "grid";
+    gridContainer.appendChild(grid);
 
-    // 创建渐变气泡
-    this.createGradientBubbles();
-  }
+    // 将网格添加到画布
+    this.canvas.insertBefore(gridContainer, this.canvas.firstChild);
 
-  createDotPattern() {
-    // 创建点阵图案 - 每隔80px放置一个点
-    const dotCount = 120; // 点的总数
-
-    for (let i = 0; i < dotCount; i++) {
-      const dot = document.createElement("div");
-      dot.className = "bg-dots";
-
-      // 随机位置
-      const x =
-        Math.floor(Math.random() * window.innerWidth * 2) -
-        window.innerWidth / 2;
-      const y =
-        Math.floor(Math.random() * window.innerHeight * 2) -
-        window.innerHeight / 2;
-
-      // 随机大小 (3-8px)
-      const size = 3 + Math.random() * 5;
-
-      dot.style.left = `${x}px`;
-      dot.style.top = `${y}px`;
-      dot.style.width = `${size}px`;
-      dot.style.height = `${size}px`;
-      dot.style.opacity = 0.1 + Math.random() * 0.3;
-
-      this.bgContainer.appendChild(dot);
-    }
-  }
-
-  createGradientBubbles() {
-    // 创建几个大型渐变气泡
-    const bubbleCount = 5;
-    const colors = [
-      "rgba(26, 115, 232, 0.4)", // 蓝色
-      "rgba(52, 168, 83, 0.4)", // 绿色
-      "rgba(251, 188, 5, 0.4)", // 黄色
-      "rgba(234, 67, 53, 0.4)", // 红色
-      "rgba(103, 58, 183, 0.4)", // 紫色
-    ];
-
-    for (let i = 0; i < bubbleCount; i++) {
-      const bubble = document.createElement("div");
-      bubble.className = "bg-gradient-bubble";
-
-      // 随机位置 - 覆盖更大范围
-      const x =
-        Math.floor(Math.random() * window.innerWidth * 3) - window.innerWidth;
-      const y =
-        Math.floor(Math.random() * window.innerHeight * 3) - window.innerHeight;
-
-      // 随机大小 (200-500px)
-      const size = 200 + Math.random() * 300;
-
-      bubble.style.left = `${x}px`;
-      bubble.style.top = `${y}px`;
-      bubble.style.width = `${size}px`;
-      bubble.style.height = `${size}px`;
-      bubble.style.backgroundColor = colors[i % colors.length];
-
-      this.bgContainer.appendChild(bubble);
-    }
+    // 保存网格引用
+    this.gridElement = grid;
   }
 
   // 创建缩放控制器
@@ -198,59 +141,67 @@ class Canvas {
     });
   }
 
-  setupEvents() {
+  // 性能优化的事件处理
+  setupOptimizedEvents() {
+    let animationFrameId = null;
+    let lastMoveTime = 0;
+
     // 鼠标按下事件 - 开始平移画布
     this.canvas.addEventListener("mousedown", (e) => {
-      // 只有当点击画布空白处时才触发平移
-      if (e.target === this.canvas) {
+      // 只有当点击画布空白处或网格背景时才触发平移
+      if (
+        e.target === this.canvas ||
+        e.target.classList.contains("grid") ||
+        e.target.classList.contains("grid-background")
+      ) {
         this.isPanning = true;
         this.startPoint = { x: e.clientX, y: e.clientY };
         this.canvas.style.cursor = "grabbing";
       }
     });
 
-    // 鼠标移动事件 - 平移画布
+    // 鼠标移动事件 - 平移画布 (使用requestAnimationFrame优化)
     document.addEventListener("mousemove", (e) => {
       if (!this.isPanning) return;
 
-      this.currentPoint = { x: e.clientX, y: e.clientY };
+      // 使用requestAnimationFrame和时间限制来优化性能
+      const now = Date.now();
+      if (now - lastMoveTime < 16) {
+        // 限制大约60fps
+        if (!animationFrameId) {
+          animationFrameId = requestAnimationFrame(() => {
+            this.moveCanvas(e.clientX, e.clientY);
+            animationFrameId = null;
+            lastMoveTime = Date.now();
+          });
+        }
+        return;
+      }
 
-      // 计算鼠标移动距离
-      const deltaX = this.currentPoint.x - this.startPoint.x;
-      const deltaY = this.currentPoint.y - this.startPoint.y;
-
-      // 更新所有便签的位置
-      const notes = document.querySelectorAll(".note");
-      notes.forEach((note) => {
-        const left = parseInt(note.style.left || 0) + deltaX;
-        const top = parseInt(note.style.top || 0) + deltaY;
-
-        note.style.left = `${left}px`;
-        note.style.top = `${top}px`;
-      });
-
-      // 同时移动背景元素，创造视差效果
-      this.moveBackgroundElements(deltaX, deltaY);
-
-      // 更新起始点为当前点
-      this.startPoint = { x: this.currentPoint.x, y: this.currentPoint.y };
+      lastMoveTime = now;
+      this.moveCanvas(e.clientX, e.clientY);
     });
 
     // 鼠标松开事件 - 停止平移
     document.addEventListener("mouseup", () => {
       this.isPanning = false;
       this.canvas.style.cursor = "default";
+
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
     });
 
     // 鼠标离开事件 - 停止平移
     document.addEventListener("mouseleave", () => {
       this.isPanning = false;
       this.canvas.style.cursor = "default";
-    });
 
-    // 阻止右键菜单
-    this.canvas.addEventListener("contextmenu", (e) => {
-      e.preventDefault();
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
     });
 
     // 添加鼠标滚轮缩放事件
@@ -274,26 +225,39 @@ class Canvas {
     );
   }
 
-  // 添加背景元素移动方法 - 创造视差效果
-  moveBackgroundElements(deltaX, deltaY) {
-    // 移动点阵图案，使用较慢的移动速度产生视差
-    const dots = document.querySelectorAll(".bg-dots");
-    dots.forEach((dot) => {
-      const left = parseInt(dot.style.left || 0) + deltaX * 0.3;
-      const top = parseInt(dot.style.top || 0) + deltaY * 0.3;
+  // 移动画布的方法 (移动便签和网格)
+  moveCanvas(clientX, clientY) {
+    this.currentPoint = { x: clientX, y: clientY };
 
-      dot.style.left = `${left}px`;
-      dot.style.top = `${top}px`;
+    // 计算鼠标移动距离
+    const deltaX = this.currentPoint.x - this.startPoint.x;
+    const deltaY = this.currentPoint.y - this.startPoint.y;
+
+    // 更新所有便签的位置
+    const notes = document.querySelectorAll(".note");
+    notes.forEach((note) => {
+      const left = parseInt(note.style.left || 0) + deltaX;
+      const top = parseInt(note.style.top || 0) + deltaY;
+
+      note.style.left = `${left}px`;
+      note.style.top = `${top}px`;
     });
 
-    // 移动渐变气泡，速度更慢
-    const bubbles = document.querySelectorAll(".bg-gradient-bubble");
-    bubbles.forEach((bubble) => {
-      const left = parseInt(bubble.style.left || 0) + deltaX * 0.1;
-      const top = parseInt(bubble.style.top || 0) + deltaY * 0.1;
+    // 只移动网格背景 (使用transform以获得更好性能)
+    if (this.gridElement) {
+      // 跟踪网格偏移量
+      this.offset.x = (this.offset.x || 0) + deltaX;
+      this.offset.y = (this.offset.y || 0) + deltaY;
 
-      bubble.style.left = `${left}px`;
-      bubble.style.top = `${top}px`;
-    });
+      // 只移动网格模式，保持网格在可见区域内循环
+      const gridSize = 30; // 标准网格大小
+      const offsetX = this.offset.x % gridSize;
+      const offsetY = this.offset.y % gridSize;
+
+      this.gridElement.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+    }
+
+    // 更新起始点为当前点
+    this.startPoint = { x: this.currentPoint.x, y: this.currentPoint.y };
   }
 }
