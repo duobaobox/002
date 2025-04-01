@@ -490,7 +490,7 @@ class App {
       const titleElem = noteElement.querySelector(".note-title");
       if (titleElem) {
         titleElem.textContent =
-          prompt.substring(0, 20) + (prompt.length > 20 ? "..." : "");
+          prompt.substring(0, 20) + (prompt.length > 20 ? "... " : "");
       }
 
       // 随机选择便签位置和颜色
@@ -608,7 +608,14 @@ class App {
 
       // 设置内容区域为Markdown
       const contentElement = noteElement.querySelector(".note-content");
+      const previewElement = noteElement.querySelector(".markdown-preview");
       contentElement.classList.add("markdown");
+
+      // 确保预览区域就绪
+      if (previewElement) {
+        previewElement.style.display = "block";
+        contentElement.style.display = "none";
+      }
 
       // 模拟打字效果
       const typingInterval = setInterval(() => {

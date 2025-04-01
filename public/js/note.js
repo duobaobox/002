@@ -530,19 +530,32 @@ function getHighestZIndex() {
   return highest;
 }
 
-// 添加一个更新便签内容的方法
+// 修改更新便签内容的方法
 function updateNoteContent(noteElement, content) {
   const contentElement = noteElement.querySelector(".note-content");
+  const previewElement = noteElement.querySelector(".markdown-preview");
 
-  // 如果内容是Markdown格式，则解析它
+  // 如果内容是Markdown格式，则解析它并更新预览区域
   if (contentElement.classList.contains("markdown")) {
-    contentElement.innerHTML = marked.parse(content);
-    // 如果有代码块，应用高亮
-    contentElement.querySelectorAll("pre code").forEach((block) => {
-      hljs.highlightElement(block);
-    });
+    // 保存原始文本到文本区域
+    contentElement.value = content;
+
+    // 更新预览区域显示解析后的HTML
+    if (previewElement) {
+      previewElement.innerHTML = marked.parse(content);
+
+      // 如果有代码块，应用高亮
+      previewElement.querySelectorAll("pre code").forEach((block) => {
+        hljs.highlightElement(block);
+      });
+
+      // 确保预览区域可见，文本区域隐藏
+      previewElement.style.display = "block";
+      contentElement.style.display = "none";
+    }
   } else {
-    contentElement.textContent = content;
+    // 普通文本模式，直接更新文本区域
+    contentElement.value = content;
   }
 }
 

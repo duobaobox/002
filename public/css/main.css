@@ -85,3 +85,42 @@
   border-radius: 4px;
   padding: 6px;
 }
+
+/* 改进 Markdown 预览区域样式 */
+.markdown-preview {
+  overflow-y: auto;
+  max-height: calc(100% - 30px); /* 减去标题高度 */
+  padding: 8px;
+  line-height: 1.5;
+  white-space: normal; /* 确保正常换行 */
+}
+
+.markdown-preview p {
+  margin-bottom: 0.8em;
+}
+
+.markdown-preview h1,
+.markdown-preview h2,
+.markdown-preview h3,
+.markdown-preview h4,
+.markdown-preview h5,
+.markdown-preview h6 {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  font-weight: bold;
+}
+
+.markdown-preview ul,
+.markdown-preview ol {
+  padding-left: 1.5em;
+  margin-bottom: 0.8em;
+}
+
+.markdown-preview pre {
+  margin-bottom: 1em;
+}
+
+/* 临时生成便签的预览样式 */
+.note .ai-typing-indicator + .note-body .markdown-preview {
+  min-height: 50px; /* 确保在生成时有最小高度 */
+}
