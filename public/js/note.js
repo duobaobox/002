@@ -529,3 +529,158 @@ function getHighestZIndex() {
 
   return highest;
 }
+
+// 添加一个更新便签内容的方法
+function updateNoteContent(noteElement, content) {
+  const contentElement = noteElement.querySelector(".note-content");
+
+  // 如果内容是Markdown格式，则解析它
+  if (contentElement.classList.contains("markdown")) {
+    contentElement.innerHTML = marked.parse(content);
+    // 如果有代码块，应用高亮
+    contentElement.querySelectorAll("pre code").forEach((block) => {
+      hljs.highlightElement(block);
+    });
+  } else {
+    contentElement.textContent = content;
+  }
+}
+
+// 修复 createEmptyAiNote 函数
+function createEmptyAiNote() {
+  // 随机位置
+  const x = 100 + Math.random() * 200;
+  const y = 100 + Math.random() * 200;
+
+  // 随机颜色
+  const colorClasses = [
+    "note-yellow",
+    "note-blue",
+    "note-green",
+    "note-pink",
+    "note-purple",
+  ];
+  const colorClass =
+    colorClasses[Math.floor(Math.random() * colorClasses.length)];
+
+  // 创建便签元素
+  const note = document.createElement("div");
+  const noteId = "note-" + Date.now();
+  note.id = noteId;
+  note.className = `note ${colorClass}`;
+  note.style.left = `${x}px`;
+  note.style.top = `${y}px`;
+
+  // 设置最高层级，确保新便签显示在最上层
+  note.style.zIndex = getHighestZIndex() + 10;
+
+  // 创建便签头部
+  const header = document.createElement("div");
+  header.className = "note-header";
+
+  // 添加标题和关闭按钮，与Note类结构相同
+  const title = document.createElement("div");
+  title.className = "note-title";
+  title.textContent = "AI生成中...";
+  title.setAttribute("title", "双击编辑标题"); // 添加与Note类相同的tooltip
+
+  const closeBtn = document.createElement("div");
+  closeBtn.className = "note-close";
+  closeBtn.innerHTML = "&times;";
+  closeBtn.addEventListener("click", () => note.remove());
+
+  header.appendChild(title);
+  header.appendChild(closeBtn);
+  note.appendChild(header);
+
+  // 创建便签内容区域
+  const body = document.createElement("div");
+  body.className = "note-body";
+
+  // 创建文本区域
+  const textarea = document.createElement("textarea");
+  textarea.className = "note-content";
+  textarea.placeholder = "AI 正在生成内容...";
+  body.appendChild(textarea);
+
+  // 创建预览区域
+  const preview = document.createElement("div");
+  preview.className = "markdown-preview";
+  body.appendChild(preview);
+
+  // 创建自定义滚动条容器和滑块，与Note类结构相同
+  const scrollbarContainer = document.createElement("div");
+  scrollbarContainer.className = "custom-scrollbar";
+
+  const scrollbarThumb = document.createElement("div");
+  scrollbarThumb.className = "scrollbar-thumb";
+  scrollbarContainer.appendChild(scrollbarThumb);
+  body.appendChild(scrollbarContainer);
+
+  // 添加调整大小的控件
+  const resizeHandle = document.createElement("div");
+  resizeHandle.className = "note-resize-handle";
+
+  // 添加等待指示器
+  const loader = document.createElement("div");
+  loader.className = "ai-typing-indicator";
+  loader.innerHTML = "<span></span><span></span><span></span>";
+
+  // 组装便签
+  note.appendChild(body);
+  note.appendChild(resizeHandle);
+  note.appendChild(loader);
+
+  // 添加到DOM
+  document.getElementById("note-canvas").appendChild(note);
+
+  // 使便签可拖动
+  setupDragEvents(note, header);
+
+  // 添加点击事件，确保便签点击时提升到最上层
+  note.addEventListener("mousedown", () => {
+    note.style.zIndex = getHighestZIndex() + 1;
+  });
+
+  return { noteElement: note, noteId };
+}
+
+// 添加一个单独的拖动事件处理函数，供createEmptyAiNote使用
+function setupDragEvents(note, header) {
+  let isDragging = false;
+  let dragOffsetX = 0;
+  let dragOffsetY = 0;
+
+  header.addEventListener("mousedown", (e) => {
+    if (e.target === header) {
+      isDragging = true;
+      dragOffsetX = e.clientX - note.offsetLeft;
+      dragOffsetY = e.clientY - note.offsetTop;
+      note.style.zIndex = getHighestZIndex() + 1;
+    }
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+
+    const x = e.clientX - dragOffsetX;
+    const y = e.clientY - dragOffsetY;
+
+    // 检查底部控制栏位置
+    const bottomBar = document.querySelector(".bottom-bar");
+    const bottomBarRect = bottomBar.getBoundingClientRect();
+
+    const noteHeight = note.offsetHeight;
+    const headerHeight = 30; // 便签头部高度
+    const safeBottomPosition = window.innerHeight - bottomBarRect.height - 40;
+
+    const finalY = Math.min(y, safeBottomPosition - headerHeight);
+
+    note.style.left = `${x}px`;
+    note.style.top = `${finalY}px`;
+  });
+
+  window.addEventListener("mouseup", () => {
+    isDragging = false;
+  });
+}

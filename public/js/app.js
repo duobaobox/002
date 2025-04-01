@@ -355,6 +355,12 @@ class App {
         // 设置下一个ID
         this.nextId = data.nextId || 1;
 
+        // 检查 Note 类是否已定义
+        if (typeof Note === "undefined") {
+          console.error("错误: Note 类未定义，无法加载便签");
+          return;
+        }
+
         // 创建便签
         data.notes.forEach((noteData) => {
           const note = new Note(
@@ -458,11 +464,11 @@ class App {
 
   async generateAiNote() {
     const promptElement = document.getElementById("ai-prompt");
-    const prompt = promptElement.value;
+    const prompt = promptElement.value.trim();
     const generateButton = document.getElementById("ai-generate");
     const originalText = generateButton.textContent;
 
-    if (!prompt.trim()) {
+    if (!prompt) {
       // 使用更友好的提示方式
       promptElement.focus();
       promptElement.placeholder = "请输入内容后再生成便笺...";
@@ -477,8 +483,24 @@ class App {
       generateButton.disabled = true;
       generateButton.textContent = "生成中...";
 
+      // 首先创建一个空便签，准备接收流式内容
+      const { noteElement, noteId } = createEmptyAiNote();
+
+      // 设置便签标题 - 修改为使用正确的标题元素
+      const titleElem = noteElement.querySelector(".note-title");
+      if (titleElem) {
+        titleElem.textContent =
+          prompt.substring(0, 20) + (prompt.length > 20 ? "..." : "");
+      }
+
+      // 随机选择便签位置和颜色
+      const x = parseInt(noteElement.style.left) || 100 + Math.random() * 200;
+      const y = parseInt(noteElement.style.top) || 100 + Math.random() * 200;
+      const colorClass = noteElement.classList[1]; // 获取当前颜色类
+
       console.log("发送AI生成请求，提示:", prompt);
 
+      // API请求AI内容生成
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: {
@@ -495,24 +517,13 @@ class App {
       }
 
       if (data.success && data.text) {
-        // 随机位置
-        const x = 100 + Math.random() * 200;
-        const y = 100 + Math.random() * 200;
+        // 显示打字机效果
+        await this.displayTypingEffect(noteElement, data.text);
 
-        // 为AI生成的便签创建特殊标题
+        // AI标题
         const aiTitle =
           prompt.length > 15 ? prompt.substring(0, 15) + "..." : prompt;
-
-        // 随机选择颜色
-        const colorClasses = [
-          "note-yellow",
-          "note-blue",
-          "note-green",
-          "note-pink",
-          "note-purple",
-        ];
-        const colorClass =
-          colorClasses[Math.floor(Math.random() * colorClasses.length)];
+        const finalTitle = `AI: ${aiTitle}`;
 
         // 创建便签到服务器
         const noteResponse = await fetch("/api/notes", {
@@ -524,23 +535,36 @@ class App {
             text: data.text,
             x,
             y,
-            title: `AI: ${aiTitle}`,
-            colorClass: colorClass, // 添加颜色类
+            title: finalTitle,
+            colorClass: colorClass,
           }),
         });
 
         const noteData = await noteResponse.json();
 
         if (noteData.success && noteData.note) {
+          console.log("AI便签已添加，ID:", noteData.note.id);
+
+          // 移除临时便签
+          noteElement.remove();
+
+          // 创建正式的Note实例替代临时便签
           const note = new Note(
             noteData.note.id,
-            noteData.note.text,
-            noteData.note.x,
-            noteData.note.y,
-            noteData.note.title
+            data.text,
+            noteData.note.x || x,
+            noteData.note.y || y,
+            noteData.note.title || finalTitle,
+            colorClass
           );
+
+          // 确保新创建的便签在最上层
+          if (note.element) {
+            note.element.style.zIndex = getHighestZIndex() + 1;
+          }
+
+          // 添加到notes数组
           this.notes.push(note);
-          console.log("AI便签已添加，ID:", noteData.note.id);
         } else {
           console.error("创建AI便签失败:", noteData);
           throw new Error("无法创建AI便签");
@@ -574,6 +598,30 @@ class App {
       generateButton.disabled = false;
       generateButton.textContent = originalText;
     }
+  }
+
+  // 添加打字机效果方法
+  async displayTypingEffect(noteElement, fullText) {
+    return new Promise((resolve) => {
+      let currentContent = "";
+      let charIndex = 0;
+
+      // 设置内容区域为Markdown
+      const contentElement = noteElement.querySelector(".note-content");
+      contentElement.classList.add("markdown");
+
+      // 模拟打字效果
+      const typingInterval = setInterval(() => {
+        if (charIndex < fullText.length) {
+          currentContent += fullText.charAt(charIndex);
+          updateNoteContent(noteElement, currentContent);
+          charIndex++;
+        } else {
+          clearInterval(typingInterval);
+          resolve(); // 打字效果完成
+        }
+      }, 25); // 每个字符之间的延迟，可以调整
+    });
   }
 }
 

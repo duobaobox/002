@@ -1,3 +1,15 @@
+/**
+ * 主样式文件 - main.css
+ * 
+ * 本文件是应用的CSS入口点，通过导入所有模块化的样式文件实现样式组织，包括：
+ * 1. 基础样式：重置规则和基本页面布局
+ * 2. 组件样式：各个功能组件的专用样式
+ * 3. 工具类：通用辅助样式和功能类
+ * 
+ * 采用模块化的CSS导入方式有助于代码分离和维护，
+ * 每个功能区域的样式都被组织在独立的文件中，便于开发和调试。
+ */
+
 /* 主样式文件，引入所有模块 */
 
 /* 引入基础样式 */
@@ -13,3 +25,63 @@
 
 /* 引入工具类 */
 @import url("utils.css");
+
+/* AI 打字效果的指示器样式 */
+.ai-typing-indicator {
+  display: flex;
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  align-items: center;
+  height: 20px;
+}
+
+.ai-typing-indicator span {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 5px;
+  background-color: #555;
+  border-radius: 50%;
+  opacity: 0.4;
+  animation: typing-dot 1.4s infinite ease-in-out both;
+}
+
+.ai-typing-indicator span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.ai-typing-indicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.ai-typing-indicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing-dot {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.7);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 让markdown内容区域支持滚动 */
+.note-content.markdown {
+  overflow-y: auto;
+  max-height: calc(100% - 30px); /* 减去标题高度 */
+  padding: 8px;
+}
+
+.note-content.markdown pre {
+  white-space: pre-wrap;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  padding: 6px;
+}
