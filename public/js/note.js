@@ -17,6 +17,7 @@ class Note {
     // 如果文本不为空，默认设置为预览模式
     this.editMode = text.trim() === "";
     this.updateTimer = null; // 用于防抖渲染
+    this.resizeTimer = null; // 用于resize操作的防抖
     // 保存便签的颜色类名
     this.colorClass = colorClass;
 
@@ -198,6 +199,9 @@ class Note {
 
     // 设置初始z-index
     note.style.zIndex = getHighestZIndex() + 1;
+
+    // 添加ResizeObserver监听便签大小变化
+    this.setupResizeObserver(note);
 
     // 初始切换模式 - 有内容的便签默认显示预览模式
     this.toggleEditPreviewMode(textarea, markdownPreview);
@@ -423,8 +427,56 @@ class Note {
     });
   }
 
+  // 添加新方法：设置ResizeObserver监听便签大小变化
+  setupResizeObserver(note) {
+    // 检查浏览器是否支持ResizeObserver
+    if (typeof ResizeObserver !== "undefined") {
+      // 记录初始尺寸
+      this.lastWidth = note.offsetWidth;
+      this.lastHeight = note.offsetHeight;
+
+      // 创建一个观察器实例
+      const resizeObserver = new ResizeObserver((entries) => {
+        if (this.isResizing) return; // 如果是通过自定义控件调整大小，不重复触发
+
+        const entry = entries[0];
+        const newWidth = entry.contentRect.width;
+        const newHeight = entry.contentRect.height;
+
+        // 检查是否有真实的尺寸变化
+        if (newWidth !== this.lastWidth || newHeight !== this.lastHeight) {
+          // 使用防抖，避免频繁触发更新
+          clearTimeout(this.resizeTimer);
+          this.resizeTimer = setTimeout(() => {
+            // 更新记录的尺寸
+            this.lastWidth = newWidth;
+            this.lastHeight = newHeight;
+
+            // 触发更新事件
+            document.dispatchEvent(
+              new CustomEvent("note-resized", { detail: { id: this.id } })
+            );
+          }, 300); // 300ms防抖延迟
+        }
+      });
+
+      // 开始观察便签元素
+      resizeObserver.observe(note);
+
+      // 保存观察器引用以便后续可能的清理
+      this.resizeObserver = resizeObserver;
+    } else {
+      console.warn("浏览器不支持ResizeObserver，便签大小调整可能不会保存");
+    }
+  }
+
   remove() {
     if (this.element) {
+      // 停止观察大小变化
+      if (this.resizeObserver) {
+        this.resizeObserver.disconnect();
+      }
+
       this.element.remove();
       document.dispatchEvent(
         new CustomEvent("note-removed", { detail: { id: this.id } })
@@ -650,12 +702,48 @@ function createEmptyAiNote() {
   // 使便签可拖动
   setupDragEvents(note, header);
 
+  // 为临时AI便签添加大小调整监控
+  setupResizeObserverForTemp(note, noteId);
+
   // 添加点击事件，确保便签点击时提升到最上层
   note.addEventListener("mousedown", () => {
     note.style.zIndex = getHighestZIndex() + 1;
   });
 
   return { noteElement: note, noteId };
+}
+
+// 为临时AI便签添加ResizeObserver
+function setupResizeObserverForTemp(note, noteId) {
+  if (typeof ResizeObserver !== "undefined") {
+    let lastWidth = note.offsetWidth;
+    let lastHeight = note.offsetHeight;
+    let resizeTimer = null;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      const newWidth = entry.contentRect.width;
+      const newHeight = entry.contentRect.height;
+
+      if (newWidth !== lastWidth || newHeight !== lastHeight) {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          lastWidth = newWidth;
+          lastHeight = newHeight;
+          // 临时便签的大小变化我们不需要保存到服务器
+          // 但在此记录是为了保持一致性，实际AI返回后会创建真正的Note实例
+          console.log(
+            `临时AI便签 ${noteId} 大小已调整: ${newWidth}x${newHeight}`
+          );
+        }, 300);
+      }
+    });
+
+    resizeObserver.observe(note);
+
+    // 在note上存储observer引用，以便后续可能的清理
+    note._resizeObserver = resizeObserver;
+  }
 }
 
 // 添加一个单独的拖动事件处理函数，供createEmptyAiNote使用
