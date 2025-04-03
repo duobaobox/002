@@ -46,6 +46,15 @@ class Note {
     note.style.left = `${this.x}px`;
     note.style.top = `${this.y}px`;
 
+    // 设置便签默认大小
+    const DEFAULT_NOTE_SIZE = {
+      width: 320,
+      height: 350,
+    };
+
+    note.style.width = `${DEFAULT_NOTE_SIZE.width}px`;
+    note.style.height = `${DEFAULT_NOTE_SIZE.height}px`;
+
     // 创建便签头部
     const header = document.createElement("div");
     header.className = "note-header";
@@ -663,6 +672,15 @@ function createEmptyAiNote() {
 
   // 设置最高层级，确保新便签显示在最上层
   note.style.zIndex = getHighestZIndex() + 10;
+
+  // 设置便签默认大小
+  const DEFAULT_NOTE_SIZE = {
+    width: 320,
+    height: 350,
+  };
+
+  note.style.width = `${DEFAULT_NOTE_SIZE.width}px`;
+  note.style.height = `${DEFAULT_NOTE_SIZE.height}px`;
 
   // 创建便签头部
   const header = document.createElement("div");
