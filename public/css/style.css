@@ -28,7 +28,8 @@ button {
   font-size: 16px;
 }
 
-/* 新的底部控制栏样式 */
+/* 以下底部控制栏相关样式已移至 bottom-bar.css，此处注释掉 */
+/*
 .bottom-bar {
   position: fixed;
   bottom: 20px;
@@ -44,10 +45,9 @@ button {
   width: 80%;
   border: 1px solid #e8e8e8;
   overflow: hidden;
-  z-index: 9999; /* 添加极高的z-index确保控制栏永远在最上层 */
+  z-index: 9999;
 }
 
-/* 底部操作区域 */
 .bottom-actions {
   display: flex;
   justify-content: space-between;
@@ -55,14 +55,12 @@ button {
   margin-top: 15px;
 }
 
-/* 左侧功能区域 (包含AI模型标识和网页按钮) */
 .bottom-left-actions {
   display: flex;
   align-items: center;
-  gap: 5px; /* 按钮之间的间隔 */
+  gap: 5px;
 }
 
-/* AI模型标识样式 */
 .ai-model {
   background-color: #eef3ff;
   color: #666666;
@@ -73,7 +71,6 @@ button {
   letter-spacing: 0.2px;
 }
 
-/* 网页按钮样式 */
 .web-button {
   width: 32px;
   height: 32px;
@@ -87,7 +84,7 @@ button {
   transition: all 0.2s ease;
   border: none;
   font-size: 16px;
-  padding: 0; /* 确保没有内边距影响按钮形状 */
+  padding: 0;
 }
 
 .web-button:hover {
@@ -99,17 +96,19 @@ button {
 .web-button:active {
   transform: translateY(0);
 }
+*/
 
-/* 网页抽屉样式 - 修改为从底部弹出 */
+/* 以下抽屉相关样式已移至 drawer.css，此处注释掉 */
+/*
 .web-drawer {
   position: fixed;
-  bottom: -95vh; /* 初始位置在屏幕底部以下 - 修改为90vh */
-  left: 10px; /* 左侧边距10px */
-  right: 10px; /* 右侧边距10px */
-  width: calc(100% - 20px); /* 宽度为屏幕宽度减去两侧各10px的边距 */
-  max-width: none; /* 移除最大宽度限制 */
-  transform: none; /* 移除水平居中变换 */
-  height: 95vh; /* 高度为视口高度的90% - 从80vh修改为90vh */
+  bottom: -95vh;
+  left: 10px;
+  right: 10px;
+  width: calc(100% - 20px);
+  max-width: none;
+  transform: none;
+  height: 95vh;
   background-color: white;
   box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.1);
   z-index: 10000;
@@ -120,28 +119,27 @@ button {
 }
 
 .web-drawer.open {
-  bottom: 0; /* 打开时显示在底部 */
+  bottom: 0;
 }
 
-/* 抽屉头部样式 */
 .drawer-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 16px; /* 减少上下内边距 */
+  padding: 8px 16px;
   border-bottom: 1px solid #e8e8e8;
-  height: 40px; /* 显式设置较小的高度 */
+  height: 40px;
 }
 
 .drawer-title {
-  font-size: 16px; /* 略微减小字体大小 */
+  font-size: 16px;
   font-weight: 500;
   color: #333;
 }
 
 .drawer-close {
-  width: 24px; /* 减小关闭按钮尺寸 */
-  height: 24px; /* 减小关闭按钮尺寸 */
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -150,26 +148,24 @@ button {
   background-color: #f5f5f5;
   color: #666;
   border: none;
-  font-size: 14px; /* 减小关闭按钮文字大小 */
+  font-size: 14px;
   transition: background-color 0.2s;
-  padding: 0; /* 确保没有内边距影响圆形 */
-  line-height: 1; /* 确保文本垂直居中 */
+  padding: 0;
+  line-height: 1;
 }
 
 .drawer-close:hover {
   background-color: #e0e0e0;
 }
 
-/* 添加顶部拖动指示器 */
 .drawer-drag-indicator {
   width: 40px;
-  height: 4px; /* 减小拖动指示器高度 */
+  height: 4px;
   background-color: #ddd;
   border-radius: 2px;
-  margin: 4px auto; /* 减少上下间距 */
+  margin: 4px auto;
 }
 
-/* 抽屉内容样式 */
 .drawer-content {
   flex: 1;
   padding: 16px;
@@ -179,18 +175,38 @@ button {
   flex-direction: column;
 }
 
-/* 添加标签页样式 */
+.drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease;
+}
+
+.drawer-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}
+*/
+
+/* 以下标签页相关样式已移至 tabs.css，此处注释掉 */
+/*
 .tabs-container {
   display: flex;
   border-bottom: 1px solid #e8e8e8;
   background-color: #f5f5f5;
   overflow-x: auto;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .tabs-container::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  display: none;
 }
 
 .tab {
@@ -249,7 +265,6 @@ button {
   background-color: rgba(0, 0, 0, 0.1);
 }
 
-/* 添加新标签按钮 */
 .add-tab {
   padding: 0;
   width: 30px;
@@ -271,7 +286,6 @@ button {
   background-color: #e0e0e0;
 }
 
-/* IFrame容器 */
 .iframe-container {
   flex: 1;
   overflow: hidden;
@@ -283,31 +297,12 @@ button {
   border: none;
 }
 
-/* 隐藏不活跃的iframe */
 .iframe-container:not(.active) {
   display: none;
 }
+*/
 
-/* 抽屉遮罩 */
-.drawer-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.3);
-  z-index: 9999;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.3s ease;
-}
-
-.drawer-overlay.visible {
-  opacity: 1;
-  visibility: visible;
-}
-
-/* 输入区域样式 - 已在bottom-bar.css中定义，此处可删除 */
+/* 输入区域样式已在bottom-bar.css中定义，此处保持注释 */
 /*
 .input-container {
   width: 100%;
@@ -340,14 +335,14 @@ button {
 }
 */
 
-/* 操作按钮区域 */
+/* 以下操作按钮样式已移至 bottom-bar.css，此处注释掉 */
+/*
 .action-buttons {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
 }
 
-/* AI生成按钮样式 */
 .ai-button {
   background-color: #1a73e8;
   color: white;
@@ -358,7 +353,7 @@ button {
   letter-spacing: 0.3px;
   transition: all 0.3s;
   box-shadow: 0 2px 5px rgba(26, 115, 232, 0.2);
-  display: none; /* 默认隐藏AI按钮 */
+  display: none;
 }
 
 .ai-button:hover {
@@ -367,7 +362,6 @@ button {
   transform: translateY(-1px);
 }
 
-/* 添加便笺按钮样式 */
 .add-button {
   background-color: #34a853;
   color: white;
@@ -385,16 +379,17 @@ button {
   box-shadow: 0 3px 8px rgba(52, 168, 83, 0.3);
   transform: translateY(-1px);
 }
+*/
 
+/* 以下画布相关样式已移至 canvas.css，此处注释掉 */
+/*
 .canvas-container {
   flex: 1;
   background-color: #fcfcfc;
   position: relative;
   overflow: hidden;
-  /* 移除原来的单调背景 */
 }
 
-/* 添加画布背景样式 */
 #note-canvas {
   width: 100%;
   height: 100%;
@@ -406,11 +401,9 @@ button {
     ),
     linear-gradient(90deg, rgba(200, 210, 230, 0.1) 1px, transparent 1px);
   background-size: 40px 40px;
-  /* 添加微妙的阴影效果 */
   box-shadow: inset 0 0 100px rgba(220, 230, 250, 0.4);
 }
 
-/* 添加设计感背景元素 */
 .canvas-background {
   position: absolute;
   top: 0;
@@ -419,10 +412,9 @@ button {
   height: 100%;
   z-index: 0;
   overflow: hidden;
-  pointer-events: none; /* 确保不影响交互 */
+  pointer-events: none;
 }
 
-/* 背景元素：点阵装饰 */
 .bg-dots {
   position: absolute;
   width: 6px;
@@ -432,7 +424,6 @@ button {
   opacity: 0.5;
 }
 
-/* 背景渐变气泡装饰 */
 .bg-gradient-bubble {
   position: absolute;
   border-radius: 50%;
@@ -440,14 +431,10 @@ button {
   opacity: 0.1;
   z-index: -1;
 }
+*/
 
-#note-canvas {
-  width: 100%;
-  height: 100%;
-  position: relative;
-}
-
-/* ===== 便签样式回退到原始设计 ===== */
+/* 以下便签相关样式已移至 notes.css，此处注释掉 */
+/*
 .note {
   position: absolute;
   width: 200px;
@@ -458,7 +445,6 @@ button {
   flex-direction: column;
   overflow: hidden;
   transition: box-shadow 0.2s;
-  /* 添加缩放相关样式 */
   resize: both;
   min-width: 150px;
   min-height: 150px;
@@ -470,32 +456,29 @@ button {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
-/* 便签头部 - 调整内边距 */
 .note-header {
   height: 30px;
-  padding: 0 2px 0 12px; /* 调整右侧内边距，使关闭按钮有更多空间 */
+  padding: 0 2px 0 12px;
   display: flex;
   align-items: center;
-  justify-content: space-between; /* 修改为两端对齐，左侧标题，右侧关闭按钮 */
+  justify-content: space-between;
   background-color: rgba(0, 0, 0, 0.05);
   cursor: move;
   user-select: none;
   z-index: 1;
 }
 
-/* 启用便签标题 */
 .note-title {
-  display: block; /* 显示标题 */
+  display: block;
   font-size: 13px;
   font-weight: 500;
   color: rgba(0, 0, 0, 0.6);
-  max-width: 70%; /* 限制标题宽度，避免过长 */
+  max-width: 70%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* 可编辑状态的标题 */
 .note-title.editing {
   cursor: text;
   background-color: rgba(255, 255, 255, 0.5);
@@ -506,7 +489,6 @@ button {
   outline: none;
 }
 
-/* 关闭按钮 - 调整位置和边距 */
 .note-close {
   width: 20px;
   height: 20px;
@@ -519,7 +501,7 @@ button {
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s;
-  margin-right: 5px; /* 添加右边距，使关闭按钮与边缘有一定距离 */
+  margin-right: 5px;
 }
 
 .note-close:hover {
@@ -527,7 +509,6 @@ button {
   color: #e74c3c;
 }
 
-/* 便签内容区域容器 */
 .note-body {
   position: relative;
   flex: 1;
@@ -535,7 +516,6 @@ button {
   overflow: hidden;
 }
 
-/* 文本区域 */
 .note-content {
   width: 100%;
   height: 100%;
@@ -549,16 +529,13 @@ button {
   color: rgba(0, 0, 0, 0.8);
   background-color: transparent;
   overflow-y: auto;
-  /* 隐藏原生滚动条 */
-  scrollbar-width: none; /* Firefox */
+  scrollbar-width: none;
 }
 
-/* 隐藏Webkit浏览器的原生滚动条 */
 .note-content::-webkit-scrollbar {
   display: none;
 }
 
-/* 自定义滚动条容器 */
 .custom-scrollbar {
   position: absolute;
   top: 0;
@@ -571,13 +548,11 @@ button {
   pointer-events: none;
 }
 
-/* 便签悬停或文本区域聚焦时显示滚动条 */
 .note:hover .custom-scrollbar,
 .note-content:focus ~ .custom-scrollbar {
   opacity: 1;
 }
 
-/* 滚动条滑块 */
 .scrollbar-thumb {
   position: absolute;
   right: 1px;
@@ -591,30 +566,27 @@ button {
   background-color: rgba(0, 0, 0, 0.3);
 }
 
-/* 调整大小控件 - 优化外观 */
 .note-resize-handle {
   position: absolute;
   bottom: 0;
   right: 0;
   width: 12px;
-  background-color: transparent; /* 移除灰色背景 */
+  background-color: transparent;
   cursor: nwse-resize;
   border-radius: 0 0 4px 0;
   transition: opacity 0.2s;
   z-index: 3;
-  /* 添加调整大小图标 */
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='rgba(0,0,0,0.25)' d='M0 10L10 0L10 10'/%3E%3C/svg%3E");
   background-position: bottom right;
   background-repeat: no-repeat;
-  opacity: 0.4; /* 默认半透明 */
+  opacity: 0.4;
 }
 
 .note-resize-handle:hover {
-  background-color: transparent; /* 悬停时也保持透明 */
-  opacity: 0.7; /* 悬停时增加不透明度 */
+  background-color: transparent;
+  opacity: 0.7;
 }
 
-/* 便签颜色 - 恢复原来的简单颜色 */
 .note-yellow {
   background-color: #fff8c5;
 }
@@ -630,8 +602,10 @@ button {
 .note-purple {
   background-color: #e8daef;
 }
+*/
 
-/* 错误消息样式 */
+/* 以下消息显示样式已移至 utils.css，此处注释掉 */
+/*
 .error-message {
   position: fixed;
   bottom: 80px;
@@ -654,8 +628,10 @@ button {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+*/
 
-/* Markdown 渲染容器样式 */
+/* 以下Markdown相关样式已移至 markdown.css，此处注释掉 */
+/*
 .markdown-preview {
   width: 100%;
   height: 100%;
@@ -666,23 +642,21 @@ button {
   line-height: 1.5;
   color: rgba(0, 0, 0, 0.8);
   background-color: transparent;
-  display: none; /* 默认隐藏预览 */
-  scrollbar-width: none; /* Firefox */
-  cursor: text; /* 使用文本光标提示可编辑 */
+  display: none;
+  scrollbar-width: none;
+  cursor: text;
   position: relative;
-  z-index: 1; /* 较低的层级，确保编辑提示在上层 */
+  z-index: 1;
 }
 
-/* 移除原来的 :after 伪元素样式 */
 .markdown-preview:after {
-  display: none; /* 完全移除旧的提示元素 */
+  display: none;
 }
 
 .note:hover .markdown-preview:after {
   display: none;
 }
 
-/* 添加独立的编辑提示按钮样式 */
 .edit-hint {
   position: absolute !important;
   right: 10px !important;
@@ -691,10 +665,10 @@ button {
   color: rgba(0, 0, 0, 0.5) !important;
   background-color: rgba(255, 255, 255, 0.7) !important;
   padding: 3px 8px !important;
-  border-radius: 4px !important; /* 修正：从 !重要 改为 !important */
+  border-radius: 4px !important;
   opacity: 0;
   transition: opacity 0.3s, background-color 0.2s !important;
-  pointer-events: none !important; /* 不干扰其他交互 */
+  pointer-events: none !important;
   z-index: 100 !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
   user-select: none !important;
@@ -702,7 +676,7 @@ button {
 }
 
 .note:hover .edit-hint {
-  opacity: 0.9 !important; /* 修正：从 !重要 改为 !important */
+  opacity: 0.9 !important;
 }
 
 .markdown-preview h1,
@@ -792,8 +766,11 @@ button {
   padding: 5px;
   text-align: left;
 }
+*/
 
-/* 添加便签模式切换按钮样式 */
+/* 以下切换按钮样式已移至其他CSS文件，此处注释掉 */
+/*
 .note-toggle-button {
-  display: none; /* 隐藏切换按钮 */
+  display: none;
 }
+*/
