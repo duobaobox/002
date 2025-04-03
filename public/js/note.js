@@ -241,6 +241,24 @@ class Note {
         this.updateEditHintVisibility();
       }
     });
+
+    // 添加点击便签本身的事件，确保点击时将便签置于最前
+    note.addEventListener("mousedown", (e) => {
+      // 如果点击的是便签本身而不是其内部的可编辑元素
+      if (
+        e.target.closest(".note") &&
+        !e.target.matches("textarea, input, [contenteditable='true']")
+      ) {
+        note.style.zIndex = getHighestZIndex() + 1;
+
+        // 触发层级变化事件
+        document.dispatchEvent(
+          new CustomEvent("note-zindex-changed", { detail: { id: this.id } })
+        );
+      }
+    });
+
+    return note;
   }
 
   // 渲染 Markdown
@@ -339,6 +357,11 @@ class Note {
         this.dragOffsetX = e.clientX - note.offsetLeft;
         this.dragOffsetY = e.clientY - note.offsetTop;
         note.style.zIndex = getHighestZIndex() + 1;
+
+        // 触发便签层级变化事件
+        document.dispatchEvent(
+          new CustomEvent("note-zindex-changed", { detail: { id: this.id } })
+        );
       }
     });
 
@@ -708,6 +731,11 @@ function createEmptyAiNote() {
   // 添加点击事件，确保便签点击时提升到最上层
   note.addEventListener("mousedown", () => {
     note.style.zIndex = getHighestZIndex() + 1;
+
+    // 添加此行以触发事件
+    document.dispatchEvent(
+      new CustomEvent("note-zindex-changed", { detail: { id: noteId } })
+    );
   });
 
   return { noteElement: note, noteId };
@@ -783,5 +811,23 @@ function setupDragEvents(note, header) {
 
   window.addEventListener("mouseup", () => {
     isDragging = false;
+  });
+}
+
+// 在note.js最后添加一个事件监听器，以处理便签点击的情况
+function setupNoteClickEvents(note, noteId) {
+  note.addEventListener("mousedown", (e) => {
+    // 如果点击的是便签本身而不是其内部的可编辑元素
+    if (
+      e.target.closest(".note") &&
+      !e.target.matches("textarea, input, [contenteditable='true']")
+    ) {
+      note.style.zIndex = getHighestZIndex() + 1;
+
+      // 触发层级变化事件
+      document.dispatchEvent(
+        new CustomEvent("note-zindex-changed", { detail: { id: noteId } })
+      );
+    }
   });
 }

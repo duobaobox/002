@@ -43,6 +43,11 @@ class App {
       this.updateNoteOnServer(e.detail.id);
     });
 
+    // 监听便签层级变化事件
+    document.addEventListener("note-zindex-changed", (e) => {
+      this.updateNoteOnServer(e.detail.id);
+    });
+
     // 监听输入框内容变化
     const promptElement = document.getElementById("ai-prompt");
     promptElement.addEventListener("input", () => {
@@ -349,96 +354,94 @@ class App {
       const response = await fetch("/api/notes");
       const data = await response.json();
 
-      if (data.success && Array.isArray(data.notes)) {
-        console.log(`正在从服务器加载 ${data.notes.length} 个便签...`);
+      if (data.success) {
+        this.nextId = data.nextId;
 
-        // 设置下一个ID
-        this.nextId = data.nextId || 1;
-
-        // 检查 Note 类是否已定义
-        if (typeof Note === "undefined") {
-          console.error("错误: Note 类未定义，无法加载便签");
-          return;
+        // 清空现有便签
+        this.notes = [];
+        const noteContainer = document.getElementById("note-container");
+        while (noteContainer.firstChild) {
+          noteContainer.removeChild(noteContainer.firstChild);
         }
 
-        // 创建便签
+        // 添加服务器返回的便签
         data.notes.forEach((noteData) => {
           const note = new Note(
             noteData.id,
-            noteData.text || "",
-            noteData.x || 50,
-            noteData.y || 50,
-            noteData.title || `便签 ${noteData.id}`,
+            noteData.text,
+            noteData.x,
+            noteData.y,
+            noteData.title,
             noteData.colorClass
           );
 
-          // 设置自定义尺寸
-          if (noteData.width && noteData.height && note.element) {
+          // 如果有宽度和高度数据，应用它们
+          if (noteData.width) {
             note.element.style.width = `${noteData.width}px`;
+          }
+          if (noteData.height) {
             note.element.style.height = `${noteData.height}px`;
-
-            // 更新滚动条
-            const textarea = note.element.querySelector(".note-content");
-            const scrollbarThumb =
-              note.element.querySelector(".scrollbar-thumb");
-            if (textarea && scrollbarThumb) {
-              note.updateScrollbar(textarea, scrollbarThumb);
-            }
           }
 
-          // 有内容的便签应默认显示为预览模式
-          if (noteData.text && noteData.text.trim() !== "") {
-            note.editMode = false;
-            const textarea = note.element.querySelector(".note-content");
-            const preview = note.element.querySelector(".markdown-preview");
-            if (textarea && preview) {
-              note.toggleEditPreviewMode(textarea, preview);
-            }
+          // 如果有zIndex数据，应用它
+          if (noteData.zIndex) {
+            note.element.style.zIndex = noteData.zIndex;
           }
 
           this.notes.push(note);
         });
-
-        console.log(`成功加载了 ${this.notes.length} 个便签`);
       } else {
-        console.error("无法加载便签:", data);
+        console.error("加载便签失败:", data.message);
       }
     } catch (error) {
-      console.error("加载便签时出错:", error);
+      console.error("加载便签时发生错误:", error);
     }
   }
 
   // 在服务器上更新便签
   async updateNoteOnServer(id) {
+    const note = this.notes.find((n) => n.id === id);
+    if (!note) return;
+
+    const element = note.element;
+    if (!element) return;
+
     try {
-      const note = this.notes.find((n) => n.id === id);
-      if (!note || !note.element) return;
+      // 获取便签的当前位置和尺寸
+      const rect = element.getBoundingClientRect();
+      const x = parseInt(element.style.left);
+      const y = parseInt(element.style.top);
+      const width = Math.round(rect.width);
+      const height = Math.round(rect.height);
+      const zIndex = parseInt(
+        element.style.zIndex || window.getComputedStyle(element).zIndex
+      );
 
-      const noteData = {
-        text: note.text,
-        x: parseInt(note.element.style.left),
-        y: parseInt(note.element.style.top),
-        title: note.title,
-        width: note.element.offsetWidth,
-        height: note.element.offsetHeight,
-        colorClass: note.colorClass, // 添加颜色类
-      };
-
+      // 发送更新请求到服务器
       const response = await fetch(`/api/notes/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(noteData),
+        body: JSON.stringify({
+          text: note.text,
+          title: note.title,
+          x,
+          y,
+          width,
+          height,
+          colorClass: note.colorClass,
+          zIndex, // 添加zIndex值到更新请求
+        }),
       });
 
       const data = await response.json();
 
       if (!data.success) {
-        console.error("更新便签失败:", data);
+        console.error("更新便签失败:", data.message);
       }
     } catch (error) {
-      console.error("更新便签时出错:", error);
+      console.error("更新便签时发生错误:", error);
     }
   }
 

@@ -41,7 +41,7 @@ router.get("/notes", (req, res) => {
 // 创建新便签
 router.post("/notes", (req, res) => {
   try {
-    const { text, x, y, title, colorClass } = req.body;
+    const { text, x, y, title, colorClass, zIndex } = req.body;
 
     // 读取现有数据
     const data = JSON.parse(fs.readFileSync(notesFilePath));
@@ -54,6 +54,7 @@ router.post("/notes", (req, res) => {
       y: y || 100,
       title: title || `便签 ${data.nextId}`,
       colorClass: colorClass, // 保存颜色类
+      zIndex: zIndex || 1, // 添加zIndex属性，默认为1
       createdAt: new Date().toISOString(),
     };
 
@@ -79,7 +80,7 @@ router.post("/notes", (req, res) => {
 router.put("/notes/:id", (req, res) => {
   try {
     const noteId = parseInt(req.params.id);
-    const { text, x, y, title, width, height, colorClass } = req.body;
+    const { text, x, y, title, width, height, colorClass, zIndex } = req.body;
 
     // 读取现有数据
     const data = JSON.parse(fs.readFileSync(notesFilePath));
@@ -102,6 +103,7 @@ router.put("/notes/:id", (req, res) => {
     if (width !== undefined) data.notes[noteIndex].width = width;
     if (height !== undefined) data.notes[noteIndex].height = height;
     if (colorClass !== undefined) data.notes[noteIndex].colorClass = colorClass;
+    if (zIndex !== undefined) data.notes[noteIndex].zIndex = zIndex; // 添加zIndex处理
     data.notes[noteIndex].updatedAt = new Date().toISOString();
 
     // 保存数据
