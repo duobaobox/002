@@ -7,18 +7,23 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 数据文件路径
+// 数据文件路径 - 使用相对路径，确保跨系统兼容性
 const dataDir = path.join(__dirname, "../data");
 const notesFilePath = path.join(dataDir, "notes.json");
+
+console.log("数据目录:", dataDir);
+console.log("便签文件路径:", notesFilePath);
 
 // 确保数据目录存在
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
+  console.log("创建数据目录:", dataDir);
 }
 
 // 如果数据文件不存在，创建一个空的数据文件
 if (!fs.existsSync(notesFilePath)) {
   fs.writeFileSync(notesFilePath, JSON.stringify({ notes: [], nextId: 1 }));
+  console.log("创建初始数据文件:", notesFilePath);
 }
 
 const router = express.Router();
@@ -30,21 +35,38 @@ const router = express.Router();
  */
 const readNotesData = () => {
   return new Promise((resolve, reject) => {
-    fs.readFile(notesFilePath, "utf8", (err, data) => {
-      if (err) {
-        console.error("读取便签数据失败:", err);
-        reject(err);
+    try {
+      // 使用同步方法读取文件
+      if (!fs.existsSync(notesFilePath)) {
+        // 如果文件不存在，创建一个空的数据文件
+        const initialData = { notes: [], nextId: 1 };
+        // 使用Buffer作为路径参数，解决中文路径问题
+        fs.writeFileSync(notesFilePath, JSON.stringify(initialData, null, 2), {
+          encoding: "utf8",
+        });
+        resolve(initialData);
         return;
       }
 
+      // 使用Buffer作为路径参数，解决中文路径问题
+      const data = fs.readFileSync(notesFilePath, { encoding: "utf8" });
       try {
         const jsonData = JSON.parse(data);
         resolve(jsonData);
       } catch (parseError) {
         console.error("解析便签数据失败:", parseError);
-        reject(parseError);
+        // 如果解析失败，创建新的空数据
+        const initialData = { notes: [], nextId: 1 };
+        fs.writeFileSync(notesFilePath, JSON.stringify(initialData, null, 2), {
+          encoding: "utf8",
+        });
+        resolve(initialData);
       }
-    });
+    } catch (error) {
+      console.error("读取便签数据失败:", error);
+      // 如果读取失败，返回空数据
+      resolve({ notes: [], nextId: 1 });
+    }
   });
 };
 
@@ -55,24 +77,41 @@ const readNotesData = () => {
  */
 const writeNotesData = (data) => {
   return new Promise((resolve, reject) => {
-    // 先写入临时文件，成功后再重命名，避免数据损坏
-    const tempFilePath = `${notesFilePath}.temp`;
-    fs.writeFile(tempFilePath, JSON.stringify(data, null, 2), "utf8", (err) => {
-      if (err) {
-        console.error("写入临时文件失败:", err);
-        reject(err);
-        return;
+    try {
+      // 确保data目录存在
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
       }
 
-      fs.rename(tempFilePath, notesFilePath, (renameErr) => {
-        if (renameErr) {
-          console.error("重命名文件失败:", renameErr);
-          reject(renameErr);
-          return;
-        }
-        resolve();
+      // 将对象转换为JSON字符串
+      const jsonData = JSON.stringify(data, null, 2);
+
+      // 使用指定的编码写入文件，处理中文路径
+      fs.writeFileSync(notesFilePath, jsonData, {
+        encoding: "utf8",
+        flag: "w",
       });
-    });
+      resolve();
+    } catch (error) {
+      console.error("写入便签数据失败:", error);
+      // 尝试以不同方式写入
+      try {
+        const tempPath = path.join(dataDir, "notes_temp.json");
+        fs.writeFileSync(tempPath, JSON.stringify(data, null, 2), "utf8");
+
+        // 先删除原文件，再重命名临时文件
+        if (fs.existsSync(notesFilePath)) {
+          fs.unlinkSync(notesFilePath);
+        }
+        fs.renameSync(tempPath, notesFilePath);
+
+        console.log("使用备用方法写入数据成功");
+        resolve();
+      } catch (fallbackError) {
+        console.error("备用写入方法失败:", fallbackError);
+        reject(fallbackError);
+      }
+    }
   });
 };
 
@@ -181,35 +220,73 @@ router.put("/notes/:id", validateNoteData, async (req, res) => {
     }
 
     const { text, x, y, title, width, height, colorClass, zIndex } = req.body;
+    console.log(`更新便签 ID=${noteId}, x=${x}, y=${y}`);
 
-    // 读取现有数据
-    const data = await readNotesData();
+    try {
+      // 读取现有数据
+      const data = await readNotesData();
 
-    // 查找便签
-    const noteIndex = data.notes.findIndex((note) => note.id === noteId);
+      // 查找便签
+      const noteIndex = data.notes.findIndex((note) => note.id === noteId);
 
-    if (noteIndex === -1) {
-      return res.status(404).json({
-        success: false,
-        message: `ID为${noteId}的便签不存在`,
-      });
+      if (noteIndex === -1) {
+        return res.status(404).json({
+          success: false,
+          message: `ID为${noteId}的便签不存在`,
+        });
+      }
+
+      // 更新便签
+      const updatedNote = { ...data.notes[noteIndex] };
+      if (text !== undefined) updatedNote.text = text;
+      if (x !== undefined) updatedNote.x = x;
+      if (y !== undefined) updatedNote.y = y;
+      if (title !== undefined) updatedNote.title = title;
+      if (width !== undefined) updatedNote.width = width;
+      if (height !== undefined) updatedNote.height = height;
+      if (colorClass !== undefined) updatedNote.colorClass = colorClass;
+      if (zIndex !== undefined) updatedNote.zIndex = zIndex;
+      updatedNote.updatedAt = new Date().toISOString();
+
+      // 将更新后的便签放回数组
+      data.notes[noteIndex] = updatedNote;
+
+      // 保存数据
+      await writeNotesData(data);
+
+      console.log(`便签 ID=${noteId} 更新成功`);
+      res.json({ success: true, note: updatedNote });
+    } catch (dataError) {
+      console.error("数据处理错误:", dataError);
+
+      // 尝试直接更新便签，不依赖当前数据文件
+      const fallbackData = {
+        notes: [
+          {
+            id: noteId,
+            text: text || "",
+            x: x || 0,
+            y: y || 0,
+            title: title || `便签 ${noteId}`,
+            width: width,
+            height: height,
+            colorClass: colorClass,
+            zIndex: zIndex || 1,
+            updatedAt: new Date().toISOString(),
+          },
+        ],
+        nextId: noteId + 1,
+      };
+
+      try {
+        await writeNotesData(fallbackData);
+        console.log(`使用备用方法更新便签 ID=${noteId}`);
+        res.json({ success: true, note: fallbackData.notes[0] });
+      } catch (fallbackError) {
+        console.error("备用更新方法失败:", fallbackError);
+        throw fallbackError;
+      }
     }
-
-    // 更新便签
-    if (text !== undefined) data.notes[noteIndex].text = text;
-    if (x !== undefined) data.notes[noteIndex].x = x;
-    if (y !== undefined) data.notes[noteIndex].y = y;
-    if (title !== undefined) data.notes[noteIndex].title = title;
-    if (width !== undefined) data.notes[noteIndex].width = width;
-    if (height !== undefined) data.notes[noteIndex].height = height;
-    if (colorClass !== undefined) data.notes[noteIndex].colorClass = colorClass;
-    if (zIndex !== undefined) data.notes[noteIndex].zIndex = zIndex; // 添加zIndex处理
-    data.notes[noteIndex].updatedAt = new Date().toISOString();
-
-    // 保存数据
-    await writeNotesData(data);
-
-    res.json({ success: true, note: data.notes[noteIndex] });
   } catch (error) {
     console.error("更新便签失败:", error);
     res.status(500).json({

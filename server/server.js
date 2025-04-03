@@ -25,6 +25,7 @@ const PORT = process.env.PORT || 3000;
 const logDir = path.join(__dirname, "../logs");
 if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir, { recursive: true });
+  console.log("创建日志目录:", logDir);
 }
 
 // 使用Helmet增强安全性
