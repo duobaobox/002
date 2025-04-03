@@ -116,34 +116,38 @@
 
 /* 缩放控制面板样式 */
 .zoom-controls {
-  position: absolute; /* 绝对定位，固定在右下角 */
-  bottom: 20px; /* 距底部20像素 */
-  right: 20px; /* 距右侧20像素 */
+  position: absolute; /* 绝对定位 */
+  top: 20px; /* 从底部改为顶部 */
+  right: 20px; /* 保持右侧位置 */
   background-color: #fff; /* 白色背景 */
-  border-radius: 20px; /* 圆角边框 */
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* 添加轻微阴影 */
-  display: flex; /* 弹性布局，横向排列子元素 */
-  align-items: center; /* 垂直居中对齐 */
-  padding: 5px 10px; /* 内边距 */
+  border-radius: 20px; /* 调小圆角边框 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); /* 减小阴影 */
+  display: flex; /* 弹性布局 */
+  flex-direction: column; /* 从横向改为纵向 */
+  align-items: center; /* 居中对齐 */
+  padding: 6px 8px; /* 缩小内边距 */
   z-index: 1000; /* 高层级，确保显示在最上层 */
   border: 1px solid #eaeaea; /* 添加边框 */
+  width: 44px; /* 缩小宽度 */
+  box-sizing: border-box; /* 确保边框和内边距包含在宽度内 */
 }
 
 /* 缩放按钮的基本样式 */
 .zoom-btn {
-  width: 30px; /* 设置按钮宽度为30像素 */
-  height: 30px; /* 设置按钮高度为30像素 */
-  border-radius: 50%; /* 将按钮设置为圆形（50%的边框半径） */
+  width: 28px; /* 缩小按钮宽度 */
+  height: 28px; /* 缩小按钮高度 */
+  border-radius: 50%; /* 圆形按钮 */
   border: none; /* 移除按钮边框 */
   background-color: transparent; /* 设置按钮背景颜色为透明 */
-  color: #333; /* 设置按钮文字颜色为深灰色 */
-  font-size: 16px; /* 设置按钮文字大小为16像素 */
-  cursor: pointer; /* 鼠标悬停时显示手型光标，提示可点击 */
-  display: flex; /* 使用弹性布局，便于内容居中 */
+  color: #333; /* 按钮文字颜色 */
+  font-size: 16px; /* 减小文字大小 */
+  cursor: pointer; /* 鼠标悬停时显示手型光标 */
+  display: flex; /* 使用弹性布局 */
   align-items: center; /* 垂直居中按钮内容 */
   justify-content: center; /* 水平居中按钮内容 */
-  margin: 0 2px; /* 按钮左右间距为2像素 */
-  transition: all 0.2s; /* 添加0.2秒的平滑过渡效果，适用于所有属性变化 */
+  margin: 1px 0; /* 减少上下间距 */
+  padding: 0; /* 确保没有内边距影响按钮实际大小 */
+  transition: all 0.2s; /* 添加过渡效果 */
 }
 
 /* 缩放按钮悬停状态样式 */
@@ -158,15 +162,16 @@
 
 /* 缩放比例显示区域样式 */
 .zoom-display {
-  margin: 0 10px; /* 上下边距为0，左右边距为10像素 */
-  font-size: 14px; /* 文字大小为14像素 */
-  color: #666; /* 文字颜色为中灰色 */
-  font-weight: 500; /* 字体粗细为500(介于正常和粗体之间) */
-  min-width: 50px; /* 显示区域最小宽度为50像素 */
+  margin: 3px 0; /* 减少上下间距 */
+  font-size: 12px; /* 减小字体大小 */
+  color: #666; /* 文字颜色 */
+  font-weight: 500; /* 字体粗细 */
+  width: 28px; /* 与按钮宽度一致 */
   text-align: center; /* 文字居中对齐 */
+  line-height: 1; /* 保持垂直空间紧凑 */
 }
 
 /* 重置缩放按钮的特殊样式 */
 .zoom-reset {
-  font-size: 12px; /* 重置按钮文字大小为12像素，比其他按钮小 */
+  font-size: 11px; /* 进一步减小重置按钮文字大小 */
 }

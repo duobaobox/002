@@ -65,37 +65,37 @@ class Canvas {
     const zoomControls = document.createElement("div");
     zoomControls.className = "zoom-controls";
 
-    // 创建缩小按钮
-    const zoomOutBtn = document.createElement("button");
-    zoomOutBtn.className = "zoom-btn zoom-out";
-    zoomOutBtn.innerHTML = "−";
-    zoomOutBtn.title = "缩小画布";
-    zoomOutBtn.addEventListener("click", () => this.zoomOut());
-
-    // 创建缩放显示
-    const zoomDisplay = document.createElement("div");
-    zoomDisplay.className = "zoom-display";
-    zoomDisplay.id = "zoom-level";
-    zoomDisplay.textContent = "100%";
-
-    // 创建放大按钮
+    // 创建放大按钮 - 放在最上面
     const zoomInBtn = document.createElement("button");
     zoomInBtn.className = "zoom-btn zoom-in";
     zoomInBtn.innerHTML = "+";
     zoomInBtn.title = "放大画布";
     zoomInBtn.addEventListener("click", () => this.zoomIn());
 
-    // 创建重置按钮
+    // 创建缩放显示 - 在中间
+    const zoomDisplay = document.createElement("div");
+    zoomDisplay.className = "zoom-display";
+    zoomDisplay.id = "zoom-level";
+    zoomDisplay.textContent = "100%";
+
+    // 创建缩小按钮 - 放在下面
+    const zoomOutBtn = document.createElement("button");
+    zoomOutBtn.className = "zoom-btn zoom-out";
+    zoomOutBtn.innerHTML = "−";
+    zoomOutBtn.title = "缩小画布";
+    zoomOutBtn.addEventListener("click", () => this.zoomOut());
+
+    // 创建重置按钮 - 放在最下面
     const zoomResetBtn = document.createElement("button");
     zoomResetBtn.className = "zoom-btn zoom-reset";
     zoomResetBtn.innerHTML = "↻";
     zoomResetBtn.title = "重置缩放";
     zoomResetBtn.addEventListener("click", () => this.resetZoom());
 
-    // 组装控制器
-    zoomControls.appendChild(zoomOutBtn);
-    zoomControls.appendChild(zoomDisplay);
+    // 组装控制器 - 调整顺序为从上到下
     zoomControls.appendChild(zoomInBtn);
+    zoomControls.appendChild(zoomDisplay);
+    zoomControls.appendChild(zoomOutBtn);
     zoomControls.appendChild(zoomResetBtn);
 
     // 添加到DOM
