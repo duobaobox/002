@@ -619,9 +619,11 @@ function updateNoteContent(noteElement, content) {
     if (previewElement) {
       previewElement.innerHTML = marked.parse(content);
 
-      // 如果有代码块，应用高亮
+      // 如果有代码块且hljs已定义，才应用高亮
       previewElement.querySelectorAll("pre code").forEach((block) => {
-        hljs.highlightElement(block);
+        if (typeof hljs !== "undefined") {
+          hljs.highlightElement(block);
+        }
       });
 
       // 确保预览区域可见，文本区域隐藏
