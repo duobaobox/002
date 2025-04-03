@@ -119,7 +119,7 @@
   position: absolute; /* 绝对定位 */
   top: 20px; /* 从底部改为顶部 */
   right: 20px; /* 保持右侧位置 */
-  background-color: #fff; /* 白色背景 */
+  background-color: #ffffff3e; /* 白色背景 */
   border-radius: 20px; /* 调小圆角边框 */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); /* 减小阴影 */
   display: flex; /* 弹性布局 */
@@ -162,8 +162,8 @@
 
 /* 缩放比例显示区域样式 */
 .zoom-display {
-  margin: 3px 0; /* 减少上下间距 */
-  font-size: 12px; /* 减小字体大小 */
+  margin: 2px 0; /* 进一步减少上下间距 */
+  font-size: 10px; /* 缩小字体大小 */
   color: #666; /* 文字颜色 */
   font-weight: 500; /* 字体粗细 */
   width: 28px; /* 与按钮宽度一致 */
@@ -173,5 +173,34 @@
 
 /* 重置缩放按钮的特殊样式 */
 .zoom-reset {
-  font-size: 11px; /* 进一步减小重置按钮文字大小 */
+  font-size: 14px; /* 进一步减小重置按钮文字大小 */
+}
+
+/* 设置按钮拟物风格样式 */
+.settings-btn {
+  font-size: 18px; /* 齿轮图标稍小一点 */
+  color: #2c3e50; /* 深色图标 */
+  background: linear-gradient(to bottom, #f8f9fa, #e9ecef); /* 渐变背景 */
+  border: 1px solid #ced4da; /* 明显的边框 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12),
+    /* 外阴影 */ inset 0 1px 0 rgba(255, 255, 255, 0.7); /* 内阴影创造顶部高光 */
+  margin-bottom: 4px; /* 增加与下方按钮的间距 */
+  transition: all 0.2s ease; /* 平滑过渡 */
+}
+
+.settings-btn:hover {
+  background: linear-gradient(
+    to bottom,
+    #e9ecef,
+    #dee2e6
+  ); /* 悬停时改变渐变方向 */
+  color: #1a73e8; /* 悬停时图标变蓝 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.settings-btn:active {
+  background: linear-gradient(to top, #e9ecef, #dee2e6); /* 点击时反向渐变 */
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.15); /* 内陷效果 */
+  transform: translateY(1px); /* 轻微下沉 */
 }

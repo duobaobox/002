@@ -65,6 +65,16 @@ class Canvas {
     const zoomControls = document.createElement("div");
     zoomControls.className = "zoom-controls";
 
+    // 创建设置按钮 - 放在最上面
+    const settingsBtn = document.createElement("button");
+    settingsBtn.className = "zoom-btn settings-btn";
+    settingsBtn.innerHTML = "⚙"; // 齿轮图标
+    settingsBtn.title = "设置";
+    settingsBtn.addEventListener("click", () => {
+      // 设置按钮点击事件，稍后添加功能
+      console.log("设置按钮被点击");
+    });
+
     // 创建放大按钮 - 放在最上面
     const zoomInBtn = document.createElement("button");
     zoomInBtn.className = "zoom-btn zoom-in";
@@ -93,6 +103,7 @@ class Canvas {
     zoomResetBtn.addEventListener("click", () => this.resetZoom());
 
     // 组装控制器 - 调整顺序为从上到下
+    zoomControls.appendChild(settingsBtn);
     zoomControls.appendChild(zoomInBtn);
     zoomControls.appendChild(zoomDisplay);
     zoomControls.appendChild(zoomOutBtn);
