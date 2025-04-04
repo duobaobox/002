@@ -67,6 +67,7 @@
   transition: background-color 0.2s;
   padding: 0; /* 确保没有内边距影响圆形 */
   line-height: 1; /* 确保文本垂直居中 */
+  box-sizing: border-box;
 }
 
 .drawer-close:hover {

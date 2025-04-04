@@ -135,20 +135,22 @@
 
 /* 缩放按钮的基本样式 */
 .zoom-btn {
-  width: 28px; /* 缩小按钮宽度 */
-  height: 28px; /* 缩小按钮高度 */
-  border-radius: 50%; /* 圆形按钮 */
-  border: none; /* 移除按钮边框 */
-  background-color: transparent; /* 设置按钮背景颜色为透明 */
-  color: #333; /* 按钮文字颜色 */
-  font-size: 16px; /* 减小文字大小 */
-  cursor: pointer; /* 鼠标悬停时显示手型光标 */
-  display: flex; /* 使用弹性布局 */
-  align-items: center; /* 垂直居中按钮内容 */
-  justify-content: center; /* 水平居中按钮内容 */
-  margin: 1px 0; /* 减少上下间距 */
-  padding: 0; /* 确保没有内边距影响按钮实际大小 */
-  transition: all 0.2s; /* 添加过渡效果 */
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background-color: transparent;
+  color: #333;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1px 0;
+  padding: 0;
+  transition: all 0.2s;
+  line-height: 1;
+  box-sizing: border-box;
 }
 
 /* 缩放按钮悬停状态样式 */

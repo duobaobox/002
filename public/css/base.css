@@ -34,9 +34,12 @@ body {
 
 /* 按钮基本样式 */
 button {
-  padding: 10px 20px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 16px;
+  /* 移除默认内边距，让特定按钮自己定义自己的内边距 */
+  padding: 0;
+  /* 添加盒模型设置，确保边框不会改变按钮尺寸 */
+  box-sizing: border-box;
 }

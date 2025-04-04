@@ -35,3 +35,34 @@
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+
+/* 圆形按钮通用类 - 确保任何按钮应用这个类都会是完美圆形 */
+.circle-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  padding: 0;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-sizing: border-box;
+  font-size: inherit;
+  background-color: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* 圆形按钮尺寸变体 */
+.circle-button-sm {
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+}
+
+.circle-button-lg {
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+}
