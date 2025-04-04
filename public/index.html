@@ -45,6 +45,7 @@
                     <div class="ai-model">deepseek-chat</div>
                     <!-- 网页按钮 - 简化按钮内容，移除多余样式 -->
                     <button id="web-button" class="web-button" title="打开网页">🌐</button>
+                    <!-- 删除设置按钮 -->
                 </div>
 
                 <!-- 操作按钮区域 -->
@@ -83,15 +84,191 @@
 
         <!-- 抽屉遮罩 -->
         <div class="drawer-overlay" id="drawer-overlay"></div>
-    </div>
 
-    <!-- 引入JavaScript文件 -->
-    <!-- 便签相关功能脚本 -->
-    <script src="js/note.js"></script>
-    <!-- 画布相关功能脚本 -->
-    <script src="js/canvas.js"></script>
-    <!-- 主应用程序脚本 -->
-    <script src="js/app.js"></script>
+        <!-- 设置弹窗 -->
+        <div class="settings-modal" id="settings-modal">
+            <div class="settings-container">
+                <div class="settings-header">
+                    <h2>设置</h2>
+                    <button class="close-settings" id="close-settings">&times;</button>
+                </div>
+
+                <div class="settings-content">
+                    <!-- 左侧导航 -->
+                    <div class="settings-nav">
+                        <button class="nav-item active" data-tab="general">通用</button>
+                        <button class="nav-item" data-tab="ai">AI 设置</button>
+                        <button class="nav-item" data-tab="appearance">外观</button>
+                        <button class="nav-item" data-tab="backup">备份恢复</button>
+                        <button class="nav-item" data-tab="about">关于</button>
+                    </div>
+
+                    <!-- 右侧设置项 -->
+                    <div class="settings-panels">
+                        <!-- 通用设置 -->
+                        <div class="settings-panel active" id="general-panel">
+                            <h3>通用设置</h3>
+                            <div class="setting-item">
+                                <div class="setting-label">
+                                    <label for="auto-save">自动保存间隔</label>
+                                    <span class="setting-description">便签内容自动保存的时间间隔</span>
+                                </div>
+                                <div class="setting-control">
+                                    <select id="auto-save">
+                                        <option value="5000">5 秒</option>
+                                        <option value="10000" selected>10 秒</option>
+                                        <option value="30000">30 秒</option>
+                                        <option value="60000">1 分钟</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-label">
+                                    <label for="default-color">默认便签颜色</label>
+                                    <span class="setting-description">新便签的默认颜色</span>
+                                </div>
+                                <div class="setting-control color-options">
+                                    <button class="color-option note-yellow active"></button>
+                                    <button class="color-option note-blue"></button>
+                                    <button class="color-option note-green"></button>
+                                    <button class="color-option note-pink"></button>
+                                    <button class="color-option note-purple"></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AI 设置 -->
+                        <div class="settings-panel" id="ai-panel">
+                            <h3>AI 设置</h3>
+                            <div class="setting-item">
+                                <div class="setting-label">
+                                    <label for="ai-model">AI 模型</label>
+                                    <span class="setting-description">用于生成内容的AI模型</span>
+                                </div>
+                                <div class="setting-control">
+                                    <select id="ai-model">
+                                        <option value="deepseek-chat" selected>DeepSeek Chat</option>
+                                        <option value="deepseek-coder">DeepSeek Coder</option>
+                                        <option value="other">其他</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-label">
+                                    <label for="ai-temperature">模型温度</label>
+                                    <span class="setting-description">较高的值会使输出更加随机，较低的值使其更加集中和确定性</span>
+                                </div>
+                                <div class="setting-control range-container">
+                                    <input type="range" id="ai-temperature" min="0" max="1" step="0.1" value="0.7">
+                                    <span class="range-value">0.7</span>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-label">
+                                    <label for="ai-max-tokens">最大令牌数</label>
+                                    <span class="setting-description">生成内容的最大长度</span>
+                                </div>
+                                <div class="setting-control">
+                                    <input type="number" id="ai-max-tokens" min="100" max="2000" step="50" value="300">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 外观设置 -->
+                        <div class="settings-panel" id="appearance-panel">
+                            <h3>外观设置</h3>
+                            <div class="setting-item">
+                                <div class="setting-label">
+                                    <label>主题</label>
+                                    <span class="setting-description">选择应用的主题</span>
+                                </div>
+                                <div class="setting-control theme-options">
+                                    <button class="theme-option light active">
+                                        <div class="theme-preview light-preview"></div>
+                                        <span>浅色</span>
+                                    </button>
+                                    <button class="theme-option dark">
+                                        <div class="theme-preview dark-preview"></div>
+                                        <span>深色
+                                    </button>
+                                    <button class="theme-option system">
+                                        <div class="theme-preview system-preview"></div>
+                                        <span>跟随系统</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-label">
+                                    <label for="font-size">字体大小</label>
+                                    <span class="setting-description">便签内容的字体大小</span>
+                                </div>
+                                <div class="setting-control range-container">
+                                    <input type="range" id="font-size" min="12" max="20" step="1" value="14">
+                                    <span class="range-value">14px</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 备份恢复 -->
+                        <div class="settings-panel" id="backup-panel">
+                            <h3>备份与恢复</h3>
+                            <div class="setting-item">
+                                <div class="setting-label">
+                                    <label>导出数据</label>
+                                    <span class="setting-description">将便签数据导出为JSON文件</span>
+                                </div>
+                                <div class="setting-control">
+                                    <button class="action-button export-button">导出数据</button>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-label">
+                                    <label>导入数据</label>
+                                    <span class="setting-description">从JSON文件导入便签数据</span>
+                                </div>
+                                <div class="setting-control">
+                                    <label for="import-file" class="file-input-label">选择文件</label>
+                                    <input type="file" id="import-file" accept=".json" class="file-input">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 关于 -->
+                        <div class="settings-panel" id="about-panel">
+                            <h3>关于</h3>
+                            <div class="about-content">
+                                <img src="img/logo.png" alt="Logo" class="app-logo">
+                                <h2>AI 便签画布</h2>
+                                <p class="version">版本 1.0.0</p>
+                                <p class="description">
+                                    这是一个基于 Node.js 的 Web 应用项目，允许用户创建、编辑和管理便签，
+                                    并且支持使用 AI 生成便签内容。
+                                </p>
+                                <div class="links">
+                                    <a href="https://github.com/yourusername/ai-note-canvas" target="_blank">GitHub</a>
+                                    <a href="#" target="_blank">反馈问题</a>
+                                    <a href="#" target="_blank">帮助文档</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-footer">
+                    <button class="reset-button">重置所有设置</button>
+                    <button class="save-button">保存设置</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 引入JavaScript文件 -->
+        <!-- 便签相关功能脚本 -->
+        <script src="js/note.js"></script>
+        <!-- 画布相关功能脚本 -->
+        <script src="js/canvas.js"></script>
+        <!-- 主应用程序脚本 -->
+        <script src="js/app.js"></script>
+    </div>
 </body>
 
 </html>

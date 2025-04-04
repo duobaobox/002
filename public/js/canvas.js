@@ -71,8 +71,11 @@ class Canvas {
     settingsBtn.innerHTML = "⚙"; // 齿轮图标
     settingsBtn.title = "设置";
     settingsBtn.addEventListener("click", () => {
-      // 设置按钮点击事件，稍后添加功能
-      console.log("设置按钮被点击");
+      // 获取设置弹窗并显示
+      const settingsModal = document.getElementById("settings-modal");
+      if (settingsModal) {
+        settingsModal.classList.add("visible");
+      }
     });
 
     // 创建放大按钮 - 放在最上面

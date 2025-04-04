@@ -127,7 +127,9 @@
 .ai-button {
   background-color: #1a73e8;
   color: white;
-  padding: 8px 24px;
+  padding: 0 24px; /* 修改上下内边距为0，保持左右内边距不变 */
+  height: 32px; /* 明确设置高度为32px */
+  line-height: 32px; /* 设置行高与高度相同，确保文本垂直居中 */
   border-radius: 30px;
   font-size: 14px;
   font-weight: 500;
@@ -135,6 +137,7 @@
   transition: all 0.3s;
   box-shadow: 0 2px 5px rgba(26, 115, 232, 0.2);
   display: none; /* 默认隐藏AI按钮 */
+  border: none; /* 确保没有边框 */
 }
 
 .ai-button:hover {
@@ -143,17 +146,36 @@
   transform: translateY(-1px);
 }
 
+/* AI生成按钮禁用状态 */
+.ai-button:disabled {
+  background-color: #b0bec5;
+  color: #e0e0e0;
+  cursor: not-allowed;
+  box-shadow: none;
+  pointer-events: none; /* 禁止所有鼠标事件，包括hover */
+}
+
+/* 确保禁用状态下不显示悬停效果 */
+.ai-button:disabled:hover {
+  background-color: #b0bec5;
+  transform: none;
+  box-shadow: none;
+}
+
 /* 添加便笺按钮样式 */
 .add-button {
   background-color: #34a853;
   color: white;
-  padding: 8px 24px;
+  padding: 0 24px; /* 修改上下内边距为0，保持一致性 */
+  height: 32px; /* 设置相同高度 */
+  line-height: 32px; /* 设置行高与高度相同 */
   border-radius: 30px;
   font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.3px;
   transition: all 0.3s;
   box-shadow: 0 2px 5px rgba(52, 168, 83, 0.2);
+  border: none; /* 确保没有边框 */
 }
 
 .add-button:hover {

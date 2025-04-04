@@ -22,6 +22,7 @@
 @import url("canvas.css");
 @import url("notes.css");
 @import url("markdown.css");
+@import url("settings.css"); /* 新增设置样式导入 */
 
 /* 引入工具类 */
 @import url("utils.css");

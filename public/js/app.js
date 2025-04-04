@@ -10,6 +10,7 @@ class App {
     this.initEventListeners();
     this.updateButtonVisibility();
     this.initWebDrawer();
+    this.initSettingsModal(); // 新增初始化设置弹窗
   }
 
   initEventListeners() {
@@ -482,8 +483,9 @@ class App {
     }
 
     try {
-      // 禁用按钮并显示加载状态
+      // 禁用按钮和输入框
       generateButton.disabled = true;
+      promptElement.disabled = true; // 新增：禁用文本输入框
       generateButton.textContent = "生成中...";
 
       // 首先创建一个空便签，准备接收流式内容
@@ -597,8 +599,9 @@ class App {
         }, 3000);
       }, 10);
     } finally {
-      // 恢复按钮状态
+      // 恢复按钮和输入框状态
       generateButton.disabled = false;
+      promptElement.disabled = false; // 新增：恢复文本输入框
       generateButton.textContent = originalText;
     }
   }
@@ -631,6 +634,130 @@ class App {
           resolve(); // 打字效果完成
         }
       }, 25); // 每个字符之间的延迟，可以调整
+    });
+  }
+
+  // 初始化设置弹窗
+  initSettingsModal() {
+    // 不需要获取设置按钮，因为我们在canvas.js中处理了
+    // const settingsButton = document.getElementById("settings-button"); // 删除这行
+    const settingsModal = document.getElementById("settings-modal");
+    const closeSettings = document.getElementById("close-settings");
+    const saveButton = document.querySelector(".save-button");
+    const resetButton = document.querySelector(".reset-button");
+    const navItems = document.querySelectorAll(".nav-item");
+    const colorOptions = document.querySelectorAll(".color-option");
+    const themeOptions = document.querySelectorAll(".theme-option");
+    const rangeInputs = document.querySelectorAll('input[type="range"]');
+
+    // 删除打开设置弹窗的事件监听（现在在canvas.js中处理）
+    // settingsButton.addEventListener("click", () => {
+    //   settingsModal.classList.add("visible");
+    // });
+
+    // 关闭设置弹窗
+    closeSettings.addEventListener("click", () => {
+      settingsModal.classList.remove("visible");
+    });
+
+    // 点击弹窗外部区域关闭
+    settingsModal.addEventListener("click", (e) => {
+      if (e.target === settingsModal) {
+        settingsModal.classList.remove("visible");
+      }
+    });
+
+    // ESC键关闭设置弹窗
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && settingsModal.classList.contains("visible")) {
+        settingsModal.classList.remove("visible");
+      }
+    });
+
+    // 导航切换
+    navItems.forEach((item) => {
+      item.addEventListener("click", () => {
+        // 移除所有导航项的active类
+        navItems.forEach((nav) => nav.classList.remove("active"));
+
+        // 添加当前导航项的active类
+        item.classList.add("active");
+
+        // 隐藏所有面板
+        document.querySelectorAll(".settings-panel").forEach((panel) => {
+          panel.classList.remove("active");
+        });
+
+        // 显示当前面板
+        const tabId = item.getAttribute("data-tab");
+        document.getElementById(`${tabId}-panel`).classList.add("active");
+      });
+    });
+
+    // 颜色选项切换
+    colorOptions.forEach((option) => {
+      option.addEventListener("click", () => {
+        colorOptions.forEach((opt) => opt.classList.remove("active"));
+        option.classList.add("active");
+      });
+    });
+
+    // 主题选项切换
+    themeOptions.forEach((option) => {
+      option.addEventListener("click", () => {
+        themeOptions.forEach((opt) => opt.classList.remove("active"));
+        option.classList.add("active");
+      });
+    });
+
+    // 范围滑块值显示更新
+    rangeInputs.forEach((input) => {
+      const valueDisplay = input.nextElementSibling;
+
+      // 初始化显示值
+      if (input.id === "font-size") {
+        valueDisplay.textContent = `${input.value}px`;
+      } else {
+        valueDisplay.textContent = input.value;
+      }
+
+      // 滑动时更新值
+      input.addEventListener("input", () => {
+        if (input.id === "font-size") {
+          valueDisplay.textContent = `${input.value}px`;
+        } else {
+          valueDisplay.textContent = input.value;
+        }
+      });
+    });
+
+    // 保存设置 (目前仅关闭弹窗，实际保存功能待实现)
+    saveButton.addEventListener("click", () => {
+      // 在此处添加保存设置的逻辑
+      settingsModal.classList.remove("visible");
+    });
+
+    // 重置设置
+    resetButton.addEventListener("click", () => {
+      if (confirm("确定要重置所有设置吗？这将恢复所有默认值。")) {
+        // 在此处添加重置设置的逻辑
+      }
+    });
+
+    // 导出数据
+    const exportButton = document.querySelector(".export-button");
+    exportButton.addEventListener("click", () => {
+      // 在此处添加导出数据的逻辑
+      alert("导出功能将在后续版本实现");
+    });
+
+    // 导入数据
+    const importFile = document.getElementById("import-file");
+    importFile.addEventListener("change", (e) => {
+      if (e.target.files.length > 0) {
+        // 在此处添加导入数据的逻辑
+        alert("导入功能将在后续版本实现");
+      }
     });
   }
 }

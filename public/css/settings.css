@@ -1,0 +1,495 @@
+/**
+ * 设置弹窗样式表 - settings.css
+ * 
+ * 本文件定义了设置弹窗相关的所有样式，包括：
+ * 1. 弹窗容器：居中显示、动画效果
+ * 2. 设置项分类：侧边导航、内容面板
+ * 3. 表单控件：下拉框、滑块、按钮等
+ * 4. 主题预览：不同主题的样式预览
+ * 
+ * 这些样式构建了一个现代化的设置界面，提供直观的用户体验。
+ */
+
+/* 设置弹窗样式 */
+.settings-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.settings-modal.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.settings-container {
+  width: 900px;
+  max-width: 90%;
+  max-height: 90vh;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateY(20px);
+  transition: transform 0.3s ease;
+}
+
+.settings-modal.visible .settings-container {
+  transform: translateY(0);
+}
+
+/* 设置头部样式 */
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.settings-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.close-settings {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 24px;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.close-settings:hover {
+  background-color: #f2f2f2;
+}
+
+/* 设置内容区域样式 */
+.settings-content {
+  display: flex;
+  height: 500px;
+  max-height: calc(90vh - 130px);
+  overflow: hidden;
+}
+
+/* 设置导航样式 */
+.settings-nav {
+  width: 180px;
+  background-color: #f8f9fa;
+  padding: 16px 0;
+  border-right: 1px solid #eaeaea;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.nav-item {
+  padding: 12px 24px;
+  text-align: left;
+  background: none;
+  border: none;
+  font-size: 15px;
+  color: #333;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+  border-left: 3px solid transparent;
+}
+
+.nav-item:hover {
+  background-color: #f1f3f4;
+}
+
+.nav-item.active {
+  color: #1a73e8;
+  background-color: #e8f0fe;
+  border-left-color: #1a73e8;
+  font-weight: 500;
+}
+
+/* 设置面板样式 */
+.settings-panels {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+
+.settings-panel {
+  display: none;
+}
+
+.settings-panel.active {
+  display: block;
+}
+
+.settings-panel h3 {
+  font-size: 18px;
+  font-weight: 500;
+  color: #333;
+  margin: 0 0 20px 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eaeaea;
+}
+
+/* 设置项样式 */
+.setting-item {
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.setting-label {
+  margin-bottom: 8px;
+}
+
+.setting-label label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: #333;
+}
+
+.setting-description {
+  display: block;
+  font-size: 13px;
+  color: #666;
+}
+
+.setting-control {
+  display: flex;
+  align-items: center;
+}
+
+/* 表单控件样式 */
+select,
+input[type="number"] {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background-color: white;
+  font-size: 14px;
+  color: #333;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+select:focus,
+input[type="number"]:focus {
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
+  outline: none;
+}
+
+/* 范围滑块样式 */
+.range-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+input[type="range"] {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 4px;
+  background: #eaeaea;
+  border-radius: 2px;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #1a73e8;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+.range-value {
+  margin-left: 12px;
+  font-size: 14px;
+  color: #333;
+  width: 40px;
+  text-align: right;
+}
+
+/* 颜色选项样式 */
+.color-options {
+  display: flex;
+  gap: 10px;
+}
+
+.color-option {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.color-option:hover {
+  transform: scale(1.1);
+}
+
+.color-option.active {
+  border-color: #1a73e8;
+}
+
+.color-option.note-yellow {
+  background-color: #fff9c4;
+}
+.color-option.note-blue {
+  background-color: #bbdefb;
+}
+.color-option.note-green {
+  background-color: #c8e6c9;
+}
+.color-option.note-pink {
+  background-color: #f8bbd0;
+}
+.color-option.note-purple {
+  background-color: #e1bee7;
+}
+
+/* 主题选项样式 */
+.theme-options {
+  display: flex;
+  gap: 12px;
+}
+
+.theme-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.theme-option:hover {
+  background-color: #f2f2f2;
+}
+
+.theme-option.active {
+  background-color: #e8f0fe;
+  color: #1a73e8;
+}
+
+.theme-preview {
+  width: 80px;
+  height: 50px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  border: 1px solid #ddd;
+  overflow: hidden;
+  position: relative;
+}
+
+.theme-preview::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 30%;
+  background-color: #f5f5f5;
+}
+
+.theme-preview::after {
+  content: "";
+  position: absolute;
+  top: 40%;
+  left: 10%;
+  width: 80%;
+  height: 50%;
+  background-color: #ffecb3;
+  border-radius: 4px;
+}
+
+.dark-preview {
+  background-color: #333;
+}
+
+.dark-preview::before {
+  background-color: #1e1e1e;
+}
+
+.dark-preview::after {
+  background-color: #2c2c2c;
+  border: 1px solid #444;
+}
+
+.system-preview {
+  background: linear-gradient(to right, white 50%, #333 50%);
+}
+
+.system-preview::before {
+  background: linear-gradient(to right, #f5f5f5 50%, #1e1e1e 50%);
+}
+
+.system-preview::after {
+  background: linear-gradient(to right, #ffecb3 50%, #2c2c2c 50%);
+  border-right: 1px solid #444;
+}
+
+/* 按钮样式 */
+.action-button,
+.file-input-label,
+.reset-button,
+.save-button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+  text-align: center;
+  border: none;
+}
+
+.action-button,
+.file-input-label {
+  background-color: #f2f2f2;
+  color: #333;
+}
+
+.action-button:hover,
+.file-input-label:hover {
+  background-color: #e5e5e5;
+}
+
+.export-button {
+  background-color: #e3f2fd;
+  color: #1a73e8;
+}
+
+.export-button:hover {
+  background-color: #bbdefb;
+}
+
+.file-input {
+  display: none;
+}
+
+/* 设置底部样式 */
+.settings-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 24px;
+  border-top: 1px solid #eaeaea;
+  gap: 10px;
+}
+
+.reset-button {
+  background-color: #f2f2f2;
+  color: #333;
+}
+
+.reset-button:hover {
+  background-color: #e5e5e5;
+}
+
+.save-button {
+  background-color: #1a73e8;
+  color: white;
+}
+
+.save-button:hover {
+  background-color: #1557b0;
+}
+
+/* 关于页面样式 */
+.about-content {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.app-logo {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 15px;
+}
+
+.version {
+  color: #666;
+  margin: 5px 0 20px 0;
+}
+
+.description {
+  color: #333;
+  line-height: 1.6;
+  max-width: 500px;
+  margin: 0 auto 20px auto;
+}
+
+.links {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.links a {
+  color: #1a73e8;
+  text-decoration: none;
+}
+
+.links a:hover {
+  text-decoration: underline;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .settings-content {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .settings-nav {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #eaeaea;
+    overflow-x: auto;
+    flex-direction: row;
+    padding: 10px 0;
+  }
+
+  .nav-item {
+    border-left: none;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+  }
+
+  .nav-item.active {
+    border-left-color: transparent;
+    border-bottom-color: #1a73e8;
+  }
+
+  .settings-panels {
+    padding: 15px;
+  }
+}

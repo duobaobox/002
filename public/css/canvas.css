@@ -13,6 +13,7 @@
 
 /* 画布容器基础样式 - 作为整个应用的工作区 */
 .canvas-container {
+  position: relative; /* 添加相对定位，为绝对定位的子元素提供参考 */
   flex: 1; /* 占据父容器中的剩余空间 */
   background-color: #fcfcfc; /* 设置容器背景为接近白色的颜色 */
   position: relative; /* 建立定位上下文，便于子元素绝对定位 */
