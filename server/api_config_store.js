@@ -133,13 +133,21 @@ export function loadConfigToEnv() {
       temperature: config.temperature,
     });
 
-    if (config.apiKey) process.env.AI_API_KEY = config.apiKey;
-    if (config.baseURL) process.env.AI_BASE_URL = config.baseURL;
-    if (config.model) process.env.AI_MODEL = config.model;
-    if (config.maxTokens)
-      process.env.AI_MAX_TOKENS = config.maxTokens.toString();
-    if (config.temperature)
-      process.env.AI_TEMPERATURE = config.temperature.toString();
+    // 强制设置环境变量，确保即使值为空也会覆盖
+    process.env.AI_API_KEY = config.apiKey || "";
+    process.env.AI_BASE_URL = config.baseURL || "";
+    process.env.AI_MODEL = config.model || "";
+    process.env.AI_MAX_TOKENS = (config.maxTokens || 300).toString();
+    process.env.AI_TEMPERATURE = (config.temperature || 0.7).toString();
+
+    // 输出最终设置的环境变量，用于调试
+    console.log("环境变量设置完成:", {
+      AI_API_KEY: process.env.AI_API_KEY ? "已设置" : "未设置",
+      AI_BASE_URL: process.env.AI_BASE_URL,
+      AI_MODEL: process.env.AI_MODEL,
+      AI_MAX_TOKENS: process.env.AI_MAX_TOKENS,
+      AI_TEMPERATURE: process.env.AI_TEMPERATURE,
+    });
 
     return config;
   } catch (error) {

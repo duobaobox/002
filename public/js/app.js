@@ -489,7 +489,10 @@ class App {
 
       if (!configCheckData.success) {
         // 如果AI服务未配置，显示友好的错误提示并引导用户设置
-        this.showMessage("AI服务尚未配置，请先在设置中完成配置", "warning");
+        this.showMessage(
+          configCheckData.message || "AI服务尚未配置，请先在设置中完成配置",
+          "warning"
+        );
 
         // 打开设置面板并切换到AI设置选项卡
         document.getElementById("settings-modal").classList.add("visible");
@@ -847,6 +850,43 @@ class App {
           aiModelDisplay.textContent = settings.model || "deepseek-chat";
         }
 
+        // 添加测试API按钮
+        const aiPanel = document.getElementById("ai-panel");
+        if (aiPanel) {
+          // 检查是否已经存在测试按钮，避免重复添加
+          if (!document.getElementById("test-ai-api")) {
+            const buttonContainer = document.createElement("div");
+            buttonContainer.className = "setting-actions";
+            buttonContainer.style.marginTop = "15px";
+            buttonContainer.style.marginBottom = "15px";
+            buttonContainer.style.display = "flex";
+            buttonContainer.style.justifyContent = "center";
+
+            const testButton = document.createElement("button");
+            testButton.id = "test-ai-api";
+            testButton.className = "btn secondary";
+            testButton.textContent = "测试API连接";
+            testButton.style.marginRight = "10px";
+            testButton.onclick = () => this.testAIConnection();
+
+            buttonContainer.appendChild(testButton);
+
+            // 查找保存按钮
+            const saveBtn = aiPanel.querySelector(".settings-save");
+
+            // 如果找到按钮所在位置，在它之前插入测试按钮
+            if (saveBtn && saveBtn.parentNode) {
+              saveBtn.parentNode.parentNode.insertBefore(
+                buttonContainer,
+                saveBtn.parentNode
+              );
+            } else {
+              // 否则添加到面板末尾
+              aiPanel.appendChild(buttonContainer);
+            }
+          }
+        }
+
         console.log("AI设置已加载");
       }
     } catch (error) {
@@ -915,47 +955,35 @@ class App {
 
   // 测试AI连接
   async testAIConnection() {
+    const testButton = document.getElementById("test-ai-api");
+    const originalText = testButton.textContent;
+    testButton.textContent = "正在测试...";
+    testButton.disabled = true;
+
     try {
-      const statusEl = document.getElementById("connection-status");
-      const testButton = document.getElementById("test-ai-connection");
-
-      if (!statusEl || !testButton) return;
-
-      // 更新UI状态
-      statusEl.textContent = "测试中...";
-      statusEl.className = "";
-      testButton.disabled = true;
+      // 首先尝试保存当前设置
+      await this.saveAISettings();
 
       // 发送测试请求
-      const response = await fetch("/api/test", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
+      const response = await fetch("/api/test-ai-connection");
       const data = await response.json();
 
       if (data.success) {
-        statusEl.textContent = "连接成功!";
-        statusEl.className = "status-success";
+        this.showMessage(
+          "API连接成功！" + (data.message ? ` ${data.message}` : ""),
+          "success"
+        );
       } else {
-        statusEl.textContent = "连接失败!";
-        statusEl.className = "status-error";
+        this.showMessage(
+          "API连接失败: " + (data.message || "未知错误"),
+          "error"
+        );
       }
     } catch (error) {
-      console.error("测试AI连接失败:", error);
-      const statusEl = document.getElementById("connection-status");
-      if (statusEl) {
-        statusEl.textContent = "连接失败!";
-        statusEl.className = "status-error";
-      }
+      this.showMessage("测试失败: " + error.message, "error");
     } finally {
-      // 恢复按钮状态
-      const testButton = document.getElementById("test-ai-connection");
-      if (testButton) {
-        testButton.disabled = false;
-      }
+      testButton.textContent = originalText;
+      testButton.disabled = false;
     }
   }
 

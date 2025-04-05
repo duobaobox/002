@@ -520,6 +520,52 @@ router.get("/test", (req, res) => {
   });
 });
 
+// 添加测试AI连接的新接口
+router.get("/test-ai-connection", async (req, res) => {
+  try {
+    // 首先检查是否有必要的配置
+    if (
+      !process.env.AI_API_KEY ||
+      !process.env.AI_BASE_URL ||
+      !process.env.AI_MODEL
+    ) {
+      return res.json({
+        success: false,
+        message: "缺少必要的AI配置，请先完成配置",
+        details: {
+          missingApiKey: !process.env.AI_API_KEY,
+          missingBaseUrl: !process.env.AI_BASE_URL,
+          missingModel: !process.env.AI_MODEL,
+        },
+      });
+    }
+
+    // 使用AI服务的验证方法测试连接
+    const isValid = await aiService.verifyApiKey();
+
+    if (isValid) {
+      // 连接成功
+      return res.json({
+        success: true,
+        message: "API密钥验证成功，连接正常",
+        model: process.env.AI_MODEL,
+      });
+    } else {
+      // 连接失败，返回详细错误信息
+      return res.json({
+        success: false,
+        message: aiService.authError || "API密钥验证失败，请检查您的配置",
+      });
+    }
+  } catch (error) {
+    console.error("测试AI连接出错:", error);
+    return res.json({
+      success: false,
+      message: `测试连接时发生错误: ${error.message}`,
+    });
+  }
+});
+
 // 健康检查端点，用于监控
 router.get("/health", (req, res) => {
   res.json({

@@ -25,20 +25,100 @@ class AIService {
       fallbackConfig: config.fallbackConfig,
     };
 
+    // 详细记录当前配置状态以便调试
+    console.log("AI服务初始化配置详情:");
+    console.log(
+      "环境变量中的AI_API_KEY:",
+      process.env.AI_API_KEY ? "已设置" : "未设置"
+    );
+    console.log("环境变量中的AI_BASE_URL:", process.env.AI_BASE_URL);
+    console.log("环境变量中的AI_MODEL:", process.env.AI_MODEL);
+    console.log("最终使用的apiKey:", this.config.apiKey ? "已设置" : "未设置");
+    console.log("最终使用的baseURL:", this.config.baseURL);
+    console.log("最终使用的model:", this.config.model);
+
     // 检查是否存在必要的配置
     const hasRequiredConfig =
       this.config.apiKey && this.config.baseURL && this.config.model;
 
     if (hasRequiredConfig) {
-      // 重新创建OpenAI客户端
-      this.openai = new OpenAI({
-        baseURL: this.config.baseURL,
-        apiKey: this.config.apiKey,
-      });
-      console.log("AI服务已初始化，使用模型:", this.config.model);
+      try {
+        // 重新创建OpenAI客户端
+        this.openai = new OpenAI({
+          baseURL: this.config.baseURL,
+          apiKey: this.config.apiKey,
+        });
+
+        // 记录API密钥部分信息以便调试但不泄露完整密钥
+        const apiKeyPreview =
+          this.config.apiKey.length > 8
+            ? `${this.config.apiKey.substring(
+                0,
+                4
+              )}...${this.config.apiKey.substring(
+                this.config.apiKey.length - 4
+              )}`
+            : "密钥过短";
+
+        console.log("AI服务已初始化，使用模型:", this.config.model);
+        console.log("API密钥预览:", apiKeyPreview);
+
+        // 设置验证状态为未验证
+        this.isVerified = false;
+      } catch (error) {
+        console.error("初始化OpenAI客户端失败:", error.message);
+        this.openai = null;
+      }
     } else {
       console.log("AI服务尚未配置，请在设置中完成配置");
+      console.log("缺少的配置项:", {
+        apiKey: !this.config.apiKey,
+        baseURL: !this.config.baseURL,
+        model: !this.config.model,
+      });
       this.openai = null;
+    }
+  }
+
+  /**
+   * 验证API密钥是否有效
+   * @returns {Promise<boolean>} 验证结果
+   */
+  async verifyApiKey() {
+    if (!this.openai) {
+      return false;
+    }
+
+    try {
+      // 发送一个最小化请求来验证API密钥
+      const response = await this.openai.chat.completions.create({
+        model: this.config.model,
+        messages: [{ role: "user", content: "Hello" }],
+        max_tokens: 1, // 只请求最少的token以减少开销
+      });
+
+      this.isVerified = true;
+      console.log("API密钥验证成功");
+      return true;
+    } catch (error) {
+      console.error("API密钥验证失败:", error.message);
+      this.isVerified = false;
+
+      // 根据错误类型设置更友好的错误消息
+      if (error.response && error.response.status === 401) {
+        this.authError = "API密钥无效或已过期，请更新您的API密钥";
+      } else if (error.response && error.response.status === 403) {
+        this.authError = "API密钥权限不足，请检查您的账户权限";
+      } else if (
+        error.message.includes("network") ||
+        error.message.includes("timeout")
+      ) {
+        this.authError = "网络连接问题，请检查您的网络连接和API地址";
+      } else {
+        this.authError = `API服务出错: ${error.message}`;
+      }
+
+      return false;
     }
   }
 
@@ -52,6 +132,14 @@ class AIService {
       // 首先检查是否已配置AI服务
       if (!this.openai) {
         throw new Error("AI服务尚未配置，请在设置中配置API密钥、URL和模型");
+      }
+
+      // 如果未验证过API密钥，先进行验证
+      if (!this.isVerified) {
+        const isValid = await this.verifyApiKey();
+        if (!isValid) {
+          throw new Error(this.authError || "API密钥验证失败，请检查您的配置");
+        }
       }
 
       // 检查缓存

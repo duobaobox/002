@@ -168,4 +168,10 @@ function gracefulShutdown() {
 const server = app.listen(PORT, () => {
   console.log(`服务器运行在 http://localhost:${PORT}`);
   console.log(`环境: ${process.env.NODE_ENV || "development"}`);
+
+  // 服务器启动后，主动触发AI服务初始化
+  if (global.aiConfigUpdated && typeof global.aiConfigUpdated === "function") {
+    console.log("服务器启动完成，主动触发AI服务初始化...");
+    global.aiConfigUpdated();
+  }
 });
