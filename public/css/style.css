@@ -286,19 +286,11 @@ button {
   background-color: #e0e0e0;
 }
 
-.iframe-container {
-  flex: 1;
-  overflow: hidden;
-}
-
+/* web-frame样式 - 已删除
 .web-frame {
   width: 100%;
   height: 100%;
   border: none;
-}
-
-.iframe-container:not(.active) {
-  display: none;
 }
 */
 

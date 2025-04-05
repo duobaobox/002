@@ -5,7 +5,7 @@
  * 1. 底部栏容器：固定定位、边框和阴影效果
  * 2. 输入区域：文本输入框及其各种状态样式
  * 3. 操作按钮：AI生成和添加便签按钮
- * 4. 辅助元素：AI模型标识、网页按钮等
+ * 4. 辅助元素：AI模型标识
  * 
  * 这些样式共同构建了一个功能丰富、视觉友好的底部控制区域，
  * 是用户与应用主要交互的入口之一。
@@ -58,8 +58,8 @@
   letter-spacing: 0.2px;
 }
 
-/* 网页按钮样式 */
-.web-button {
+/* 网页按钮样式 - 已删除 */
+/* .web-button {
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -72,18 +72,18 @@
   transition: all 0.2s ease;
   border: none;
   font-size: 16px;
-  padding: 0; /* 确保没有内边距影响按钮形状 */
-}
+  padding: 0;
+} */
 
-.web-button:hover {
+/* .web-button:hover {
   background-color: #e8f0fe;
   transform: translateY(-2px);
   box-shadow: 0 2px 5px rgba(26, 115, 232, 0.2);
-}
+} */
 
-.web-button:active {
+/* .web-button:active {
   transform: translateY(0);
-}
+} */
 
 /* 输入区域样式 */
 .input-container {
