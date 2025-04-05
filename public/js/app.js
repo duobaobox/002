@@ -789,8 +789,30 @@ class App {
 
     // 重置设置
     resetButton.addEventListener("click", () => {
-      if (confirm("确定要重置所有设置吗？这将恢复所有默认值。")) {
-        // 在此处添加重置设置的逻辑
+      if (confirm("确定要重置所有设置吗？这将清除所有AI配置信息。")) {
+        this.clearAISettings()
+          .then((success) => {
+            if (success) {
+              // 清空表单值
+              document.getElementById("ai-api-key").value = "";
+              document.getElementById("ai-base-url").value = "";
+              document.getElementById("ai-model").value = "";
+              document.getElementById("ai-max-tokens").value = "800";
+              document.getElementById("ai-temperature").value = "0.7";
+
+              // 更新底部栏的AI模型显示
+              const aiModelDisplay = document.querySelector(".ai-model");
+              if (aiModelDisplay) {
+                aiModelDisplay.textContent = "未设置";
+              }
+
+              this.showMessage("所有AI设置已重置", "success");
+            }
+          })
+          .catch((error) => {
+            console.error("重置设置失败:", error);
+            this.showMessage(`重置失败: ${error.message}`, "error");
+          });
       }
     });
 
@@ -821,6 +843,42 @@ class App {
       });
     }
 
+    // 清除AI设置按钮
+    const clearAiSettingsButton = document.getElementById("clear-ai-settings");
+    if (clearAiSettingsButton) {
+      clearAiSettingsButton.addEventListener("click", () => {
+        if (confirm("确定要清除所有AI设置吗？这将删除API密钥和其他配置。")) {
+          this.clearAISettings()
+            .then((success) => {
+              if (success) {
+                // 清空表单值
+                document.getElementById("ai-api-key").value = "";
+                document.getElementById("ai-base-url").value = "";
+                document.getElementById("ai-model").value = "";
+                document.getElementById("ai-max-tokens").value = "800";
+                document.getElementById("ai-temperature").value = "0.7";
+
+                // 隐藏状态显示
+                const statusElem = document.getElementById("connection-status");
+                statusElem.style.display = "none";
+
+                // 更新底部栏的AI模型显示
+                const aiModelDisplay = document.querySelector(".ai-model");
+                if (aiModelDisplay) {
+                  aiModelDisplay.textContent = "未设置";
+                }
+
+                this.showMessage("所有AI设置已清除", "info");
+              }
+            })
+            .catch((error) => {
+              console.error("清除AI设置失败:", error);
+              this.showMessage(`清除失败: ${error.message}`, "error");
+            });
+        }
+      });
+    }
+
     // 保存设置
     saveButton.addEventListener("click", () => {
       // 保存AI设置
@@ -836,84 +894,87 @@ class App {
           this.showMessage(`保存失败: ${error.message}`, "error");
         });
     });
+
+    // 设置API密钥可见性切换
+    const toggleApiKeyBtn = document.getElementById("toggle-api-key");
+    const apiKeyInput = document.getElementById("ai-api-key");
+
+    if (toggleApiKeyBtn && apiKeyInput) {
+      apiKeyInput.type = "password"; // 默认隐藏
+
+      toggleApiKeyBtn.addEventListener("click", () => {
+        if (apiKeyInput.type === "password") {
+          apiKeyInput.type = "text"; // 显示密钥
+          toggleApiKeyBtn.title = "隐藏密钥";
+          toggleApiKeyBtn.querySelector(".eye-icon").style.opacity = "1";
+        } else {
+          apiKeyInput.type = "password"; // 隐藏密钥
+          toggleApiKeyBtn.title = "显示密钥";
+          toggleApiKeyBtn.querySelector(".eye-icon").style.opacity = "0.7";
+        }
+      });
+    }
+  }
+
+  // 清除AI设置
+  async clearAISettings() {
+    try {
+      const response = await fetch("/api/settings/ai/clear", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.message || "清除设置失败");
+      }
+
+      return true;
+    } catch (error) {
+      console.error("清除AI设置失败:", error);
+      throw error;
+    }
   }
 
   // 加载AI设置
   async loadAISettings() {
     try {
-      const response = await fetch("/api/settings/ai");
-      if (!response.ok) {
-        throw new Error(`服务器错误: ${response.status}`);
-      }
-
+      const response = await fetch("/api/ai-settings");
       const data = await response.json();
+
       if (data.success && data.settings) {
-        const settings = data.settings;
+        // 填充表单 - 确保ID与HTML中的匹配
+        const apiKeyInput = document.getElementById("ai-api-key");
+        apiKeyInput.value = data.settings.apiKey || "";
+        apiKeyInput.type = "password"; // 确保密钥默认是隐藏的
 
-        // 填充表单
-        document.getElementById("ai-api-key").value = settings.apiKey || "";
-        document.getElementById("ai-api-key").placeholder = settings.hasApiKey
-          ? "已设置密钥"
-          : "输入API密钥";
-        document.getElementById("ai-base-url").value = settings.baseURL || "";
-        document.getElementById("ai-model").value = settings.model || "";
+        document.getElementById("ai-base-url").value =
+          data.settings.baseURL || "https://api.openai.com/v1";
+        document.getElementById("ai-model").value =
+          data.settings.model || "gpt-3.5-turbo";
         document.getElementById("ai-max-tokens").value =
-          settings.maxTokens || 300;
+          data.settings.maxTokens || 800;
+        document.getElementById("ai-temperature").value =
+          data.settings.temperature || 0.7;
 
-        const temperatureInput = document.getElementById("ai-temperature");
-        temperatureInput.value = settings.temperature || 0.7;
-        const temperatureDisplay = temperatureInput.nextElementSibling;
-        if (temperatureDisplay) {
-          temperatureDisplay.textContent = temperatureInput.value;
-        }
-
-        // 更新AI模型显示
+        // 更新底部栏的AI模型显示
         const aiModelDisplay = document.querySelector(".ai-model");
-        if (aiModelDisplay) {
-          aiModelDisplay.textContent = settings.model || "deepseek-chat";
+        if (aiModelDisplay && data.settings.model) {
+          // 提取模型名称的简短版本，去掉前缀如"gpt-"
+          const modelName =
+            data.settings.model.split("-").pop() || data.settings.model;
+          aiModelDisplay.textContent = modelName;
         }
 
-        // 添加测试API按钮
-        const aiPanel = document.getElementById("ai-panel");
-        if (aiPanel) {
-          // 检查是否已经存在测试按钮，避免重复添加
-          if (!document.getElementById("test-ai-api")) {
-            const buttonContainer = document.createElement("div");
-            buttonContainer.className = "setting-actions";
-            buttonContainer.style.marginTop = "15px";
-            buttonContainer.style.marginBottom = "15px";
-            buttonContainer.style.display = "flex";
-            buttonContainer.style.justifyContent = "center";
-
-            const testButton = document.createElement("button");
-            testButton.id = "test-ai-api";
-            testButton.className = "btn secondary";
-            testButton.textContent = "测试API连接";
-            testButton.style.marginRight = "10px";
-            testButton.onclick = () => this.testAIConnection();
-
-            buttonContainer.appendChild(testButton);
-
-            // 查找保存按钮
-            const saveBtn = aiPanel.querySelector(".settings-save");
-
-            // 如果找到按钮所在位置，在它之前插入测试按钮
-            if (saveBtn && saveBtn.parentNode) {
-              saveBtn.parentNode.parentNode.insertBefore(
-                buttonContainer,
-                saveBtn.parentNode
-              );
-            } else {
-              // 否则添加到面板末尾
-              aiPanel.appendChild(buttonContainer);
-            }
-          }
-        }
-
-        console.log("AI设置已加载");
+        console.log("AI设置已加载:", data.settings);
+      } else {
+        console.warn("未找到AI设置或加载失败");
       }
     } catch (error) {
       console.error("加载AI设置失败:", error);
+      this.showMessage("无法加载AI设置", "error");
     }
   }
 
@@ -963,12 +1024,15 @@ class App {
         throw new Error(data.message || "保存设置失败");
       }
 
-      // 更新AI模型显示
+      // 更新AI模型显示在底部栏
       const aiModelDisplay = document.querySelector(".ai-model");
       if (aiModelDisplay) {
-        aiModelDisplay.textContent = model;
+        // 提取模型名称的简短版本，去掉前缀如"gpt-"
+        const modelName = model.split("-").pop() || model;
+        aiModelDisplay.textContent = modelName;
       }
 
+      this.showMessage("AI设置已成功保存", "success");
       return true;
     } catch (error) {
       console.error("保存AI设置失败:", error);
@@ -978,35 +1042,37 @@ class App {
 
   // 测试AI连接
   async testAIConnection() {
-    const testButton = document.getElementById("test-ai-api");
-    const originalText = testButton.textContent;
-    testButton.textContent = "正在测试...";
-    testButton.disabled = true;
+    const statusElem = document.getElementById("connection-status");
+    statusElem.style.display = "block";
+    statusElem.className = "ai-test-status info";
+    statusElem.textContent = "正在测试API连接...";
 
     try {
-      // 首先尝试保存当前设置
-      await this.saveAISettings();
-
-      // 发送测试请求
-      const response = await fetch("/api/test-ai-connection");
+      const response = await fetch("/api/test");
       const data = await response.json();
 
       if (data.success) {
-        this.showMessage(
-          "API连接成功！" + (data.message ? ` ${data.message}` : ""),
-          "success"
-        );
+        statusElem.className = "ai-test-status success";
+        statusElem.textContent = "✓ 连接成功！API密钥有效。";
       } else {
-        this.showMessage(
-          "API连接失败: " + (data.message || "未知错误"),
-          "error"
-        );
+        statusElem.className = "ai-test-status error";
+        statusElem.textContent = `✗ 连接失败: ${data.message || "未知错误"}`;
+
+        // 如果有更详细的配置状态信息
+        if (data.configStatus) {
+          const details = [];
+          if (!data.configStatus.hasApiKey) details.push("缺少API密钥");
+          if (!data.configStatus.hasBaseUrl) details.push("缺少基础URL");
+          if (!data.configStatus.hasModel) details.push("缺少模型设置");
+
+          if (details.length > 0) {
+            statusElem.textContent += ` (${details.join(", ")})`;
+          }
+        }
       }
     } catch (error) {
-      this.showMessage("测试失败: " + error.message, "error");
-    } finally {
-      testButton.textContent = originalText;
-      testButton.disabled = false;
+      statusElem.className = "ai-test-status error";
+      statusElem.textContent = `✗ 请求失败: ${error.message}`;
     }
   }
 

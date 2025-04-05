@@ -515,6 +515,52 @@ router.post("/settings/ai", async (req, res) => {
   }
 });
 
+// 添加清除AI设置的端点
+router.post("/settings/ai/clear", async (req, res) => {
+  try {
+    // 创建空的配置对象
+    const emptyConfig = {
+      apiKey: "",
+      baseURL: "",
+      model: "",
+      maxTokens: 800,
+      temperature: 0.7,
+    };
+
+    // 保存空配置
+    if (saveApiConfig(emptyConfig)) {
+      // 同时也清空环境变量
+      process.env.AI_API_KEY = "";
+      process.env.AI_BASE_URL = "";
+      process.env.AI_MODEL = "";
+      process.env.AI_MAX_TOKENS = "800";
+      process.env.AI_TEMPERATURE = "0.7";
+
+      // 发出配置更新事件
+      if (
+        global.aiConfigUpdated &&
+        typeof global.aiConfigUpdated === "function"
+      ) {
+        global.aiConfigUpdated();
+      }
+
+      res.json({
+        success: true,
+        message: "AI设置已清除",
+      });
+    } else {
+      throw new Error("保存配置文件失败");
+    }
+  } catch (error) {
+    console.error("清除AI设置失败:", error);
+    res.status(500).json({
+      success: false,
+      message: "无法清除AI设置",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
 // 添加测试端点，用于检查API连接
 router.get("/test", (req, res) => {
   // 检查AI配置是否存在
