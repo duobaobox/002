@@ -931,6 +931,19 @@ class App {
         throw new Error(data.message || "清除设置失败");
       }
 
+      // 直接清空UI上的所有输入框，不依赖后续的loadAISettings
+      document.getElementById("ai-api-key").value = "";
+      document.getElementById("ai-base-url").value = "";
+      document.getElementById("ai-model").value = "";
+      document.getElementById("ai-max-tokens").value = "800";
+      document.getElementById("ai-temperature").value = "0.7";
+
+      // 更新底部栏显示
+      const aiModelDisplay = document.querySelector(".ai-model");
+      if (aiModelDisplay) {
+        aiModelDisplay.textContent = "未设置";
+      }
+
       return true;
     } catch (error) {
       console.error("清除AI设置失败:", error);
@@ -942,39 +955,76 @@ class App {
   async loadAISettings() {
     try {
       const response = await fetch("/api/ai-settings");
+
+      // 检查响应类型
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error(`收到非JSON响应: ${contentType}`);
+      }
+
       const data = await response.json();
 
       if (data.success && data.settings) {
+        const settings = data.settings;
+
+        // 检查是否是空配置
+        const isEmpty =
+          settings.isEmpty ||
+          (!settings.apiKey && !settings.baseURL && !settings.model);
+
         // 填充表单 - 确保ID与HTML中的匹配
         const apiKeyInput = document.getElementById("ai-api-key");
-        apiKeyInput.value = data.settings.apiKey || "";
+        apiKeyInput.value = isEmpty ? "" : settings.apiKey || "";
         apiKeyInput.type = "password"; // 确保密钥默认是隐藏的
 
-        document.getElementById("ai-base-url").value =
-          data.settings.baseURL || "https://api.openai.com/v1";
-        document.getElementById("ai-model").value =
-          data.settings.model || "gpt-3.5-turbo";
+        // 只有当配置非空时，才填充默认值
+        document.getElementById("ai-base-url").value = isEmpty
+          ? ""
+          : settings.baseURL || "";
+        document.getElementById("ai-model").value = isEmpty
+          ? ""
+          : settings.model || "";
         document.getElementById("ai-max-tokens").value =
-          data.settings.maxTokens || 800;
+          settings.maxTokens || 800;
         document.getElementById("ai-temperature").value =
-          data.settings.temperature || 0.7;
+          settings.temperature || 0.7;
 
         // 更新底部栏的AI模型显示
         const aiModelDisplay = document.querySelector(".ai-model");
-        if (aiModelDisplay && data.settings.model) {
-          // 提取模型名称的简短版本，去掉前缀如"gpt-"
-          const modelName =
-            data.settings.model.split("-").pop() || data.settings.model;
-          aiModelDisplay.textContent = modelName;
+        if (aiModelDisplay) {
+          if (isEmpty || !settings.model) {
+            aiModelDisplay.textContent = "未设置";
+          } else {
+            // 提取模型名称的简短版本，去掉前缀如"gpt-"
+            const modelName = settings.model.split("-").pop() || settings.model;
+            aiModelDisplay.textContent = modelName;
+          }
         }
 
-        console.log("AI设置已加载:", data.settings);
+        console.log("AI设置已加载:", isEmpty ? "空配置" : settings);
       } else {
         console.warn("未找到AI设置或加载失败");
+
+        // 更新底部栏显示为未设置状态
+        const aiModelDisplay = document.querySelector(".ai-model");
+        if (aiModelDisplay) {
+          aiModelDisplay.textContent = "未设置";
+        }
+
+        // 清空所有输入框
+        document.getElementById("ai-api-key").value = "";
+        document.getElementById("ai-base-url").value = "";
+        document.getElementById("ai-model").value = "";
       }
     } catch (error) {
       console.error("加载AI设置失败:", error);
       this.showMessage("无法加载AI设置", "error");
+
+      // 确保在错误情况下也更新UI
+      const aiModelDisplay = document.querySelector(".ai-model");
+      if (aiModelDisplay) {
+        aiModelDisplay.textContent = "未设置";
+      }
     }
   }
 

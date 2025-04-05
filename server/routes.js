@@ -444,6 +444,53 @@ router.get("/settings/ai", async (req, res) => {
   }
 });
 
+// 添加新的API端点 - 获取AI设置
+router.get("/ai-settings", async (req, res) => {
+  try {
+    // 从配置文件中读取设置
+    const aiSettings = getApiConfig();
+
+    // 检查设置是否为空 - 如果全部配置都为空，则真正返回空值，而不是默认值
+    const isEmptyConfig =
+      !aiSettings.apiKey && !aiSettings.baseURL && !aiSettings.model;
+
+    // 如果是空配置，则返回所有字段为空
+    if (isEmptyConfig) {
+      return res.json({
+        success: true,
+        settings: {
+          apiKey: "",
+          baseURL: "",
+          model: "",
+          maxTokens: 800,
+          temperature: 0.7,
+          isEmpty: true, // 添加标志表示这是一个空配置
+        },
+      });
+    }
+
+    // 处理API密钥 - 出于安全考虑，返回一个掩码版本
+    if (aiSettings.apiKey) {
+      // 仅显示前四位和后四位
+      const prefix = aiSettings.apiKey.substring(0, 4);
+      const suffix = aiSettings.apiKey.substring(aiSettings.apiKey.length - 4);
+      aiSettings.apiKey = `${prefix}${"*".repeat(10)}${suffix}`;
+      aiSettings.hasApiKey = true; // 添加标志表示已设置密钥
+    } else {
+      aiSettings.hasApiKey = false;
+    }
+
+    res.json({ success: true, settings: aiSettings });
+  } catch (error) {
+    console.error("获取AI设置失败:", error);
+    res.status(500).json({
+      success: false,
+      message: "无法获取AI设置",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
 // 添加新的API端点 - 保存AI设置
 router.post("/settings/ai", async (req, res) => {
   try {
@@ -518,11 +565,11 @@ router.post("/settings/ai", async (req, res) => {
 // 添加清除AI设置的端点
 router.post("/settings/ai/clear", async (req, res) => {
   try {
-    // 创建空的配置对象
+    // 创建空的配置对象 - 确保所有字段真正清空
     const emptyConfig = {
       apiKey: "",
-      baseURL: "",
-      model: "",
+      baseURL: "", // 确保完全清空
+      model: "", // 确保完全清空
       maxTokens: 800,
       temperature: 0.7,
     };
@@ -547,6 +594,7 @@ router.post("/settings/ai/clear", async (req, res) => {
       res.json({
         success: true,
         message: "AI设置已清除",
+        clearedSettings: true, // 添加标志，表示设置已被清除
       });
     } else {
       throw new Error("保存配置文件失败");
