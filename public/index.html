@@ -30,27 +30,40 @@
             </div>
         </div>
 
-        <!-- 底部控制栏 -->
+        <!-- 底部控制栏 - 优化为更紧凑的设计 -->
         <div class="bottom-bar">
-            <!-- 输入区域 -->
-            <div class="input-container">
-                <textarea id="ai-prompt" placeholder="请输入文本"></textarea>
+            <div class="bottom-bar-content">
+                <!-- 重新组织结构，将输入区和按钮区并列放置 -->
+                <div class="bottom-bar-layout">
+                    <!-- 输入区域 -->
+                    <div class="input-container">
+                        <textarea id="ai-prompt" placeholder="输入提示或直接添加便签..."></textarea>
+                    </div>
+
+                    <!-- 操作按钮区域 - 现在与输入框同级 -->
+                    <div class="action-buttons">
+                        <button id="add-note" class="add-button" title="添加空白便签">
+                            <i class="icon-add"></i>
+                        </button>
+                        <button id="ai-generate" class="ai-button" title="AI生成便签">
+                            <i class="icon-ai"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            <!-- 底部操作区域 -->
-            <div class="bottom-actions">
-                <!-- 左侧功能区域 -->
-                <div class="bottom-left-actions">
-                    <!-- AI模型标识 -->
-                    <div class="ai-model">deepseek-chat</div>
-                    <!-- 删除设置按钮 -->
+            <!-- 底部状态栏 -->
+            <div class="bottom-status-bar">
+                <!-- AI模型标识 - 更加紧凑 -->
+                <div class="ai-model-indicator">
+                    <span class="ai-model-icon">AI</span>
+                    <span class="ai-model">deepseek-chat</span>
                 </div>
 
-                <!-- 操作按钮区域 -->
-                <div class="action-buttons">
-                    <button id="add-note" class="add-button">添加便笺</button>
-                    <button id="ai-generate" class="ai-button">AI生成便笺</button>
-                </div>
+                <!-- 折叠/展开控制按钮 -->
+                <button class="toggle-bar-button" title="折叠/展开输入区域">
+                    <i class="icon-chevron-up"></i>
+                </button>
             </div>
         </div>
 
@@ -65,8 +78,8 @@
                 <div class="settings-content">
                     <!-- 左侧导航 -->
                     <div class="settings-nav">
-                        <button class="nav-item active" data-tab="general">通用</button>
                         <button class="nav-item" data-tab="ai">AI 设置</button>
+                        <button class="nav-item active" data-tab="general">通用</button>
                         <button class="nav-item" data-tab="appearance">外观</button>
                         <button class="nav-item" data-tab="backup">备份恢复</button>
                         <button class="nav-item" data-tab="about">关于</button>
@@ -108,7 +121,7 @@
 
                         <!-- AI设置 -->
                         <div class="settings-panel" id="ai-panel">
-                            <h3>AI 生成设置</h3>
+                            <h3>AI配置</h3>
                             <div class="ai-settings-container">
                                 <div class="ai-settings-group">
                                     <h4>API 连接配置</h4>

@@ -6,180 +6,318 @@
  * 2. 输入区域：文本输入框及其各种状态样式
  * 3. 操作按钮：AI生成和添加便签按钮
  * 4. 辅助元素：AI模型标识
- * 
- * 这些样式共同构建了一个功能丰富、视觉友好的底部控制区域，
- * 是用户与应用主要交互的入口之一。
+ * 5. 折叠/展开控制
  */
 
-/* 底部控制栏相关样式 */
-
-/* 新的底部控制栏样式 */
+/* 底部控制栏基础样式 */
 .bottom-bar {
   position: fixed;
-  bottom: 20px;
+  bottom: 15px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse; /* 反转方向，状态栏在顶部，内容区在底部 */
   background-color: #ffffff;
-  border-radius: 20px;
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
-  padding: 16px;
-  max-width: 550px;
-  width: 80%;
-  border: 1px solid #e8e8e8;
+  border-radius: 18px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  width: 500px;
+  max-width: 85%;
+  border: 1px solid rgba(232, 232, 232, 0.8);
   overflow: hidden;
-  z-index: 9999; /* 添加极高的z-index确保控制栏永远在最上层 */
+  z-index: 9999;
+  transition: height 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
 }
 
-/* 底部操作区域 */
-.bottom-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 15px;
+/* 添加悬停效果，微妙提升 */
+.bottom-bar:hover {
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
 }
 
-/* 左侧功能区域 (包含AI模型标识和网页按钮) */
-.bottom-left-actions {
-  display: flex;
-  align-items: center;
-  gap: 5px; /* 按钮之间的间隔 */
+/* 底部栏内容区 */
+.bottom-bar-content {
+  padding: 10px;
+  transition: height 0.3s ease, opacity 0.3s ease, max-height 0.3s ease;
+  max-height: 60px;
 }
 
-/* AI模型标识样式 */
-.ai-model {
-  background-color: #eef3ff;
-  color: #666666;
-  padding: 8px 16px;
-  border-radius: 30px;
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 0.2px;
-}
-
-/* 网页按钮样式 - 已删除 */
-/* .web-button {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background-color: #f0f4ff;
-  color: #1a73e8;
+/* 新增：底部栏布局容器，用于水平排列输入框和按钮 */
+.bottom-bar-layout {
   display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: none;
-  font-size: 16px;
-  padding: 0;
-} */
+  gap: 8px; /* 输入框和按钮之间的间距 */
+}
 
-/* .web-button:hover {
-  background-color: #e8f0fe;
-  transform: translateY(-2px);
-  box-shadow: 0 2px 5px rgba(26, 115, 232, 0.2);
-} */
-
-/* .web-button:active {
-  transform: translateY(0);
-} */
-
-/* 输入区域样式 */
+/* 输入容器及输入框 */
 .input-container {
+  flex: 1; /* 让输入框容器占据剩余空间 */
+  position: relative;
   width: 100%;
+  display: flex;
+  align-items: center;
+  margin-right: 0; /* 确保容器不会有右侧外边距 */
+  box-sizing: border-box; /* 确保边框不会增加宽度 */
 }
 
 #ai-prompt {
   width: 100%;
-  padding: 8px 8px; /* 减小上下内边距从16px到10px，左右从20px到16px */
-  border: 1px solid transparent; /* 默认透明边框，避免布局跳动 */
+  padding: 8px 12px;
+  border: 1px solid transparent;
   border-radius: 12px;
   resize: none;
   outline: none;
-  height: 50px; /* 可能也需要减小高度 */
+  height: 36px; /* 减小高度 */
   font-family: inherit;
-  font-size: 14px;
+  font-size: 12px;
   color: #333;
   background-color: #f5f5f5;
-  transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s; /* 添加过渡效果 */
+  transition: all 0.3s ease;
 }
 
 #ai-prompt:focus {
   background-color: #f1f1f1;
-  border-color: rgba(26, 115, 232, 0.4); /* 使用主蓝色但半透明 */
-  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1); /* 添加微妙的外发光效果 */
+  border-color: rgba(26, 115, 232, 0.4);
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
 }
 
 #ai-prompt::placeholder {
   color: #999;
-  font-size: 14px;
+  font-size: 12px; /* 从14px减小到12px */
 }
 
-/* 操作按钮区域 */
+/* 自定义滚动条样式 */
+#ai-prompt::-webkit-scrollbar {
+  width: 6px; /* 滚动条宽度 */
+}
+
+#ai-prompt::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2); /* 滚动条颜色 */
+  border-radius: 3px; /* 圆角 */
+}
+
+#ai-prompt::-webkit-scrollbar-track {
+  background: transparent; /* 透明轨道背景 */
+}
+
+/* 操作按钮区域 - 现在与输入框同级 */
 .action-buttons {
   display: flex;
-  justify-content: flex-end;
-  gap: 10px;
+  gap: 8px; /* 按钮之间的间距 */
+  align-items: center;
 }
 
-/* AI生成按钮样式 */
+/* 样式图标 */
+.icon-add,
+.icon-ai {
+  font-size: 16px;
+  display: inline-block;
+}
+
+.icon-add:before {
+  content: "+";
+}
+
+.icon-ai:before {
+  content: "AI";
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* 添加便签按钮 */
+.add-button {
+  background-color: #34a853;
+  color: white;
+  height: 28px;
+  width: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 18px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.add-button:hover {
+  background-color: #2d8e47;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+/* AI生成按钮 */
 .ai-button {
   background-color: #1a73e8;
   color: white;
-  padding: 0 24px; /* 修改上下内边距为0，保持左右内边距不变 */
-  height: 32px; /* 明确设置高度为32px */
-  line-height: 32px; /* 设置行高与高度相同，确保文本垂直居中 */
-  border-radius: 30px;
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 0.3px;
-  transition: all 0.3s;
-  box-shadow: 0 2px 5px rgba(26, 115, 232, 0.2);
+  height: 28px;
+  width: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   display: none; /* 默认隐藏AI按钮 */
-  border: none; /* 确保没有边框 */
 }
 
 .ai-button:hover {
   background-color: #1557b0;
-  box-shadow: 0 3px 8px rgba(26, 115, 232, 0.3);
   transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
 }
 
-/* AI生成按钮禁用状态 */
 .ai-button:disabled {
   background-color: #b0bec5;
   color: #e0e0e0;
   cursor: not-allowed;
   box-shadow: none;
-  pointer-events: none; /* 禁止所有鼠标事件，包括hover */
+  pointer-events: none;
 }
 
-/* 确保禁用状态下不显示悬停效果 */
-.ai-button:disabled:hover {
-  background-color: #b0bec5;
-  transform: none;
-  box-shadow: none;
+/* 生成中的动画效果 - 脉冲扩散 */
+.ai-button.generating::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: ai-pulse 1.5s infinite ease-in-out;
 }
 
-/* 添加便笺按钮样式 */
-.add-button {
-  background-color: #34a853;
-  color: white;
-  padding: 0 24px; /* 修改上下内边距为0，保持一致性 */
-  height: 32px; /* 设置相同高度 */
-  line-height: 32px; /* 设置行高与高度相同 */
-  border-radius: 30px;
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 0.3px;
-  transition: all 0.3s;
-  box-shadow: 0 2px 5px rgba(52, 168, 83, 0.2);
-  border: none; /* 确保没有边框 */
+/* 生成中的按钮图标动画 */
+.ai-button.generating .icon-ai:before {
+  content: ""; /* 清空AI文字 */
 }
 
-.add-button:hover {
-  background-color: #2d8e47;
-  box-shadow: 0 3px 8px rgba(52, 168, 83, 0.3);
-  transform: translateY(-1px);
+/* 脉冲动画关键帧 */
+@keyframes ai-pulse {
+  0% {
+    width: 0;
+    height: 0;
+    opacity: 1;
+  }
+  100% {
+    width: 40px;
+    height: 40px;
+    opacity: 0;
+  }
+}
+
+/* 旋转动画关键帧 */
+@keyframes ai-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* 加载旋转动画 */
+@keyframes ai-spinner {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* 底部状态栏 */
+.bottom-status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 12px;
+  background-color: #f9f9f9;
+  border-bottom: 1px solid #eee; /* 从top改为bottom */
+  font-size: 12px;
+  color: #666;
+}
+
+/* AI模型指示器 */
+.ai-model-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ai-model-icon {
+  background-color: #e1f5fe;
+  color: #0288d1;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 3px;
+  border-radius: 4px;
+}
+
+.ai-model {
+  color: #666;
+  font-size: 12px;
+}
+
+/* 折叠/展开控制按钮 */
+.toggle-bar-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #888;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  background-color: #f0f0f0;
+}
+
+.toggle-bar-button:hover {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.icon-chevron-up:before {
+  content: "▼"; /* 默认向下箭头，表示可以展开 */
+  font-size: 8px;
+}
+
+/* 折叠状态类 - 修改为向上展开的逻辑 */
+.bottom-bar.collapsed .bottom-bar-content {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+.bottom-bar.collapsed .toggle-bar-button .icon-chevron-up:before {
+  content: "▲"; /* 折叠状态显示向上箭头，表示点击可展开 */
+}
+
+/* 响应式设计 */
+@media screen and (max-width: 768px) {
+  .bottom-bar {
+    width: 90%;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .bottom-bar {
+    width: 95%;
+  }
+
+  #ai-prompt {
+    height: 32px;
+    font-size: 13px;
+  }
 }

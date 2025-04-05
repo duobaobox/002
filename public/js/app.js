@@ -66,6 +66,47 @@ class App {
         }
       }
     });
+
+    // 底部控制栏折叠/展开功能
+    const toggleBarButton = document.querySelector(".toggle-bar-button");
+    if (toggleBarButton) {
+      toggleBarButton.addEventListener("click", () => {
+        const bottomBar = document.querySelector(".bottom-bar");
+        bottomBar.classList.toggle("collapsed");
+
+        // 保存折叠状态到本地存储
+        const isCollapsed = bottomBar.classList.contains("collapsed");
+        localStorage.setItem("bottomBarCollapsed", isCollapsed);
+
+        // 更新按钮提示文本 - 修改提示文本以匹配新的展开方向
+        toggleBarButton.title = isCollapsed
+          ? "向上展开输入区域"
+          : "隐藏输入区域";
+      });
+
+      // 加载保存的折叠状态
+      const savedCollapsedState = localStorage.getItem("bottomBarCollapsed");
+      if (savedCollapsedState === "true") {
+        document.querySelector(".bottom-bar").classList.add("collapsed");
+        toggleBarButton.title = "向上展开输入区域";
+      } else {
+        toggleBarButton.title = "隐藏输入区域";
+      }
+    }
+
+    // 自动聚焦到输入框当用户点击底部栏时（如果不处于折叠状态）
+    const bottomBar = document.querySelector(".bottom-bar");
+    bottomBar.addEventListener("click", (e) => {
+      // 只在点击底部栏而不是其中的控件时聚焦
+      if (
+        e.target === bottomBar ||
+        e.target.classList.contains("bottom-bar-content")
+      ) {
+        if (!bottomBar.classList.contains("collapsed")) {
+          promptElement.focus();
+        }
+      }
+    });
   }
 
   // 根据输入内容更新按钮可见性
@@ -259,7 +300,6 @@ class App {
     const promptElement = document.getElementById("ai-prompt");
     const prompt = promptElement.value.trim();
     const generateButton = document.getElementById("ai-generate");
-    const originalText = generateButton.textContent;
 
     if (!prompt) {
       // 使用更友好的提示方式
@@ -299,10 +339,10 @@ class App {
         return;
       }
 
-      // 禁用按钮和输入框
+      // 禁用按钮和输入框，添加生成中的动画样式
       generateButton.disabled = true;
-      promptElement.disabled = true; // 新增：禁用文本输入框
-      generateButton.textContent = "生成中...";
+      generateButton.classList.add("generating"); // 添加生成中的动画类
+      promptElement.disabled = true; // 禁用文本输入框
 
       // 首先创建一个空便签，准备接收流式内容
       const { noteElement, noteId } = createEmptyAiNote();
@@ -440,8 +480,8 @@ class App {
     } finally {
       // 恢复按钮和输入框状态
       generateButton.disabled = false;
-      promptElement.disabled = false; // 新增：恢复文本输入框
-      generateButton.textContent = originalText;
+      generateButton.classList.remove("generating"); // 移除生成中的动画类
+      promptElement.disabled = false; // 恢复文本输入框
     }
   }
 
