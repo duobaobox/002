@@ -360,13 +360,28 @@ router.post("/generate", async (req, res) => {
   console.log("收到生成请求，提示:", prompt);
 
   try {
-    // 使用Promise.race添加超时控制
+    // 使用更短的超时时间，提高用户体验
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("AI生成请求超时")), 30000);
+      setTimeout(() => reject(new Error("AI生成请求超时")), 20000);
     });
 
-    const generationPromise = aiService.generateText(prompt);
+    // 快速检查是否已验证过API密钥
+    if (!aiService.isVerified && aiService.lastVerifiedTime === 0) {
+      // 如果从未验证过，返回需要验证的提示，但同时在后台进行验证
+      setTimeout(() => {
+        aiService
+          .backgroundVerify()
+          .catch((e) => console.error("后台验证出错:", e));
+      }, 0);
 
+      return res.status(202).json({
+        success: false,
+        needVerification: true,
+        message: "正在验证API密钥，请稍后再试",
+      });
+    }
+
+    const generationPromise = aiService.generateText(prompt);
     const text = await Promise.race([generationPromise, timeoutPromise]);
 
     console.log("生成成功，返回文本长度:", text.length);
@@ -378,6 +393,21 @@ router.post("/generate", async (req, res) => {
     });
   } catch (error) {
     console.error("AI服务调用失败:", error);
+
+    // 如果是网络或验证错误，在后台重新触发验证
+    if (
+      error.message.includes("network") ||
+      error.message.includes("API密钥") ||
+      error.message.includes("验证失败")
+    ) {
+      setTimeout(() => {
+        aiService.lastVerifiedTime = 0; // 强制重新验证
+        aiService
+          .backgroundVerify()
+          .catch((e) => console.error("后台验证出错:", e));
+      }, 0);
+    }
+
     return res.status(500).json({
       success: false,
       message: `AI调用错误: ${error.message || "未知AI服务错误"}`,

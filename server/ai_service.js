@@ -5,16 +5,28 @@ class AIService {
   constructor() {
     this.initializeService();
     this.cache = new Map(); // 缓存已生成的文本
+    this.isVerified = false; // 验证状态
+    this.lastVerifiedTime = 0; // 上次验证时间
+    this.verificationCacheTime = 30 * 60 * 1000; // 验证结果缓存时间（30分钟）
+    this.isVerifying = false; // 是否正在验证中
 
     // 注册全局配置更新函数
     global.aiConfigUpdated = () => {
       console.log("检测到AI配置更新，重新初始化服务...");
       this.initializeService();
+      // 配置更改时，触发后台验证
+      this.backgroundVerify();
     };
+
+    // 服务启动后立即在后台验证API密钥
+    setTimeout(() => this.backgroundVerify(), 1000);
   }
 
   // 初始化OpenAI服务
   initializeService() {
+    // 保存之前的验证状态
+    const prevVerified = this.isVerified;
+
     // 从环境变量获取最新配置
     this.config = {
       apiKey: process.env.AI_API_KEY || config.apiKey,
@@ -63,11 +75,36 @@ class AIService {
         console.log("AI服务已初始化，使用模型:", this.config.model);
         console.log("API密钥预览:", apiKeyPreview);
 
-        // 设置验证状态为未验证
-        this.isVerified = false;
+        // 如果配置与上次不同，重置验证状态
+        const configChanged =
+          this.lastConfig &&
+          (this.lastConfig.apiKey !== this.config.apiKey ||
+            this.lastConfig.baseURL !== this.config.baseURL ||
+            this.lastConfig.model !== this.config.model);
+
+        if (configChanged) {
+          console.log("检测到配置变更，重置验证状态");
+          this.isVerified = false;
+          this.lastVerifiedTime = 0;
+        } else if (prevVerified) {
+          // 如果配置未变且之前已验证通过，保持验证状态
+          console.log(
+            "配置未变更，保持验证状态:",
+            prevVerified ? "已验证" : "未验证"
+          );
+          this.isVerified = prevVerified;
+        } else {
+          // 配置未变但之前未验证通过，设为未验证
+          this.isVerified = false;
+        }
+
+        // 保存当前配置用于下次比较
+        this.lastConfig = { ...this.config };
       } catch (error) {
         console.error("初始化OpenAI客户端失败:", error.message);
         this.openai = null;
+        this.isVerified = false;
+        this.lastVerifiedTime = 0;
       }
     } else {
       console.log("AI服务尚未配置，请在设置中完成配置");
@@ -77,6 +114,33 @@ class AIService {
         model: !this.config.model,
       });
       this.openai = null;
+      this.isVerified = false;
+      this.lastVerifiedTime = 0;
+    }
+  }
+
+  /**
+   * 后台验证API密钥
+   * 不阻塞用户操作，提前完成验证
+   */
+  async backgroundVerify() {
+    try {
+      // 如果已经在验证中，或配置不完整，则跳过
+      if (this.isVerifying || !this.openai) {
+        return;
+      }
+
+      this.isVerifying = true;
+      console.log("后台验证API密钥...");
+
+      // 执行实际验证
+      await this.verifyApiKey();
+
+      console.log("后台验证完成, 结果:", this.isVerified ? "成功" : "失败");
+    } catch (error) {
+      console.error("后台验证出错:", error);
+    } finally {
+      this.isVerifying = false;
     }
   }
 
@@ -89,20 +153,33 @@ class AIService {
       return false;
     }
 
+    // 如果已经验证过且在缓存时间内，直接返回缓存的结果
+    const now = Date.now();
+    if (
+      this.lastVerifiedTime > 0 &&
+      now - this.lastVerifiedTime < this.verificationCacheTime
+    ) {
+      console.log("使用缓存的验证结果:", this.isVerified ? "有效" : "无效");
+      return this.isVerified;
+    }
+
     try {
-      // 发送一个最小化请求来验证API密钥
+      // 使用更轻量的请求验证API密钥
       const response = await this.openai.chat.completions.create({
         model: this.config.model,
-        messages: [{ role: "user", content: "Hello" }],
-        max_tokens: 1, // 只请求最少的token以减少开销
+        messages: [{ role: "user", content: "test" }],
+        max_tokens: 1, // 只请求1个token以减少开销
+        temperature: 0,
       });
 
       this.isVerified = true;
+      this.lastVerifiedTime = now;
       console.log("API密钥验证成功");
       return true;
     } catch (error) {
       console.error("API密钥验证失败:", error.message);
       this.isVerified = false;
+      this.lastVerifiedTime = now; // 即使失败也更新验证时间，避免频繁重试失败的密钥
 
       // 根据错误类型设置更友好的错误消息
       if (error.response && error.response.status === 401) {
@@ -134,10 +211,22 @@ class AIService {
         throw new Error("AI服务尚未配置，请在设置中配置API密钥、URL和模型");
       }
 
-      // 如果未验证过API密钥，先进行验证
+      // 验证API密钥（使用缓存结果）
       if (!this.isVerified) {
-        const isValid = await this.verifyApiKey();
-        if (!isValid) {
+        const now = Date.now();
+        // 如果从未验证过或者距离上次验证失败超过缓存时间，则重新验证
+        if (
+          this.lastVerifiedTime === 0 ||
+          now - this.lastVerifiedTime >= this.verificationCacheTime
+        ) {
+          const isValid = await this.verifyApiKey();
+          if (!isValid) {
+            throw new Error(
+              this.authError || "API密钥验证失败，请检查您的配置"
+            );
+          }
+        } else if (!this.isVerified) {
+          // 如果在缓存期内已知密钥无效，直接返回错误
           throw new Error(this.authError || "API密钥验证失败，请检查您的配置");
         }
       }

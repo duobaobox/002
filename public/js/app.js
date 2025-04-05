@@ -543,6 +543,29 @@ class App {
 
       const data = await response.json();
 
+      // 处理API密钥验证中的情况
+      if (!response.ok && response.status === 202 && data.needVerification) {
+        // 显示验证中的状态
+        if (noteElement) {
+          const contentElement = noteElement.querySelector(".note-content");
+          if (contentElement) {
+            contentElement.innerHTML =
+              "<p><i>正在验证API连接，请稍候...</i></p>";
+          }
+        }
+
+        // 短暂延迟后重试
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        // 移除临时便签
+        noteElement.remove();
+
+        // 提示用户
+        this.showMessage("API正在初始化中，请稍后再试", "info");
+
+        return;
+      }
+
       if (!response.ok) {
         console.error("服务器响应错误:", data);
         throw new Error(data.message || `服务器响应错误: ${response.status}`);
