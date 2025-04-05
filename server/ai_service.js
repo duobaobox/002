@@ -3,12 +3,43 @@ import config from "../config/ai_config.js";
 
 class AIService {
   constructor() {
-    this.openai = new OpenAI({
-      baseURL: config.baseURL,
-      apiKey: config.apiKey,
-    });
-    this.config = config;
+    this.initializeService();
     this.cache = new Map(); // 缓存已生成的文本
+
+    // 注册全局配置更新函数
+    global.aiConfigUpdated = () => {
+      console.log("检测到AI配置更新，重新初始化服务...");
+      this.initializeService();
+    };
+  }
+
+  // 初始化OpenAI服务
+  initializeService() {
+    // 从环境变量获取最新配置
+    this.config = {
+      apiKey: process.env.AI_API_KEY || config.apiKey,
+      baseURL: process.env.AI_BASE_URL || config.baseURL,
+      model: process.env.AI_MODEL || config.model,
+      maxTokens: parseInt(process.env.AI_MAX_TOKENS || config.maxTokens),
+      temperature: parseFloat(process.env.AI_TEMPERATURE || config.temperature),
+      fallbackConfig: config.fallbackConfig,
+    };
+
+    // 检查是否存在必要的配置
+    const hasRequiredConfig =
+      this.config.apiKey && this.config.baseURL && this.config.model;
+
+    if (hasRequiredConfig) {
+      // 重新创建OpenAI客户端
+      this.openai = new OpenAI({
+        baseURL: this.config.baseURL,
+        apiKey: this.config.apiKey,
+      });
+      console.log("AI服务已初始化，使用模型:", this.config.model);
+    } else {
+      console.log("AI服务尚未配置，请在设置中完成配置");
+      this.openai = null;
+    }
   }
 
   /**
@@ -18,6 +49,11 @@ class AIService {
    */
   async generateText(prompt) {
     try {
+      // 首先检查是否已配置AI服务
+      if (!this.openai) {
+        throw new Error("AI服务尚未配置，请在设置中配置API密钥、URL和模型");
+      }
+
       // 检查缓存
       const cacheKey = this._generateCacheKey(prompt);
       if (this.cache.has(cacheKey)) {

@@ -6,6 +6,8 @@ import routes from "./routes.js";
 import fs from "fs";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+// 导入加载配置的功能
+import { loadConfigToEnv } from "./api_config_store.js";
 
 // 尝试加载.env文件 (如果存在)
 try {
@@ -14,6 +16,9 @@ try {
 } catch (error) {
   console.log(".env模块不可用或.env文件不存在，使用默认环境变量");
 }
+
+// 从存储文件加载API配置到环境变量
+loadConfigToEnv();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

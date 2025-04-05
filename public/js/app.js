@@ -759,6 +759,199 @@ class App {
         alert("导入功能将在后续版本实现");
       }
     });
+
+    // 加载AI设置
+    this.loadAISettings();
+
+    // 测试AI连接
+    const testConnectionButton = document.getElementById("test-ai-connection");
+    if (testConnectionButton) {
+      testConnectionButton.addEventListener("click", () => {
+        this.testAIConnection();
+      });
+    }
+
+    // 保存设置
+    saveButton.addEventListener("click", () => {
+      // 保存AI设置
+      this.saveAISettings()
+        .then((success) => {
+          if (success) {
+            settingsModal.classList.remove("visible");
+            this.showMessage("设置已保存", "success");
+          }
+        })
+        .catch((error) => {
+          console.error("保存设置失败:", error);
+          this.showMessage(`保存失败: ${error.message}`, "error");
+        });
+    });
+  }
+
+  // 加载AI设置
+  async loadAISettings() {
+    try {
+      const response = await fetch("/api/settings/ai");
+      if (!response.ok) {
+        throw new Error(`服务器错误: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.success && data.settings) {
+        const settings = data.settings;
+
+        // 填充表单
+        document.getElementById("ai-api-key").value = settings.apiKey || "";
+        document.getElementById("ai-api-key").placeholder = settings.hasApiKey
+          ? "已设置密钥"
+          : "输入API密钥";
+        document.getElementById("ai-base-url").value = settings.baseURL || "";
+        document.getElementById("ai-model").value = settings.model || "";
+        document.getElementById("ai-max-tokens").value =
+          settings.maxTokens || 300;
+
+        const temperatureInput = document.getElementById("ai-temperature");
+        temperatureInput.value = settings.temperature || 0.7;
+        const temperatureDisplay = temperatureInput.nextElementSibling;
+        if (temperatureDisplay) {
+          temperatureDisplay.textContent = temperatureInput.value;
+        }
+
+        // 更新AI模型显示
+        const aiModelDisplay = document.querySelector(".ai-model");
+        if (aiModelDisplay) {
+          aiModelDisplay.textContent = settings.model || "deepseek-chat";
+        }
+
+        console.log("AI设置已加载");
+      }
+    } catch (error) {
+      console.error("加载AI设置失败:", error);
+    }
+  }
+
+  // 保存AI设置
+  async saveAISettings() {
+    try {
+      // 获取表单值
+      const apiKey = document.getElementById("ai-api-key").value;
+      const baseURL = document.getElementById("ai-base-url").value;
+      const model = document.getElementById("ai-model").value;
+      const maxTokens = parseInt(
+        document.getElementById("ai-max-tokens").value
+      );
+      const temperature = parseFloat(
+        document.getElementById("ai-temperature").value
+      );
+
+      // 验证必填字段
+      if (!baseURL || !model) {
+        this.showMessage("请填写API地址和模型名称", "error");
+        return false;
+      }
+
+      // 验证数字
+      if (isNaN(maxTokens) || isNaN(temperature)) {
+        this.showMessage("最大令牌数和温度必须是有效数字", "error");
+        return false;
+      }
+
+      // 发送到服务器
+      const response = await fetch("/api/settings/ai", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          apiKey,
+          baseURL,
+          model,
+          maxTokens,
+          temperature,
+        }),
+      });
+
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.message || "保存设置失败");
+      }
+
+      // 更新AI模型显示
+      const aiModelDisplay = document.querySelector(".ai-model");
+      if (aiModelDisplay) {
+        aiModelDisplay.textContent = model;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("保存AI设置失败:", error);
+      throw error;
+    }
+  }
+
+  // 测试AI连接
+  async testAIConnection() {
+    try {
+      const statusEl = document.getElementById("connection-status");
+      const testButton = document.getElementById("test-ai-connection");
+
+      if (!statusEl || !testButton) return;
+
+      // 更新UI状态
+      statusEl.textContent = "测试中...";
+      statusEl.className = "";
+      testButton.disabled = true;
+
+      // 发送测试请求
+      const response = await fetch("/api/test", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        statusEl.textContent = "连接成功!";
+        statusEl.className = "status-success";
+      } else {
+        statusEl.textContent = "连接失败!";
+        statusEl.className = "status-error";
+      }
+    } catch (error) {
+      console.error("测试AI连接失败:", error);
+      const statusEl = document.getElementById("connection-status");
+      if (statusEl) {
+        statusEl.textContent = "连接失败!";
+        statusEl.className = "status-error";
+      }
+    } finally {
+      // 恢复按钮状态
+      const testButton = document.getElementById("test-ai-connection");
+      if (testButton) {
+        testButton.disabled = false;
+      }
+    }
+  }
+
+  // 显示消息提示
+  showMessage(message, type = "info") {
+    const msgElement = document.createElement("div");
+    msgElement.className = `message message-${type}`;
+    msgElement.textContent = message;
+    document.body.appendChild(msgElement);
+
+    // 显示动画
+    setTimeout(() => {
+      msgElement.classList.add("show");
+      setTimeout(() => {
+        msgElement.classList.remove("show");
+        setTimeout(() => {
+          document.body.removeChild(msgElement);
+        }, 300);
+      }, 3000);
+    }, 10);
   }
 }
 

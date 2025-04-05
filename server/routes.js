@@ -3,6 +3,7 @@ import aiService from "./ai_service.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { getApiConfig, saveApiConfig } from "./api_config_store.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -385,8 +386,119 @@ router.post("/generate", async (req, res) => {
   }
 });
 
+// 添加新的API端点 - 获取AI设置
+router.get("/settings/ai", async (req, res) => {
+  try {
+    // 从配置文件中读取设置
+    const aiSettings = getApiConfig();
+
+    // 处理API密钥 - 出于安全考虑，返回一个掩码版本
+    if (aiSettings.apiKey) {
+      // 仅显示前四位和后四位
+      const prefix = aiSettings.apiKey.substring(0, 4);
+      const suffix = aiSettings.apiKey.substring(aiSettings.apiKey.length - 4);
+      aiSettings.apiKey = `${prefix}${"*".repeat(10)}${suffix}`;
+      aiSettings.hasApiKey = true; // 添加标志表示已设置密钥
+    } else {
+      aiSettings.hasApiKey = false;
+    }
+
+    res.json({ success: true, settings: aiSettings });
+  } catch (error) {
+    console.error("获取AI设置失败:", error);
+    res.status(500).json({
+      success: false,
+      message: "无法获取AI设置",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
+// 添加新的API端点 - 保存AI设置
+router.post("/settings/ai", async (req, res) => {
+  try {
+    const { apiKey, baseURL, model, maxTokens, temperature } = req.body;
+
+    // 验证必填字段
+    if (!baseURL || !model) {
+      return res.status(400).json({
+        success: false,
+        message: "请提供所有必要的设置",
+      });
+    }
+
+    // 验证数值类型
+    if (
+      (maxTokens !== undefined && (isNaN(maxTokens) || maxTokens < 1)) ||
+      (temperature !== undefined &&
+        (isNaN(temperature) || temperature < 0 || temperature > 1))
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "无效的数值设置",
+      });
+    }
+
+    // 获取当前配置，保留可能存在的任何密钥
+    const currentConfig = getApiConfig();
+
+    // 创建新的配置对象
+    const newConfig = {
+      apiKey: apiKey || currentConfig.apiKey, // 如果新密钥为空，保留旧密钥
+      baseURL,
+      model,
+      maxTokens: parseInt(maxTokens),
+      temperature: parseFloat(temperature),
+    };
+
+    // 保存到文件
+    if (saveApiConfig(newConfig)) {
+      // 同时也更新环境变量以便当前会话使用
+      process.env.AI_API_KEY = newConfig.apiKey;
+      process.env.AI_BASE_URL = newConfig.baseURL;
+      process.env.AI_MODEL = newConfig.model;
+      process.env.AI_MAX_TOKENS = newConfig.maxTokens.toString();
+      process.env.AI_TEMPERATURE = newConfig.temperature.toString();
+
+      // 发出配置更新事件
+      if (
+        global.aiConfigUpdated &&
+        typeof global.aiConfigUpdated === "function"
+      ) {
+        global.aiConfigUpdated();
+      }
+
+      res.json({
+        success: true,
+        message: "AI设置已保存",
+      });
+    } else {
+      throw new Error("保存配置文件失败");
+    }
+  } catch (error) {
+    console.error("保存AI设置失败:", error);
+    res.status(500).json({
+      success: false,
+      message: "无法保存AI设置",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
 // 添加测试端点，用于检查API连接
 router.get("/test", (req, res) => {
+  // 检查AI配置是否存在
+  const hasAIConfig =
+    process.env.AI_API_KEY && process.env.AI_BASE_URL && process.env.AI_MODEL;
+
+  if (!hasAIConfig) {
+    return res.json({
+      success: false,
+      message: "AI服务尚未配置，请先在设置中配置API密钥、URL和模型",
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   res.json({
     success: true,
     message: "API服务正常工作",

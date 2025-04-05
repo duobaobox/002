@@ -29,4 +29,9 @@ Thumbs.db
 /out/
 
 # 数据文件
-data/*.json 
+data/*.json
+data/api_config.json
+
+# 忽略IDE和编辑器文件
+*.sublime-project
+*.sublime-workspace

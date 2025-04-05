@@ -142,15 +142,29 @@
                             <h3>AI 设置</h3>
                             <div class="setting-item">
                                 <div class="setting-label">
+                                    <label for="ai-api-key">API 密钥</label>
+                                    <span class="setting-description">您的AI服务API密钥</span>
+                                </div>
+                                <div class="setting-control">
+                                    <input type="password" id="ai-api-key" placeholder="输入API密钥">
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-label">
+                                    <label for="ai-base-url">API 地址</label>
+                                    <span class="setting-description">AI服务的基础URL</span>
+                                </div>
+                                <div class="setting-control">
+                                    <input type="text" id="ai-base-url" placeholder="例如：https://api.deepseek.com">
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-label">
                                     <label for="ai-model">AI 模型</label>
                                     <span class="setting-description">用于生成内容的AI模型</span>
                                 </div>
                                 <div class="setting-control">
-                                    <select id="ai-model">
-                                        <option value="deepseek-chat" selected>DeepSeek Chat</option>
-                                        <option value="deepseek-coder">DeepSeek Coder</option>
-                                        <option value="other">其他</option>
-                                    </select>
+                                    <input type="text" id="ai-model" placeholder="例如：deepseek-reasoner">
                                 </div>
                             </div>
                             <div class="setting-item">
@@ -170,6 +184,12 @@
                                 </div>
                                 <div class="setting-control">
                                     <input type="number" id="ai-max-tokens" min="100" max="2000" step="50" value="300">
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-control">
+                                    <button id="test-ai-connection" class="action-button">测试连接</button>
+                                    <span id="connection-status"></span>
                                 </div>
                             </div>
                         </div>
