@@ -42,7 +42,8 @@ app.use(
         scriptSrc: ["'self'", "https://cdn.jsdelivr.net"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
         imgSrc: ["'self'", "data:"],
-        connectSrc: ["'self'", "https://api.deepseek.com"],
+        // 动态允许API连接
+        connectSrc: ["'self'", process.env.AI_BASE_URL || ""],
         frameSrc: ["'self'", "https://kimi.moonshot.cn"],
         fontSrc: ["'self'", "https://cdn.jsdelivr.net"],
         objectSrc: ["'none'"],

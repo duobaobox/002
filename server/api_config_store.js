@@ -69,16 +69,33 @@ export function saveApiConfig(config) {
   try {
     // 确保目录存在
     if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
+      fs.mkdirSync(dataDir, { recursive: true, mode: 0o755 });
     }
 
     // 保存配置
     fs.writeFileSync(configFilePath, JSON.stringify(config, null, 2), {
       encoding: "utf8",
+      mode: 0o644, // 确保文件有适当的权限
     });
 
-    console.log("API配置已保存");
-    return true;
+    console.log("API配置已保存到:", configFilePath);
+
+    // 验证文件被正确写入
+    if (fs.existsSync(configFilePath)) {
+      const savedSize = fs.statSync(configFilePath).size;
+      console.log(`配置文件大小: ${savedSize} 字节`);
+
+      if (savedSize > 10) {
+        // 基本检查，确保写入了某些内容
+        return true;
+      } else {
+        console.error("配置文件似乎为空或过小");
+        return false;
+      }
+    } else {
+      console.error("保存后无法找到配置文件");
+      return false;
+    }
   } catch (error) {
     console.error("保存API配置失败:", error);
     return false;
@@ -87,15 +104,52 @@ export function saveApiConfig(config) {
 
 // 将配置加载到环境变量
 export function loadConfigToEnv() {
-  const config = getApiConfig();
+  try {
+    console.log("尝试从以下位置加载API配置:", configFilePath);
 
-  if (config.apiKey) process.env.AI_API_KEY = config.apiKey;
-  if (config.baseURL) process.env.AI_BASE_URL = config.baseURL;
-  if (config.model) process.env.AI_MODEL = config.model;
-  if (config.maxTokens) process.env.AI_MAX_TOKENS = config.maxTokens.toString();
-  if (config.temperature)
-    process.env.AI_TEMPERATURE = config.temperature.toString();
+    if (!fs.existsSync(configFilePath)) {
+      console.log("配置文件不存在，创建默认配置");
+      const initialConfig = {
+        apiKey: "",
+        baseURL: "",
+        model: "",
+        maxTokens: 300,
+        temperature: 0.7,
+      };
 
-  console.log("已从文件加载API配置到环境变量");
-  return config;
+      fs.writeFileSync(configFilePath, JSON.stringify(initialConfig, null, 2), {
+        encoding: "utf8",
+      });
+      return initialConfig;
+    }
+
+    const config = getApiConfig();
+
+    console.log("已加载的API配置:", {
+      apiKey: config.apiKey ? "已设置" : "未设置",
+      baseURL: config.baseURL,
+      model: config.model,
+      maxTokens: config.maxTokens,
+      temperature: config.temperature,
+    });
+
+    if (config.apiKey) process.env.AI_API_KEY = config.apiKey;
+    if (config.baseURL) process.env.AI_BASE_URL = config.baseURL;
+    if (config.model) process.env.AI_MODEL = config.model;
+    if (config.maxTokens)
+      process.env.AI_MAX_TOKENS = config.maxTokens.toString();
+    if (config.temperature)
+      process.env.AI_TEMPERATURE = config.temperature.toString();
+
+    return config;
+  } catch (error) {
+    console.error("加载配置到环境变量失败:", error);
+    return {
+      apiKey: "",
+      baseURL: "",
+      model: "",
+      maxTokens: 300,
+      temperature: 0.7,
+    };
+  }
 }

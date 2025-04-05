@@ -492,17 +492,31 @@ router.get("/test", (req, res) => {
     process.env.AI_API_KEY && process.env.AI_BASE_URL && process.env.AI_MODEL;
 
   if (!hasAIConfig) {
+    // 提供更详细的配置状态
     return res.json({
       success: false,
       message: "AI服务尚未配置，请先在设置中配置API密钥、URL和模型",
+      configStatus: {
+        hasApiKey: !!process.env.AI_API_KEY,
+        hasBaseUrl: !!process.env.AI_BASE_URL,
+        hasModel: !!process.env.AI_MODEL,
+      },
       timestamp: new Date().toISOString(),
     });
   }
+
+  // 检查配置文件是否存在
+  const configFilePath = path.join(__dirname, "../data/api_config.json");
+  const fileExists = fs.existsSync(configFilePath);
 
   res.json({
     success: true,
     message: "API服务正常工作",
     timestamp: new Date().toISOString(),
+    configFile: {
+      exists: fileExists,
+      path: configFilePath,
+    },
   });
 });
 

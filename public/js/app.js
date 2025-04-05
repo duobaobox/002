@@ -483,6 +483,30 @@ class App {
     }
 
     try {
+      // 在发送请求前先检查AI配置状态
+      const configCheckResponse = await fetch("/api/test");
+      const configCheckData = await configCheckResponse.json();
+
+      if (!configCheckData.success) {
+        // 如果AI服务未配置，显示友好的错误提示并引导用户设置
+        this.showMessage("AI服务尚未配置，请先在设置中完成配置", "warning");
+
+        // 打开设置面板并切换到AI设置选项卡
+        document.getElementById("settings-modal").classList.add("visible");
+        document
+          .querySelectorAll(".nav-item")
+          .forEach((item) => item.classList.remove("active"));
+        document
+          .querySelector(".nav-item[data-tab='ai']")
+          .classList.add("active");
+        document
+          .querySelectorAll(".settings-panel")
+          .forEach((panel) => panel.classList.remove("active"));
+        document.getElementById("ai-panel").classList.add("active");
+
+        return;
+      }
+
       // 禁用按钮和输入框
       generateButton.disabled = true;
       promptElement.disabled = true; // 新增：禁用文本输入框
