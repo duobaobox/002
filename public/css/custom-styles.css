@@ -332,3 +332,139 @@
     transform: rotate(360deg);
   }
 }
+
+/* 备份和恢复操作按钮样式 */
+.export-button,
+.file-input-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  background-color: #f5f5f7;
+  border: 1px solid #d2d2d7;
+  border-radius: 6px;
+  color: #1d1d1f;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+}
+
+.export-button:hover,
+.file-input-label:hover {
+  background-color: #e8e8ed;
+  border-color: #c4c4c9;
+}
+
+.export-button:active,
+.file-input-label:active {
+  background-color: #dcdce0;
+  transform: scale(0.98);
+}
+
+/* 导出按钮前添加图标 */
+.export-button::before {
+  content: "";
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231d1d1f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'%3E%3C/path%3E%3Cpolyline points='7 10 12 15 17 10'%3E%3C/polyline%3E%3Cline x1='12' y1='15' x2='12' y2='3'%3E%3C/line%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+/* 导入按钮前添加图标 */
+.file-input-label::before {
+  content: "";
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231d1d1f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'%3E%3C/path%3E%3Cpolyline points='17 8 12 3 7 8'%3E%3C/polyline%3E%3Cline x1='12' y1='3' x2='12' y2='15'%3E%3C/line%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+/* 隐藏原始文件输入 */
+.file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* 导入导出操作的提示样式 */
+.backup-status {
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  display: none;
+}
+
+.backup-status.show {
+  display: block;
+}
+
+.backup-status.success {
+  background-color: #e8f5e9;
+  color: #1b5e20;
+}
+
+.backup-status.error {
+  background-color: #ffebee;
+  color: #b71c1c;
+}
+
+.backup-status.info {
+  background-color: #e3f2fd;
+  color: #0d47a1;
+}
+
+/* 重置按钮样式 */
+.reset-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  background-color: #f5f5f7;
+  border: 1px solid #d2d2d7;
+  border-radius: 6px;
+  color: #1d1d1f;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  margin-top: 20px;
+}
+
+/* 重置按钮警告状态 */
+.reset-button.reset-warning {
+  background-color: #fff3e0;
+  border-color: #ffcc80;
+  color: #e65100;
+}
+
+/* 重置按钮危险状态 */
+.reset-button.reset-danger {
+  background-color: #ffebee;
+  border-color: #ef9a9a;
+  color: #b71c1c;
+}
+
+/* 重置进度指示器 */
+.reset-progress {
+  margin-left: 8px;
+  font-size: 12px;
+  letter-spacing: 2px;
+}

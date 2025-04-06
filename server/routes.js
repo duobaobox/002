@@ -699,4 +699,88 @@ router.get("/health", (req, res) => {
   });
 });
 
+// 导入便签数据
+router.post("/notes/import", async (req, res) => {
+  try {
+    // 验证请求体中是否有便签数据
+    const { notes } = req.body;
+
+    if (!notes || !Array.isArray(notes)) {
+      return res.status(400).json({
+        success: false,
+        message: "无效的导入数据",
+      });
+    }
+
+    // 读取当前数据
+    const currentData = await readNotesData();
+
+    // 查找最大ID，确保新导入的便签ID不冲突
+    let maxId = currentData.nextId - 1;
+    notes.forEach((note) => {
+      if (note.id > maxId) maxId = note.id;
+    });
+
+    // 清除现有便签，用导入的便签替换
+    const newData = {
+      notes: notes.map((note) => ({
+        ...note,
+        // 确保每个便签都有所需的字段
+        id: note.id,
+        text: note.text || "",
+        x: note.x || 100,
+        y: note.y || 100,
+        title: note.title || `便签 ${note.id}`,
+        colorClass: note.colorClass || null,
+        zIndex: note.zIndex || 1,
+        createdAt: note.createdAt || new Date().toISOString(),
+        updatedAt: note.updatedAt || new Date().toISOString(),
+      })),
+      nextId: maxId + 1,
+    };
+
+    // 保存新数据
+    await writeNotesData(newData);
+
+    res.json({
+      success: true,
+      message: "便签数据导入成功",
+      importedCount: notes.length,
+    });
+  } catch (error) {
+    console.error("导入便签数据失败:", error);
+    res.status(500).json({
+      success: false,
+      message: "导入便签数据失败",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
+// 重置便签数据API端点
+router.post("/notes/reset", async (req, res) => {
+  try {
+    // 创建空的便签数据结构
+    const emptyData = {
+      notes: [],
+      nextId: 1,
+    };
+
+    // 保存空数据到文件
+    await writeNotesData(emptyData);
+
+    res.json({
+      success: true,
+      message: "便签数据已重置",
+    });
+  } catch (error) {
+    console.error("重置便签数据失败:", error);
+    res.status(500).json({
+      success: false,
+      message: "重置便签数据失败",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
 export default router;

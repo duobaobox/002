@@ -107,6 +107,182 @@ class App {
         }
       }
     });
+
+    // 导出数据
+    const exportButton = document.querySelector(".export-button");
+    exportButton.addEventListener("click", () => {
+      // 导出便签数据功能
+      this.exportNotesData();
+    });
+
+    // 导入数据
+    const importFile = document.getElementById("import-file");
+    importFile.addEventListener("change", (e) => {
+      if (e.target.files.length > 0) {
+        // 导入便签数据功能
+        this.importNotesData(e.target.files[0]);
+        // 清空文件输入，以便同一文件可以再次选择导入
+        importFile.value = "";
+      }
+    });
+
+    // 重置设置
+    const resetButton = document.querySelector(".reset-button");
+    let resetClickCount = 0;
+    let resetClickTimer = null;
+
+    resetButton.addEventListener("click", () => {
+      resetClickCount++;
+
+      // 更新按钮文本，显示还需点击几次
+      if (resetClickCount === 1) {
+        resetButton.innerHTML = `再点击 2 次确认重置 <span class="reset-progress">⚫◯◯</span>`;
+        resetButton.classList.add("reset-warning");
+      } else if (resetClickCount === 2) {
+        resetButton.innerHTML = `再点击 1 次确认重置 <span class="reset-progress">⚫⚫◯</span>`;
+        resetButton.classList.add("reset-danger");
+      } else if (resetClickCount >= 3) {
+        resetButton.innerHTML = `正在重置...`;
+        resetButton.disabled = true;
+
+        // 执行重置操作
+        this.resetAllData()
+          .then((success) => {
+            if (success) {
+              // 重置完成后恢复按钮状态
+              resetButton.innerHTML = `重置所有设置`;
+              resetButton.classList.remove("reset-warning", "reset-danger");
+              resetButton.disabled = false;
+
+              // 显示重置成功消息
+              this.showMessage("所有数据已重置", "success");
+
+              // 重新加载页面以显示空白状态
+              setTimeout(() => {
+                window.location.reload();
+              }, 1500);
+            }
+          })
+          .catch((error) => {
+            console.error("重置失败:", error);
+            this.showMessage(`重置失败: ${error.message}`, "error");
+
+            // 恢复按钮状态
+            resetButton.innerHTML = `重置所有设置`;
+            resetButton.classList.remove("reset-warning", "reset-danger");
+            resetButton.disabled = false;
+          });
+
+        // 重置计数器
+        resetClickCount = 0;
+        if (resetClickTimer) {
+          clearTimeout(resetClickTimer);
+        }
+        return;
+      }
+
+      // 设置超时，如果超过3秒没有下一次点击，则重置计数器
+      if (resetClickTimer) {
+        clearTimeout(resetClickTimer);
+      }
+
+      resetClickTimer = setTimeout(() => {
+        resetClickCount = 0;
+        resetButton.innerHTML = `重置所有设置`;
+        resetButton.classList.remove("reset-warning", "reset-danger");
+      }, 3000);
+    });
+
+    // 清除AI设置按钮
+    const clearAiSettingsButton = document.getElementById("clear-ai-settings");
+    let clearAiClickCount = 0;
+    let clearAiClickTimer = null;
+
+    if (clearAiSettingsButton) {
+      clearAiSettingsButton.addEventListener("click", () => {
+        clearAiClickCount++;
+
+        // 更新按钮文本，显示还需点击几次
+        if (clearAiClickCount === 1) {
+          clearAiSettingsButton.innerHTML = `再点击 2 次确认清除 <span class="reset-progress">⚫◯◯</span>`;
+          clearAiSettingsButton.classList.add("reset-warning");
+        } else if (clearAiClickCount === 2) {
+          clearAiSettingsButton.innerHTML = `再点击 1 次确认清除 <span class="reset-progress">⚫⚫◯</span>`;
+          clearAiSettingsButton.classList.add("reset-danger");
+        } else if (clearAiClickCount >= 3) {
+          clearAiSettingsButton.innerHTML = `正在清除...`;
+          clearAiSettingsButton.disabled = true;
+
+          // 执行清除操作
+          this.clearAISettings()
+            .then((success) => {
+              if (success) {
+                // 清空表单值
+                document.getElementById("ai-api-key").value = "";
+                document.getElementById("ai-base-url").value = "";
+                document.getElementById("ai-model").value = "";
+                document.getElementById("ai-max-tokens").value = "800";
+                document.getElementById("ai-temperature").value = "0.7";
+
+                // 更新温度值显示
+                if (temperatureValue) {
+                  temperatureValue.textContent = "0.7";
+                }
+
+                // 更新底部栏的AI模型显示
+                const aiModelDisplay = document.querySelector(".ai-model");
+                if (aiModelDisplay) {
+                  aiModelDisplay.textContent = "未设置";
+                }
+
+                // 清除完成后恢复按钮状态
+                clearAiSettingsButton.innerHTML = `清除 AI 设置`;
+                clearAiSettingsButton.classList.remove(
+                  "reset-warning",
+                  "reset-danger"
+                );
+                clearAiSettingsButton.disabled = false;
+
+                // 显示成功消息
+                this.showMessage("所有AI设置已清除", "success");
+              }
+            })
+            .catch((error) => {
+              console.error("清除AI设置失败:", error);
+              this.showMessage(`清除失败: ${error.message}`, "error");
+
+              // 恢复按钮状态
+              clearAiSettingsButton.innerHTML = `清除 AI 设置`;
+              clearAiSettingsButton.classList.remove(
+                "reset-warning",
+                "reset-danger"
+              );
+              clearAiSettingsButton.disabled = false;
+            });
+
+          // 重置计数器
+          clearAiClickCount = 0;
+          if (clearAiClickTimer) {
+            clearTimeout(clearAiClickTimer);
+          }
+          return;
+        }
+
+        // 设置超时，如果超过3秒没有下一次点击，则重置计数器
+        if (clearAiClickTimer) {
+          clearTimeout(clearAiClickTimer);
+        }
+
+        clearAiClickTimer = setTimeout(() => {
+          clearAiClickCount = 0;
+          clearAiSettingsButton.innerHTML = `清除 AI 设置`;
+          clearAiSettingsButton.classList.remove(
+            "reset-warning",
+            "reset-danger"
+          );
+        }, 3000);
+      });
+    }
   }
 
   // 根据输入内容更新按钮可见性
@@ -630,53 +806,14 @@ class App {
       });
     });
 
-    // 重置设置
-    resetButton.addEventListener("click", () => {
-      if (confirm("确定要重置所有设置吗？这将清除所有AI配置信息。")) {
-        this.clearAISettings()
-          .then((success) => {
-            if (success) {
-              // 清空表单值
-              document.getElementById("ai-api-key").value = "";
-              document.getElementById("ai-base-url").value = "";
-              document.getElementById("ai-model").value = "";
-              document.getElementById("ai-max-tokens").value = "800";
-              document.getElementById("ai-temperature").value = "0.7";
-
-              // 更新温度值显示
-              if (temperatureValue) {
-                temperatureValue.textContent = "0.7";
-              }
-
-              // 更新底部栏的AI模型显示
-              const aiModelDisplay = document.querySelector(".ai-model");
-              if (aiModelDisplay) {
-                aiModelDisplay.textContent = "未设置";
-              }
-
-              this.showMessage("所有AI设置已重置", "success");
-            }
-          })
-          .catch((error) => {
-            console.error("重置设置失败:", error);
-            this.showMessage(`重置失败: ${error.message}`, "error");
-          });
-      }
-    });
-
-    // 导出数据
-    const exportButton = document.querySelector(".export-button");
-    exportButton.addEventListener("click", () => {
-      // 在此处添加导出数据的逻辑
-      alert("导出功能将在后续版本实现");
-    });
-
     // 导入数据
     const importFile = document.getElementById("import-file");
     importFile.addEventListener("change", (e) => {
       if (e.target.files.length > 0) {
-        // 在此处添加导入数据的逻辑
-        alert("导入功能将在后续版本实现");
+        // 导入便签数据功能
+        this.importNotesData(e.target.files[0]);
+        // 清空文件输入，以便同一文件可以再次选择导入
+        importFile.value = "";
       }
     });
 
@@ -688,43 +825,6 @@ class App {
     if (testConnectionButton) {
       testConnectionButton.addEventListener("click", () => {
         this.testAIConnection();
-      });
-    }
-
-    // 清除AI设置按钮
-    const clearAiSettingsButton = document.getElementById("clear-ai-settings");
-    if (clearAiSettingsButton) {
-      clearAiSettingsButton.addEventListener("click", () => {
-        if (confirm("确定要清除所有AI设置吗？这将删除API密钥和其他配置。")) {
-          this.clearAISettings()
-            .then((success) => {
-              if (success) {
-                // 清空表单值
-                document.getElementById("ai-api-key").value = "";
-                document.getElementById("ai-base-url").value = "";
-                document.getElementById("ai-model").value = "";
-                document.getElementById("ai-max-tokens").value = "800";
-                document.getElementById("ai-temperature").value = "0.7";
-
-                // 更新温度值显示
-                if (temperatureValue) {
-                  temperatureValue.textContent = "0.7";
-                }
-
-                // 更新底部栏的AI模型显示
-                const aiModelDisplay = document.querySelector(".ai-model");
-                if (aiModelDisplay) {
-                  aiModelDisplay.textContent = "未设置";
-                }
-
-                this.showMessage("所有AI设置已清除", "info");
-              }
-            })
-            .catch((error) => {
-              console.error("清除AI设置失败:", error);
-              this.showMessage(`清除失败: ${error.message}`, "error");
-            });
-        }
       });
     }
 
@@ -1099,6 +1199,165 @@ class App {
           }, 300);
         }, 3000);
       }, 10);
+    }
+  }
+
+  // 导出便签数据
+  async exportNotesData() {
+    try {
+      // 显示正在导出的消息
+      this.showMessage("正在准备导出数据...", "info");
+
+      // 从服务器获取最新的便签数据
+      const response = await fetch("/api/notes");
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error("获取便签数据失败");
+      }
+
+      // 准备导出的数据
+      const exportData = {
+        notes: data.notes,
+        exportDate: new Date().toISOString(),
+        version: "1.0",
+      };
+
+      // 转换为JSON字符串
+      const jsonString = JSON.stringify(exportData, null, 2);
+
+      // 创建Blob对象
+      const blob = new Blob([jsonString], { type: "application/json" });
+
+      // 创建下载链接
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+
+      // 设置文件名 (格式: ai-notes-yyyy-mm-dd.json)
+      const date = new Date();
+      const dateStr = date.toISOString().split("T")[0]; // 提取yyyy-mm-dd部分
+      a.download = `ai-notes-${dateStr}.json`;
+
+      // 添加到文档并触发点击
+      document.body.appendChild(a);
+      a.click();
+
+      // 清理
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        this.showMessage("数据导出成功！", "success");
+      }, 100);
+    } catch (error) {
+      console.error("导出便签数据失败:", error);
+      this.showMessage(`导出失败: ${error.message}`, "error");
+    }
+  }
+
+  // 导入便签数据
+  async importNotesData(file) {
+    try {
+      // 显示正在导入的消息
+      this.showMessage("正在读取导入文件...", "info");
+
+      // 检查文件类型
+      if (file.type !== "application/json" && !file.name.endsWith(".json")) {
+        throw new Error("只能导入JSON格式的文件");
+      }
+
+      // 读取文件内容
+      const reader = new FileReader();
+
+      // 创建一个Promise包装FileReader
+      const fileData = await new Promise((resolve, reject) => {
+        reader.onload = (event) => resolve(event.target.result);
+        reader.onerror = (error) => reject(new Error("文件读取失败"));
+        reader.readAsText(file);
+      });
+
+      // 解析JSON
+      let importedData;
+      try {
+        importedData = JSON.parse(fileData);
+      } catch (error) {
+        throw new Error("文件格式无效，无法解析JSON");
+      }
+
+      // 验证导入数据的格式
+      if (!importedData.notes || !Array.isArray(importedData.notes)) {
+        throw new Error("文件格式无效，缺少便签数据");
+      }
+
+      // 确认导入
+      if (
+        !confirm(
+          `确定要导入 ${importedData.notes.length} 个便签吗？这将替换当前的所有便签数据。`
+        )
+      ) {
+        this.showMessage("导入已取消", "info");
+        return;
+      }
+
+      // 发送数据到服务器进行导入
+      const response = await fetch("/api/notes/import", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ notes: importedData.notes }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // 重新加载便签
+        await this.loadNotes();
+        this.showMessage(
+          `成功导入 ${result.importedCount} 个便签！`,
+          "success"
+        );
+      } else {
+        throw new Error(result.message || "导入失败");
+      }
+    } catch (error) {
+      console.error("导入便签数据失败:", error);
+      this.showMessage(`导入失败: ${error.message}`, "error");
+    }
+  }
+
+  // 重置所有数据（包括AI设置和便签数据）
+  async resetAllData() {
+    try {
+      // 1. 清除AI设置
+      await this.clearAISettings();
+
+      // 2. 清除便签数据
+      const response = await fetch("/api/notes/reset", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.message || "重置便签数据失败");
+      }
+
+      // 3. 清空本地便签数组
+      this.notes = [];
+
+      // 4. 清空画布
+      const noteContainer = document.getElementById("note-container");
+      while (noteContainer && noteContainer.firstChild) {
+        noteContainer.removeChild(noteContainer.firstChild);
+      }
+
+      return true;
+    } catch (error) {
+      console.error("重置所有数据失败:", error);
+      throw error;
     }
   }
 }
