@@ -66,26 +66,37 @@
   margin: 0;
 }
 
+/* 设置弹窗关闭按钮样式 - 完全匹配画布设置按钮 */
 .close-settings {
-  background: none;
-  border: none;
-  color: #666;
-  font-size: 24px;
+  width: 28px;
+  height: 28px;
+  font-size: 18px;
+  color: #2c3e50;
+  background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+  border: 1px solid #ced4da;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
   cursor: pointer;
-  width: 32px;
-  height: 32px;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  transition: background-color 0.2s;
-  padding: 0; /* 确保没有内边距影响按钮形状 */
-  line-height: 1; /* 确保文本内容垂直居中 */
-  box-sizing: border-box; /* 确保边框不影响大小 */
+  padding: 0;
+  line-height: 1;
 }
 
 .close-settings:hover {
-  background-color: #f2f2f2;
+  background: linear-gradient(to bottom, #e9ecef, #dee2e6);
+  color: #1a73e8;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.close-settings:active {
+  background: linear-gradient(to top, #e9ecef, #dee2e6);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.15);
+  transform: translateY(1px);
 }
 
 /* 设置内容区域样式 */
@@ -401,6 +412,74 @@ input[type="range"]::-webkit-slider-thumb {
   display: none;
 }
 
+/* AI 设置操作按钮区域 */
+.ai-settings-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+/* 保存按钮样式 - 更加突出 */
+.ai-settings-actions .save-button {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 15px;
+  background-color: #1a73e8;
+  color: white;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s;
+  text-align: center;
+}
+
+.ai-settings-actions .save-button:hover {
+  background-color: #1557b0;
+}
+
+/* 次要操作按钮区域 */
+.secondary-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ai-test-button {
+  background-color: #e3f2fd;
+  color: #1a73e8;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s;
+  flex: 1;
+}
+
+.ai-test-button:hover {
+  background-color: #bbdefb;
+}
+
+.ai-clear-button {
+  background-color: #f2f2f2;
+  color: #666;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s;
+  flex: 1;
+}
+
+.ai-clear-button:hover {
+  background-color: #e5e5e5;
+}
+
 /* 设置底部样式 */
 .settings-footer {
   display: flex;
@@ -426,6 +505,53 @@ input[type="range"]::-webkit-slider-thumb {
 
 .save-button:hover {
   background-color: #1557b0;
+}
+
+/* 设置内消息容器样式 */
+.settings-message-container {
+  padding: 0 24px;
+  margin: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, margin 0.3s ease;
+}
+
+.settings-message-container.has-message {
+  max-height: 60px;
+  margin: 8px 0;
+}
+
+/* 设置内消息样式 */
+.settings-message {
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  margin: 0;
+  opacity: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.settings-message.message-info {
+  background-color: #e3f2fd;
+  color: #0d47a1;
+}
+
+.settings-message.message-success {
+  background-color: #e8f5e9;
+  color: #1b5e20;
+}
+
+.settings-message.message-error {
+  background-color: #ffebee;
+  color: #b71c1c;
+}
+
+.settings-message.message-warning {
+  background-color: #fff8e1;
+  color: #ff6f00;
 }
 
 /* 关于页面样式 */

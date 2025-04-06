@@ -528,6 +528,9 @@ class App {
     const themeOptions = document.querySelectorAll(".theme-option");
     const rangeInputs = document.querySelectorAll('input[type="range"]');
 
+    // 初始化自定义模型选择器
+    this.initCustomModelSelect();
+
     // 关闭设置弹窗
     closeSettings.addEventListener("click", () => {
       settingsModal.classList.remove("visible");
@@ -583,14 +586,36 @@ class App {
       });
     });
 
+    // 苹果风格的范围滑块值显示增强
+    const temperatureSlider = document.getElementById("ai-temperature");
+    const temperatureValue = document.getElementById("temperature-value");
+
+    if (temperatureSlider && temperatureValue) {
+      // 初始化显示值
+      temperatureValue.textContent = temperatureSlider.value;
+
+      // 滑动时实时更新值
+      temperatureSlider.addEventListener("input", () => {
+        temperatureValue.textContent = temperatureSlider.value;
+
+        // 添加值变化的视觉反馈
+        temperatureValue.classList.add("updating");
+        setTimeout(() => {
+          temperatureValue.classList.remove("updating");
+        }, 200);
+      });
+    }
+
     // 范围滑块值显示更新
     rangeInputs.forEach((input) => {
       const valueDisplay = input.nextElementSibling;
+      if (!valueDisplay) return;
 
       // 初始化显示值
       if (input.id === "font-size") {
         valueDisplay.textContent = `${input.value}px`;
-      } else {
+      } else if (input.id !== "ai-temperature") {
+        // 温度滑块已单独处理
         valueDisplay.textContent = input.value;
       }
 
@@ -598,16 +623,11 @@ class App {
       input.addEventListener("input", () => {
         if (input.id === "font-size") {
           valueDisplay.textContent = `${input.value}px`;
-        } else {
+        } else if (input.id !== "ai-temperature") {
+          // 温度滑块已单独处理
           valueDisplay.textContent = input.value;
         }
       });
-    });
-
-    // 保存设置 (目前仅关闭弹窗，实际保存功能待实现)
-    saveButton.addEventListener("click", () => {
-      // 在此处添加保存设置的逻辑
-      settingsModal.classList.remove("visible");
     });
 
     // 重置设置
@@ -622,6 +642,11 @@ class App {
               document.getElementById("ai-model").value = "";
               document.getElementById("ai-max-tokens").value = "800";
               document.getElementById("ai-temperature").value = "0.7";
+
+              // 更新温度值显示
+              if (temperatureValue) {
+                temperatureValue.textContent = "0.7";
+              }
 
               // 更新底部栏的AI模型显示
               const aiModelDisplay = document.querySelector(".ai-model");
@@ -658,7 +683,7 @@ class App {
     // 加载AI设置
     this.loadAISettings();
 
-    // 测试AI连接
+    // 测试AI连接按钮
     const testConnectionButton = document.getElementById("test-ai-connection");
     if (testConnectionButton) {
       testConnectionButton.addEventListener("click", () => {
@@ -681,9 +706,10 @@ class App {
                 document.getElementById("ai-max-tokens").value = "800";
                 document.getElementById("ai-temperature").value = "0.7";
 
-                // 隐藏状态显示
-                const statusElem = document.getElementById("connection-status");
-                statusElem.style.display = "none";
+                // 更新温度值显示
+                if (temperatureValue) {
+                  temperatureValue.textContent = "0.7";
+                }
 
                 // 更新底部栏的AI模型显示
                 const aiModelDisplay = document.querySelector(".ai-model");
@@ -708,7 +734,8 @@ class App {
       this.saveAISettings()
         .then((success) => {
           if (success) {
-            settingsModal.classList.remove("visible");
+            // 不再自动关闭弹窗，只显示成功消息
+            // settingsModal.classList.remove("visible");  // 移除这行代码
             this.showMessage("设置已保存", "success");
           }
         })
@@ -718,25 +745,101 @@ class App {
         });
     });
 
-    // 设置API密钥可见性切换
+    // 设置API密钥可见性切换 - 增强苹果风格的交互
     const toggleApiKeyBtn = document.getElementById("toggle-api-key");
     const apiKeyInput = document.getElementById("ai-api-key");
 
     if (toggleApiKeyBtn && apiKeyInput) {
       apiKeyInput.type = "password"; // 默认隐藏
+      toggleApiKeyBtn.setAttribute("data-state", "hidden");
 
       toggleApiKeyBtn.addEventListener("click", () => {
         if (apiKeyInput.type === "password") {
           apiKeyInput.type = "text"; // 显示密钥
+          toggleApiKeyBtn.setAttribute("data-state", "visible");
           toggleApiKeyBtn.title = "隐藏密钥";
-          toggleApiKeyBtn.querySelector(".eye-icon").style.opacity = "1";
         } else {
           apiKeyInput.type = "password"; // 隐藏密钥
+          toggleApiKeyBtn.setAttribute("data-state", "hidden");
           toggleApiKeyBtn.title = "显示密钥";
-          toggleApiKeyBtn.querySelector(".eye-icon").style.opacity = "0.7";
         }
       });
     }
+  }
+
+  // 初始化自定义模型选择器
+  initCustomModelSelect() {
+    const container = document.querySelector(".custom-select-container");
+    const input = document.getElementById("ai-model");
+    const dropdown = document.getElementById("model-dropdown");
+    const options = dropdown.querySelectorAll(".select-option");
+    const toggleBtn = document.querySelector(".select-toggle");
+
+    // 点击下拉按钮切换下拉列表显示状态
+    toggleBtn.addEventListener("click", () => {
+      container.classList.toggle("open");
+      if (container.classList.contains("open")) {
+        // 高亮当前选中的选项
+        const currentValue = input.value;
+        options.forEach((option) => {
+          if (option.dataset.value === currentValue) {
+            option.classList.add("selected");
+          } else {
+            option.classList.remove("selected");
+          }
+        });
+      }
+    });
+
+    // 点击选项时更新输入框值
+    options.forEach((option) => {
+      option.addEventListener("click", () => {
+        input.value = option.dataset.value;
+        options.forEach((opt) => opt.classList.remove("selected"));
+        option.classList.add("selected");
+        container.classList.remove("open");
+      });
+    });
+
+    // 点击输入框也触发下拉列表
+    input.addEventListener("click", () => {
+      container.classList.toggle("open");
+      if (container.classList.contains("open")) {
+        const currentValue = input.value;
+        options.forEach((option) => {
+          if (option.dataset.value === currentValue) {
+            option.classList.add("selected");
+          } else {
+            option.classList.remove("selected");
+          }
+        });
+      }
+    });
+
+    // 点击页面其他区域关闭下拉列表
+    document.addEventListener("click", (e) => {
+      if (!container.contains(e.target)) {
+        container.classList.remove("open");
+      }
+    });
+
+    // 输入内容变化时查找匹配项
+    input.addEventListener("input", () => {
+      const value = input.value.toLowerCase();
+      let hasExactMatch = false;
+
+      options.forEach((option) => {
+        const optionValue = option.dataset.value.toLowerCase();
+        if (optionValue === value) {
+          hasExactMatch = true;
+        }
+      });
+
+      // 如果输入框有值且没有完全匹配，保持下拉菜单打开
+      if (value && !hasExactMatch) {
+        container.classList.add("open");
+      }
+    });
   }
 
   // 清除AI设置
@@ -818,9 +921,8 @@ class App {
           if (isEmpty || !settings.model) {
             aiModelDisplay.textContent = "未设置";
           } else {
-            // 提取模型名称的简短版本，去掉前缀如"gpt-"
-            const modelName = settings.model.split("-").pop() || settings.model;
-            aiModelDisplay.textContent = modelName;
+            // 使用完整的模型名称，不再提取简短版本
+            aiModelDisplay.textContent = settings.model;
           }
         }
 
@@ -900,9 +1002,8 @@ class App {
       // 更新AI模型显示在底部栏
       const aiModelDisplay = document.querySelector(".ai-model");
       if (aiModelDisplay) {
-        // 提取模型名称的简短版本，去掉前缀如"gpt-"
-        const modelName = model.split("-").pop() || model;
-        aiModelDisplay.textContent = modelName;
+        // 使用完整的模型名称，不再提取简短版本
+        aiModelDisplay.textContent = model;
       }
 
       this.showMessage("AI设置已成功保存", "success");
@@ -913,25 +1014,21 @@ class App {
     }
   }
 
-  // 测试AI连接
+  // 测试AI连接 - 更新为与保存设置相同的消息提示机制
   async testAIConnection() {
-    const statusElem = document.getElementById("connection-status");
-    statusElem.style.display = "block";
-    statusElem.className = "ai-test-status info";
-    statusElem.textContent = "正在测试API连接...";
+    // 显示测试中的状态
+    this.showMessage("正在测试API连接...", "info");
 
     try {
       const response = await fetch("/api/test");
       const data = await response.json();
 
       if (data.success) {
-        statusElem.className = "ai-test-status success";
-        statusElem.textContent = "✓ 连接成功！API密钥有效。";
+        this.showMessage("✓ 连接成功！API密钥有效。", "success");
       } else {
-        statusElem.className = "ai-test-status error";
-        statusElem.textContent = `✗ 连接失败: ${data.message || "未知错误"}`;
-
         // 如果有更详细的配置状态信息
+        let errorMessage = `✗ 连接失败: ${data.message || "未知错误"}`;
+
         if (data.configStatus) {
           const details = [];
           if (!data.configStatus.hasApiKey) details.push("缺少API密钥");
@@ -939,33 +1036,70 @@ class App {
           if (!data.configStatus.hasModel) details.push("缺少模型设置");
 
           if (details.length > 0) {
-            statusElem.textContent += ` (${details.join(", ")})`;
+            errorMessage += ` (${details.join(", ")})`;
           }
         }
+
+        this.showMessage(errorMessage, "error");
       }
     } catch (error) {
-      statusElem.className = "ai-test-status error";
-      statusElem.textContent = `✗ 请求失败: ${error.message}`;
+      this.showMessage(`✗ 请求失败: ${error.message}`, "error");
     }
   }
 
   // 显示消息提示
   showMessage(message, type = "info") {
-    const msgElement = document.createElement("div");
-    msgElement.className = `message message-${type}`;
-    msgElement.textContent = message;
-    document.body.appendChild(msgElement);
+    // 检查设置弹窗是否打开
+    const settingsModal = document.getElementById("settings-modal");
+    const isSettingsOpen = settingsModal.classList.contains("visible");
 
-    // 显示动画
-    setTimeout(() => {
-      msgElement.classList.add("show");
+    if (isSettingsOpen) {
+      // 在设置弹窗中显示消息
+      const msgContainer = document.getElementById(
+        "settings-message-container"
+      );
+
+      // 清除现有消息
+      while (msgContainer.firstChild) {
+        msgContainer.removeChild(msgContainer.firstChild);
+      }
+
+      // 创建新消息
+      const msgElement = document.createElement("div");
+      msgElement.className = `settings-message message-${type}`;
+      msgElement.textContent = message;
+
+      // 添加消息到容器
+      msgContainer.appendChild(msgElement);
+      msgContainer.classList.add("has-message");
+
+      // 设置定时器自动移除消息
       setTimeout(() => {
-        msgElement.classList.remove("show");
+        msgContainer.classList.remove("has-message");
         setTimeout(() => {
-          document.body.removeChild(msgElement);
+          while (msgContainer.firstChild) {
+            msgContainer.removeChild(msgContainer.firstChild);
+          }
         }, 300);
       }, 3000);
-    }, 10);
+    } else {
+      // 如果设置弹窗未打开，使用原来的全局消息显示
+      const msgElement = document.createElement("div");
+      msgElement.className = `message message-${type}`;
+      msgElement.textContent = message;
+      document.body.appendChild(msgElement);
+
+      // 显示动画
+      setTimeout(() => {
+        msgElement.classList.add("show");
+        setTimeout(() => {
+          msgElement.classList.remove("show");
+          setTimeout(() => {
+            document.body.removeChild(msgElement);
+          }, 300);
+        }, 3000);
+      }, 10);
+    }
   }
 }
 
