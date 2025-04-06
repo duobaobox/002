@@ -78,8 +78,7 @@
                 <div class="settings-content">
                     <!-- 左侧导航 -->
                     <div class="settings-nav">
-                        <button class="nav-item" data-tab="ai">AI 设置</button>
-                        <button class="nav-item active" data-tab="general">通用</button>
+                        <button class="nav-item active" data-tab="ai">AI 设置</button>
                         <button class="nav-item" data-tab="appearance">外观</button>
                         <button class="nav-item" data-tab="backup">备份恢复</button>
                         <button class="nav-item" data-tab="about">关于</button>
@@ -87,40 +86,8 @@
 
                     <!-- 右侧设置项 -->
                     <div class="settings-panels">
-                        <!-- 通用设置 -->
-                        <div class="settings-panel active" id="general-panel">
-                            <h3>通用设置</h3>
-                            <div class="setting-item">
-                                <div class="setting-label">
-                                    <label for="auto-save">自动保存间隔</label>
-                                    <span class="setting-description">便签内容自动保存的时间间隔</span>
-                                </div>
-                                <div class="setting-control">
-                                    <select id="auto-save">
-                                        <option value="5000">5 秒</option>
-                                        <option value="10000" selected>10 秒</option>
-                                        <option value="30000">30 秒</option>
-                                        <option value="60000">1 分钟</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="setting-item">
-                                <div class="setting-label">
-                                    <label for="default-color">默认便签颜色</label>
-                                    <span class="setting-description">新便签的默认颜色</span>
-                                </div>
-                                <div class="setting-control color-options">
-                                    <button class="color-option note-yellow active"></button>
-                                    <button class="color-option note-blue"></button>
-                                    <button class="color-option note-green"></button>
-                                    <button class="color-option note-pink"></button>
-                                    <button class="color-option note-purple"></button>
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- AI设置 -->
-                        <div class="settings-panel" id="ai-panel">
+                        <div class="settings-panel active" id="ai-panel">
                             <h3>AI配置</h3>
                             <div class="ai-settings-container">
                                 <div class="ai-settings-group">
@@ -188,6 +155,7 @@
                                     <button id="test-ai-connection" class="ai-test-button">测试 API 连接</button>
                                     <div id="connection-status" class="ai-test-status" style="display: none;"></div>
                                     <button id="clear-ai-settings" class="ai-clear-button">清除 AI 设置</button>
+                                    <button class="save-button">保存设置</button>
                                 </div>
                             </div>
                         </div>
@@ -249,6 +217,11 @@
                                     <input type="file" id="import-file" accept=".json" class="file-input">
                                 </div>
                             </div>
+                            <div class="setting-item">
+                                <div class="setting-control">
+                                    <button class="reset-button">重置所有设置</button>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- 关于 -->
@@ -270,11 +243,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <div class="settings-footer">
-                    <button class="reset-button">重置所有设置</button>
-                    <button class="save-button">保存设置</button>
                 </div>
             </div>
         </div>

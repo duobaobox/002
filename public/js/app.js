@@ -519,20 +519,14 @@ class App {
   // 初始化设置弹窗
   initSettingsModal() {
     // 不需要获取设置按钮，因为我们在canvas.js中处理了
-    // const settingsButton = document.getElementById("settings-button"); // 删除这行
     const settingsModal = document.getElementById("settings-modal");
     const closeSettings = document.getElementById("close-settings");
-    const saveButton = document.querySelector(".save-button");
-    const resetButton = document.querySelector(".reset-button");
+    const saveButton = document.querySelector("#ai-panel .save-button"); // 更新选择器
+    const resetButton = document.querySelector("#backup-panel .reset-button"); // 更新选择器
     const navItems = document.querySelectorAll(".nav-item");
     const colorOptions = document.querySelectorAll(".color-option");
     const themeOptions = document.querySelectorAll(".theme-option");
     const rangeInputs = document.querySelectorAll('input[type="range"]');
-
-    // 删除打开设置弹窗的事件监听（现在在canvas.js中处理）
-    // settingsButton.addEventListener("click", () => {
-    //   settingsModal.classList.add("visible");
-    // });
 
     // 关闭设置弹窗
     closeSettings.addEventListener("click", () => {
