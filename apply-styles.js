@@ -4,7 +4,7 @@
   // 创建样式元素
   const styleEl = document.createElement("link");
   styleEl.setAttribute("rel", "stylesheet");
-  styleEl.setAttribute("href", "custom-styles.css");
+  styleEl.setAttribute("href", "css/custom-styles.css");
   document.head.appendChild(styleEl);
 
   // 调整内容区布局
