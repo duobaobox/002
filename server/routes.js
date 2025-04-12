@@ -1,197 +1,67 @@
 import express from "express";
 import aiService from "./ai_service.js";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-import { getApiConfig, saveApiConfig } from "./api_config_store.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// 数据文件路径 - 使用相对路径，确保跨系统兼容性
-const dataDir = path.join(__dirname, "../data");
-const notesFilePath = path.join(dataDir, "notes.json");
-
-console.log("数据目录:", dataDir);
-console.log("便签文件路径:", notesFilePath);
-
-// 确保数据目录存在
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
-  console.log("创建数据目录:", dataDir);
-}
-
-// 如果数据文件不存在，创建一个空的数据文件
-if (!fs.existsSync(notesFilePath)) {
-  fs.writeFileSync(notesFilePath, JSON.stringify({ notes: [], nextId: 1 }));
-  console.log("创建初始数据文件:", notesFilePath);
-}
+import {
+  // Notes functions
+  getAllNotes,
+  addNote,
+  updateNote,
+  deleteNote,
+  importNotes,
+  resetNotes,
+  // Settings functions
+  getAllAiSettings,
+  setSetting,
+} from "./database.js";
+import { validateNoteData } from "./middleware.js";
 
 const router = express.Router();
 
-// 数据读写辅助函数 - 添加错误处理和异步支持
-/**
- * 读取便签数据
- * @returns {Promise<Object>} 便签数据对象
- */
-const readNotesData = () => {
-  return new Promise((resolve, reject) => {
-    try {
-      // 使用同步方法读取文件
-      if (!fs.existsSync(notesFilePath)) {
-        // 如果文件不存在，创建一个空的数据文件
-        const initialData = { notes: [], nextId: 1 };
-        // 使用Buffer作为路径参数，解决中文路径问题
-        fs.writeFileSync(notesFilePath, JSON.stringify(initialData, null, 2), {
-          encoding: "utf8",
-        });
-        resolve(initialData);
-        return;
-      }
+// --- Note Routes ---
 
-      // 使用Buffer作为路径参数，解决中文路径问题
-      const data = fs.readFileSync(notesFilePath, { encoding: "utf8" });
-      try {
-        const jsonData = JSON.parse(data);
-        resolve(jsonData);
-      } catch (parseError) {
-        console.error("解析便签数据失败:", parseError);
-        // 如果解析失败，创建新的空数据
-        const initialData = { notes: [], nextId: 1 };
-        fs.writeFileSync(notesFilePath, JSON.stringify(initialData, null, 2), {
-          encoding: "utf8",
-        });
-        resolve(initialData);
-      }
-    } catch (error) {
-      console.error("读取便签数据失败:", error);
-      // 如果读取失败，返回空数据
-      resolve({ notes: [], nextId: 1 });
-    }
-  });
-};
-
-/**
- * 写入便签数据
- * @param {Object} data - 要写入的数据对象
- * @returns {Promise<void>}
- */
-const writeNotesData = (data) => {
-  return new Promise((resolve, reject) => {
-    try {
-      // 确保data目录存在
-      if (!fs.existsSync(dataDir)) {
-        fs.mkdirSync(dataDir, { recursive: true });
-      }
-      // 将对象转换为JSON字符串
-      const jsonData = JSON.stringify(data, null, 2);
-      // 使用指定的编码写入文件
-      fs.writeFileSync(notesFilePath, jsonData, {
-        encoding: "utf8",
-        flag: "w",
-      });
-      resolve();
-    } catch (error) {
-      console.error("写入便签数据失败:", error);
-      reject(error); // 直接拒绝 Promise
-    }
-  });
-};
-
-// 请求参数验证中间件
-const validateNoteData = (req, res, next) => {
-  const { text, x, y, title, width, height, colorClass, zIndex } = req.body;
-
-  // 验证坐标为数字
-  if (
-    (x !== undefined && typeof x !== "number") ||
-    (y !== undefined && typeof y !== "number")
-  ) {
-    return res.status(400).json({
-      success: false,
-      message: "坐标必须是数字",
-    });
-  }
-
-  // 验证文本、标题类型
-  if (
-    (text !== undefined && typeof text !== "string") ||
-    (title !== undefined && typeof title !== "string")
-  ) {
-    return res.status(400).json({
-      success: false,
-      message: "文本和标题必须是字符串",
-    });
-  }
-
-  // 验证尺寸为数字
-  if (
-    (width !== undefined && typeof width !== "number") ||
-    (height !== undefined && typeof height !== "number")
-  ) {
-    return res.status(400).json({
-      success: false,
-      message: "宽度和高度必须是数字",
-    });
-  }
-
-  next();
-};
-
-// 获取所有便签 - 使用异步函数和错误处理
+// 获取所有便签 - 从数据库获取
 router.get("/notes", async (req, res) => {
   try {
-    const data = await readNotesData();
-    res.json({ success: true, notes: data.notes, nextId: data.nextId });
+    const notes = await getAllNotes();
+    // 注意：不再需要 nextId，数据库会自动处理
+    res.json({ success: true, notes: notes });
   } catch (error) {
-    console.error("读取便签数据失败:", error);
-    res.status(500).json({
-      success: false,
-      message: "无法获取便签数据",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
+    console.error("获取便签失败:", error);
+    res.status(500).json({ success: false, message: "无法获取便签" });
   }
 });
 
-// 创建新便签 - 添加验证和异步处理
+// 添加新便签 - 保存到数据库
 router.post("/notes", validateNoteData, async (req, res) => {
   try {
-    const { text, x, y, title, colorClass, zIndex } = req.body;
+    const { text, x, y, title, colorClass, width, height, zIndex } = req.body;
 
-    // 读取现有数据
-    const data = await readNotesData();
-
-    // 创建新便签
-    const newNote = {
-      id: data.nextId,
-      text: text || "",
-      x: x || 100,
-      y: y || 100,
-      title: title || `便签 ${data.nextId}`,
-      colorClass: colorClass, // 保存颜色类
-      zIndex: zIndex || 1, // 添加zIndex属性，默认为1
-      createdAt: new Date().toISOString(),
+    // 让数据库处理 ID 和时间戳
+    const newNoteData = {
+      text,
+      x,
+      y,
+      title,
+      colorClass,
+      width,
+      height,
+      zIndex,
     };
 
-    // 更新数据
-    data.notes.push(newNote);
-    data.nextId += 1;
+    const createdNote = await addNote(newNoteData);
 
-    // 保存数据
-    await writeNotesData(data);
-
-    res.json({ success: true, note: newNote });
+    console.log("新便签已添加到数据库，ID:", createdNote.id);
+    res.status(201).json({ success: true, note: createdNote });
   } catch (error) {
-    console.error("创建便签失败:", error);
+    console.error("添加便签失败:", error);
     res.status(500).json({
       success: false,
-      message: "无法创建新便签",
+      message: "无法添加便签",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 });
 
-// 更新便签 - 添加验证和异步处理
+// 更新便签 - 更新数据库记录
 router.put("/notes/:id", validateNoteData, async (req, res) => {
   try {
     const noteId = parseInt(req.params.id);
@@ -203,43 +73,31 @@ router.put("/notes/:id", validateNoteData, async (req, res) => {
     }
 
     const { text, x, y, title, width, height, colorClass, zIndex } = req.body;
-    console.log(`更新便签 ID=${noteId}, x=${x}, y=${y}`);
+    console.log(`更新便签 ID=${noteId}`);
 
-    // 读取现有数据
-    const data = await readNotesData();
+    const updatedNoteData = {
+      text,
+      x,
+      y,
+      title,
+      width,
+      height,
+      colorClass,
+      zIndex,
+    };
 
-    // 查找便签
-    const noteIndex = data.notes.findIndex((note) => note.id === noteId);
+    const updatedNote = await updateNote(noteId, updatedNoteData);
 
-    if (noteIndex === -1) {
+    if (!updatedNote) {
       return res.status(404).json({
         success: false,
-        message: `ID为${noteId}的便签不存在`,
+        message: `ID为 ${noteId} 的便签不存在`,
       });
     }
-
-    // 更新便签
-    const updatedNote = { ...data.notes[noteIndex] };
-    if (text !== undefined) updatedNote.text = text;
-    if (x !== undefined) updatedNote.x = x;
-    if (y !== undefined) updatedNote.y = y;
-    if (title !== undefined) updatedNote.title = title;
-    if (width !== undefined) updatedNote.width = width;
-    if (height !== undefined) updatedNote.height = height;
-    if (colorClass !== undefined) updatedNote.colorClass = colorClass;
-    if (zIndex !== undefined) updatedNote.zIndex = zIndex;
-    updatedNote.updatedAt = new Date().toISOString();
-
-    // 将更新后的便签放回数组
-    data.notes[noteIndex] = updatedNote;
-
-    // 保存数据
-    await writeNotesData(data);
 
     console.log(`便签 ID=${noteId} 更新成功`);
     res.json({ success: true, note: updatedNote });
   } catch (error) {
-    // 简化错误处理
     console.error("更新便签失败:", error);
     res.status(500).json({
       success: false,
@@ -249,7 +107,7 @@ router.put("/notes/:id", validateNoteData, async (req, res) => {
   }
 });
 
-// 删除便签 - 添加异步处理
+// 删除便签 - 从数据库删除
 router.delete("/notes/:id", async (req, res) => {
   try {
     const noteId = parseInt(req.params.id);
@@ -260,24 +118,17 @@ router.delete("/notes/:id", async (req, res) => {
       });
     }
 
-    // 读取现有数据
-    const data = await readNotesData();
+    const success = await deleteNote(noteId);
 
-    // 查找并删除便签
-    const initialLength = data.notes.length;
-    data.notes = data.notes.filter((note) => note.id !== noteId);
-
-    if (data.notes.length === initialLength) {
+    if (!success) {
       return res.status(404).json({
         success: false,
-        message: `ID为${noteId}的便签不存在`,
+        message: `ID为 ${noteId} 的便签不存在`,
       });
     }
 
-    // 保存数据
-    await writeNotesData(data);
-
-    res.json({ success: true, message: "便签已删除" });
+    console.log(`便签 ID=${noteId} 已从数据库删除`);
+    res.json({ success: true, message: `便签 ${noteId} 已删除` });
   } catch (error) {
     console.error("删除便签失败:", error);
     res.status(500).json({
@@ -288,7 +139,155 @@ router.delete("/notes/:id", async (req, res) => {
   }
 });
 
-// 生成便签内容的API - 添加请求验证和超时控制
+// 导入便签数据 - 导入到数据库
+router.post("/notes/import", async (req, res) => {
+  const { notes } = req.body;
+
+  if (!Array.isArray(notes)) {
+    return res
+      .status(400)
+      .json({ success: false, message: "无效的导入数据格式" });
+  }
+
+  try {
+    const importedCount = await importNotes(notes);
+    console.log(`成功导入 ${importedCount} 个便签到数据库`);
+    res.json({ success: true, importedCount });
+  } catch (error) {
+    console.error("导入便签数据失败:", error);
+    res.status(500).json({
+      success: false,
+      message: "导入便签数据失败",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
+// 重置便签数据 - 清空数据库表
+router.post("/notes/reset", async (req, res) => {
+  try {
+    await resetNotes();
+    console.log("所有便签数据已从数据库重置");
+    res.json({ success: true, message: "所有便签数据已重置" });
+  } catch (error) {
+    console.error("重置便签数据失败:", error);
+    res.status(500).json({
+      success: false,
+      message: "重置便签数据失败",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
+// --- AI and Settings Routes ---
+
+// GET AI Settings - Fetch from DB (No change needed)
+router.get("/ai-settings", async (req, res) => {
+  try {
+    const settings = await getAllAiSettings();
+    console.log("[API /ai-settings] Returning settings from DB:", settings); // Add log
+    res.json({ success: true, settings });
+  } catch (error) {
+    console.error("获取AI设置时发生错误:", error);
+    res.status(500).json({ success: false, message: "无法获取AI设置" });
+  }
+});
+
+// POST AI Settings - Save to DB and Update Service
+router.post("/settings/ai", async (req, res) => {
+  try {
+    const { apiKey, baseURL, model, maxTokens, temperature } = req.body;
+
+    // Basic validation
+    if (!baseURL || !model) {
+      return res
+        .status(400)
+        .json({ success: false, message: "API地址和模型名称是必填项" });
+    }
+    const parsedMaxTokens = parseInt(maxTokens, 10);
+    const parsedTemperature = parseFloat(temperature);
+
+    // Prepare settings for DB (strings)
+    const settingsToSaveInDb = {
+      apiKey: typeof apiKey === "string" ? apiKey.trim() : "",
+      baseURL: typeof baseURL === "string" ? baseURL.trim() : "",
+      model: typeof model === "string" ? model.trim() : "",
+      maxTokens: !isNaN(parsedMaxTokens) ? String(parsedMaxTokens) : "800",
+      temperature: !isNaN(parsedTemperature)
+        ? String(parsedTemperature)
+        : "0.7",
+    };
+
+    // Save each setting to the database
+    await setSetting("apiKey", settingsToSaveInDb.apiKey);
+    await setSetting("baseURL", settingsToSaveInDb.baseURL);
+    await setSetting("model", settingsToSaveInDb.model);
+    await setSetting("maxTokens", settingsToSaveInDb.maxTokens);
+    await setSetting("temperature", settingsToSaveInDb.temperature);
+    console.log("AI设置已保存到数据库:", settingsToSaveInDb);
+
+    // Prepare settings for aiService (correct types)
+    const settingsForService = {
+      apiKey: settingsToSaveInDb.apiKey,
+      baseURL: settingsToSaveInDb.baseURL,
+      model: settingsToSaveInDb.model,
+      maxTokens: parseInt(settingsToSaveInDb.maxTokens, 10), // Convert back to number
+      temperature: parseFloat(settingsToSaveInDb.temperature), // Convert back to number
+      isEmpty: !(
+        settingsToSaveInDb.apiKey &&
+        settingsToSaveInDb.baseURL &&
+        settingsToSaveInDb.model
+      ),
+    };
+
+    // Update the in-memory configuration in aiService
+    aiService.updateConfiguration(settingsForService);
+
+    res.json({ success: true, message: "AI设置已保存" });
+  } catch (error) {
+    console.error("保存AI设置失败:", error);
+    res.status(500).json({ success: false, message: "无法保存AI设置" });
+  }
+});
+
+// POST Clear AI Settings - Update DB and Service
+router.post("/settings/ai/clear", async (req, res) => {
+  try {
+    const defaultDbSettings = {
+      apiKey: "",
+      baseURL: "",
+      model: "",
+      maxTokens: "800",
+      temperature: "0.7",
+    };
+    const defaultServiceSettings = {
+      apiKey: "",
+      baseURL: "",
+      model: "",
+      maxTokens: 800,
+      temperature: 0.7,
+      isEmpty: true,
+    };
+
+    // Update database with default values
+    await setSetting("apiKey", defaultDbSettings.apiKey);
+    await setSetting("baseURL", defaultDbSettings.baseURL);
+    await setSetting("model", defaultDbSettings.model);
+    await setSetting("maxTokens", defaultDbSettings.maxTokens);
+    await setSetting("temperature", defaultDbSettings.temperature);
+    console.log("AI设置已在数据库中清除");
+
+    // Update the in-memory configuration in aiService
+    aiService.updateConfiguration(defaultServiceSettings);
+
+    res.json({ success: true, message: "AI设置已清除" });
+  } catch (error) {
+    console.error("清除AI设置失败:", error);
+    res.status(500).json({ success: false, message: "无法清除AI设置" });
+  }
+});
+
+// AI 相关路由 (保持不变)
 router.post("/generate", async (req, res) => {
   const { prompt } = req.body;
 
@@ -367,218 +366,24 @@ router.post("/generate", async (req, res) => {
   }
 });
 
-// 添加新的API端点 - 获取AI设置
-router.get("/ai-settings", async (req, res) => {
-  try {
-    // 从配置文件中读取设置
-    const aiSettings = getApiConfig();
-
-    // 检查设置是否为空 - 如果全部配置都为空，则真正返回空值，而不是默认值
-    const isEmptyConfig =
-      !aiSettings.apiKey && !aiSettings.baseURL && !aiSettings.model;
-
-    // 如果是空配置，则返回所有字段为空
-    if (isEmptyConfig) {
-      return res.json({
-        success: true,
-        settings: {
-          apiKey: "",
-          baseURL: "",
-          model: "",
-          maxTokens: 800,
-          temperature: 0.7,
-          isEmpty: true, // 添加标志表示这是一个空配置
-        },
-      });
-    }
-
-    // 处理API密钥 - 出于安全考虑，返回一个掩码版本
-    if (aiSettings.apiKey) {
-      // 仅显示前四位和后四位
-      const prefix = aiSettings.apiKey.substring(0, 4);
-      const suffix = aiSettings.apiKey.substring(aiSettings.apiKey.length - 4);
-      aiSettings.apiKey = `${prefix}${"*".repeat(10)}${suffix}`;
-      aiSettings.hasApiKey = true; // 添加标志表示已设置密钥
-    } else {
-      aiSettings.hasApiKey = false;
-    }
-
-    res.json({ success: true, settings: aiSettings });
-  } catch (error) {
-    console.error("获取AI设置失败:", error);
-    res.status(500).json({
-      success: false,
-      message: "无法获取AI设置",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
-  }
-});
-
-// 添加新的API端点 - 保存AI设置
-router.post("/settings/ai", async (req, res) => {
-  try {
-    const { apiKey, baseURL, model, maxTokens, temperature } = req.body;
-
-    // 验证必填字段
-    if (!baseURL || !model) {
-      return res.status(400).json({
-        success: false,
-        message: "请提供所有必要的设置",
-      });
-    }
-
-    // 验证数值类型
-    if (
-      (maxTokens !== undefined && (isNaN(maxTokens) || maxTokens < 1)) ||
-      (temperature !== undefined &&
-        (isNaN(temperature) || temperature < 0 || temperature > 1))
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "无效的数值设置",
-      });
-    }
-
-    // 获取当前配置，保留可能存在的任何密钥
-    const currentConfig = getApiConfig();
-
-    // 创建新的配置对象
-    const newConfig = {
-      apiKey: apiKey || currentConfig.apiKey, // 如果新密钥为空，保留旧密钥
-      baseURL,
-      model,
-      maxTokens: parseInt(maxTokens),
-      temperature: parseFloat(temperature),
-    };
-
-    // 保存到文件
-    if (saveApiConfig(newConfig)) {
-      // 同时也更新环境变量以便当前会话使用
-      process.env.AI_API_KEY = newConfig.apiKey;
-      process.env.AI_BASE_URL = newConfig.baseURL;
-      process.env.AI_MODEL = newConfig.model;
-      process.env.AI_MAX_TOKENS = newConfig.maxTokens.toString();
-      process.env.AI_TEMPERATURE = newConfig.temperature.toString();
-
-      // 发出配置更新事件
-      if (
-        global.aiConfigUpdated &&
-        typeof global.aiConfigUpdated === "function"
-      ) {
-        global.aiConfigUpdated();
-      }
-
-      res.json({
-        success: true,
-        message: "AI设置已保存",
-      });
-    } else {
-      throw new Error("保存配置文件失败");
-    }
-  } catch (error) {
-    console.error("保存AI设置失败:", error);
-    res.status(500).json({
-      success: false,
-      message: "无法保存AI设置",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
-  }
-});
-
-// 添加清除AI设置的端点
-router.post("/settings/ai/clear", async (req, res) => {
-  try {
-    // 创建空的配置对象 - 确保所有字段真正清空
-    const emptyConfig = {
-      apiKey: "",
-      baseURL: "", // 确保完全清空
-      model: "", // 确保完全清空
-      maxTokens: 800,
-      temperature: 0.7,
-    };
-
-    // 保存空配置
-    if (saveApiConfig(emptyConfig)) {
-      // 同时也清空环境变量
-      process.env.AI_API_KEY = "";
-      process.env.AI_BASE_URL = "";
-      process.env.AI_MODEL = "";
-      process.env.AI_MAX_TOKENS = "800";
-      process.env.AI_TEMPERATURE = "0.7";
-
-      // 发出配置更新事件
-      if (
-        global.aiConfigUpdated &&
-        typeof global.aiConfigUpdated === "function"
-      ) {
-        global.aiConfigUpdated();
-      }
-
-      res.json({
-        success: true,
-        message: "AI设置已清除",
-        clearedSettings: true, // 添加标志，表示设置已被清除
-      });
-    } else {
-      throw new Error("保存配置文件失败");
-    }
-  } catch (error) {
-    console.error("清除AI设置失败:", error);
-    res.status(500).json({
-      success: false,
-      message: "无法清除AI设置",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
-  }
-});
-
-// 添加测试AI连接的新接口
+// ... 其他 AI 设置、测试、健康检查路由保持不变 ...
 router.get("/test-ai-connection", async (req, res) => {
+  console.log("[API /test-ai-connection] Received request."); // Add log
   try {
-    // 首先检查是否有必要的配置
-    if (
-      !process.env.AI_API_KEY ||
-      !process.env.AI_BASE_URL ||
-      !process.env.AI_MODEL
-    ) {
-      return res.json({
-        success: false,
-        message: "缺少必要的AI配置，请先完成配置",
-        details: {
-          missingApiKey: !process.env.AI_API_KEY,
-          missingBaseUrl: !process.env.AI_BASE_URL,
-          missingModel: !process.env.AI_MODEL,
-        },
-      });
-    }
-
-    // 使用AI服务的验证方法测试连接
-    const isValid = await aiService.verifyApiKey();
-
-    if (isValid) {
-      // 连接成功
-      return res.json({
-        success: true,
-        message: "API密钥验证成功，连接正常",
-        model: process.env.AI_MODEL,
-      });
-    } else {
-      // 连接失败，返回详细错误信息
-      return res.json({
-        success: false,
-        message: aiService.authError || "API密钥验证失败，请检查您的配置",
-      });
-    }
+    // Directly call the service's test method
+    const result = await aiService.testConnection();
+    console.log("[API /test-ai-connection] Test result:", result); // Add log
+    // Return the result from the service directly
+    res.json(result);
   } catch (error) {
-    console.error("测试AI连接出错:", error);
-    return res.json({
+    // Catch unexpected errors during the test call itself
+    console.error("测试AI连接时发生意外错误:", error);
+    res.status(500).json({
       success: false,
-      message: `测试连接时发生错误: ${error.message}`,
+      message: `测试连接时发生服务器错误: ${error.message}`,
     });
   }
 });
-
-// 健康检查端点，用于监控
 router.get("/health", (req, res) => {
   res.json({
     status: "ok",
@@ -587,88 +392,5 @@ router.get("/health", (req, res) => {
   });
 });
 
-// 导入便签数据
-router.post("/notes/import", async (req, res) => {
-  try {
-    // 验证请求体中是否有便签数据
-    const { notes } = req.body;
-
-    if (!notes || !Array.isArray(notes)) {
-      return res.status(400).json({
-        success: false,
-        message: "无效的导入数据",
-      });
-    }
-
-    // 读取当前数据
-    const currentData = await readNotesData();
-
-    // 查找最大ID，确保新导入的便签ID不冲突
-    let maxId = currentData.nextId - 1;
-    notes.forEach((note) => {
-      if (note.id > maxId) maxId = note.id;
-    });
-
-    // 清除现有便签，用导入的便签替换
-    const newData = {
-      notes: notes.map((note) => ({
-        ...note,
-        // 确保每个便签都有所需的字段
-        id: note.id,
-        text: note.text || "",
-        x: note.x || 100,
-        y: note.y || 100,
-        title: note.title || `便签 ${note.id}`,
-        colorClass: note.colorClass || null,
-        zIndex: note.zIndex || 1,
-        createdAt: note.createdAt || new Date().toISOString(),
-        updatedAt: note.updatedAt || new Date().toISOString(),
-      })),
-      nextId: maxId + 1,
-    };
-
-    // 保存新数据
-    await writeNotesData(newData);
-
-    res.json({
-      success: true,
-      message: "便签数据导入成功",
-      importedCount: notes.length,
-    });
-  } catch (error) {
-    console.error("导入便签数据失败:", error);
-    res.status(500).json({
-      success: false,
-      message: "导入便签数据失败",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
-  }
-});
-
-// 重置便签数据API端点
-router.post("/notes/reset", async (req, res) => {
-  try {
-    // 创建空的便签数据结构
-    const emptyData = {
-      notes: [],
-      nextId: 1,
-    };
-
-    // 保存空数据到文件
-    await writeNotesData(emptyData);
-
-    res.json({
-      success: true,
-      message: "便签数据已重置",
-    });
-  } catch (error) {
-    console.error("重置便签数据失败:", error);
-    res.status(500).json({
-      success: false,
-      message: "重置便签数据失败",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
-  }
-});
-
+// Export only the router (readSettingsData is no longer needed externally)
 export default router;

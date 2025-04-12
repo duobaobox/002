@@ -2,11 +2,12 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import bodyParser from "body-parser";
-import routes from "./routes.js";
+import routes from "./routes.js"; // No longer need readSettingsData here
 import fs from "fs";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-// 导入加载配置的功能
+import { initializeDatabase, getAllAiSettings } from "./database.js"; // Import getAllAiSettings
+import aiService from "./ai_service.js"; // Import the service instance
 import { loadConfigToEnv } from "./api_config_store.js";
 
 // 尝试加载.env文件 (如果存在)
@@ -164,14 +165,43 @@ function gracefulShutdown() {
   }, 5000);
 }
 
-// 启动服务器
-const server = app.listen(PORT, () => {
-  console.log(`服务器运行在 http://localhost:${PORT}`);
-  console.log(`环境: ${process.env.NODE_ENV || "development"}`);
+// 异步启动函数
+async function startServer() {
+  try {
+    // 初始化数据库
+    await initializeDatabase();
+    console.log("[Server Start] Database initialized.");
 
-  // 服务器启动后，主动触发AI服务初始化
-  if (global.aiConfigUpdated && typeof global.aiConfigUpdated === "function") {
-    console.log("服务器启动完成，主动触发AI服务初始化...");
-    global.aiConfigUpdated();
+    // 读取初始 AI 设置
+    const initialSettings = await getAllAiSettings(); // Fetch from DB
+    console.log(
+      "[Server Start] Loaded initial AI settings from DB:",
+      initialSettings
+    );
+
+    // 配置 AI 服务
+    aiService.updateConfiguration(initialSettings);
+    console.log("[Server Start] AI Service configured with initial settings.");
+
+    // 启动服务器
+    const server = app.listen(PORT, () => {
+      console.log(`服务器运行在 http://localhost:${PORT}`);
+      console.log(`环境: ${process.env.NODE_ENV || "development"}`);
+
+      // 服务器启动后，主动触发AI服务初始化
+      if (
+        global.aiConfigUpdated &&
+        typeof global.aiConfigUpdated === "function"
+      ) {
+        console.log("服务器启动完成，主动触发AI服务初始化...");
+        global.aiConfigUpdated();
+      }
+    });
+  } catch (error) {
+    console.error("服务器启动失败:", error);
+    process.exit(1);
   }
-});
+}
+
+// 调用启动函数
+startServer();

@@ -224,9 +224,12 @@ class App {
                 document.getElementById("ai-max-tokens").value = "800";
                 document.getElementById("ai-temperature").value = "0.7";
 
-                // 更新温度值显示
-                if (temperatureValue) {
-                  temperatureValue.textContent = "0.7";
+                // 更新温度值显示 - 重新获取元素
+                const tempValueElement =
+                  document.getElementById("temperature-value");
+                if (tempValueElement) {
+                  // Check if the element exists
+                  tempValueElement.textContent = "0.7"; // Update its text content
                 }
 
                 // 更新底部栏的AI模型显示
