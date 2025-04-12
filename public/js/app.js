@@ -283,6 +283,14 @@ class App {
         }, 3000);
       });
     }
+
+    // 测试AI连接按钮 (修正选择器)
+    const testConnectionButton = document.getElementById("test-ai-connection");
+    if (testConnectionButton) {
+      testConnectionButton.addEventListener("click", () => {
+        this.testAIConnection(); // 使用更新后的方法名
+      });
+    }
   }
 
   // 根据输入内容更新按钮可见性
@@ -346,13 +354,6 @@ class App {
     } catch (error) {
       console.error("添加便签出错:", error);
     }
-  }
-
-  addNote(text = "", x = 50, y = 50, title = "") {
-    // 添加默认标题参数
-    const note = new Note(this.nextId++, text, x, y, title);
-    this.notes.push(note);
-    return note;
   }
 
   // 从服务器加载便签
@@ -487,41 +488,35 @@ class App {
       return;
     }
 
+    // 禁用按钮和输入框，添加生成中的动画样式
+    generateButton.disabled = true;
+    generateButton.classList.add("generating"); // 添加生成中的动画类
+    promptElement.disabled = true; // 禁用文本输入框
+    // 不在这里显示全局消息，由打字效果提供反馈
+
+    // 首先创建一个空便签，准备接收流式内容
+    // 注意：createEmptyAiNote 现在需要在 note.js 中恢复
+    const { noteElement, noteId } = createEmptyAiNote();
+
     try {
       // 在发送请求前先检查AI配置状态
-      const configCheckResponse = await fetch("/api/test");
+      const configCheckResponse = await fetch("/api/test-ai-connection"); // Use the specific test endpoint
       const configCheckData = await configCheckResponse.json();
 
       if (!configCheckData.success) {
         // 如果AI服务未配置，显示友好的错误提示并引导用户设置
         this.showMessage(
-          configCheckData.message || "AI服务尚未配置，请先在设置中完成配置",
+          configCheckData.message || "AI服务连接失败或未配置",
           "warning"
         );
-
         // 打开设置面板并切换到AI设置选项卡
         document.getElementById("settings-modal").classList.add("visible");
-        document
-          .querySelectorAll(".nav-item")
-          .forEach((item) => item.classList.remove("active"));
-        document
-          .querySelector(".nav-item[data-tab='ai']")
-          .classList.add("active");
-        document
-          .querySelectorAll(".settings-panel")
-          .forEach((panel) => panel.classList.remove("active"));
-        document.getElementById("ai-panel").classList.add("active");
+        document.querySelector(".nav-item[data-tab='ai']").click(); // Simulate click to switch tab
 
-        return;
+        // 移除临时便签
+        noteElement.remove();
+        throw new Error("AI configuration needed"); // Stop execution
       }
-
-      // 禁用按钮和输入框，添加生成中的动画样式
-      generateButton.disabled = true;
-      generateButton.classList.add("generating"); // 添加生成中的动画类
-      promptElement.disabled = true; // 禁用文本输入框
-
-      // 首先创建一个空便签，准备接收流式内容
-      const { noteElement, noteId } = createEmptyAiNote();
 
       // 设置便签标题 - 修改为使用正确的标题元素
       const titleElem = noteElement.querySelector(".note-title");
@@ -530,7 +525,7 @@ class App {
           prompt.substring(0, 20) + (prompt.length > 20 ? "... " : "");
       }
 
-      // 随机选择便签位置和颜色
+      // 获取临时便签的位置和颜色
       const x = parseInt(noteElement.style.left) || 100 + Math.random() * 200;
       const y = parseInt(noteElement.style.top) || 100 + Math.random() * 200;
       const colorClass = noteElement.classList[1]; // 获取当前颜色类
@@ -548,9 +543,8 @@ class App {
 
       const data = await response.json();
 
-      // 处理API密钥验证中的情况
+      // 处理API密钥验证中的情况 (保持之前的逻辑)
       if (!response.ok && response.status === 202 && data.needVerification) {
-        // 显示验证中的状态
         if (noteElement) {
           const contentElement = noteElement.querySelector(".note-content");
           if (contentElement) {
@@ -558,26 +552,22 @@ class App {
               "<p><i>正在验证API连接，请稍候...</i></p>";
           }
         }
-
-        // 短暂延迟后重试
         await new Promise((resolve) => setTimeout(resolve, 2000));
-
-        // 移除临时便签
         noteElement.remove();
-
-        // 提示用户
         this.showMessage("API正在初始化中，请稍后再试", "info");
-
-        return;
+        return; // Stop execution here
       }
 
       if (!response.ok) {
         console.error("服务器响应错误:", data);
+        // 移除临时便签
+        noteElement.remove();
         throw new Error(data.message || `服务器响应错误: ${response.status}`);
       }
 
       if (data.success && data.text) {
         // 显示打字机效果
+        // 注意：updateNoteContent 需要在 note.js 中恢复
         await this.displayTypingEffect(noteElement, data.text);
 
         // AI标题
@@ -597,62 +587,67 @@ class App {
             y,
             title: finalTitle,
             colorClass: colorClass,
+            zIndex: parseInt(
+              noteElement.style.zIndex || getHighestZIndex() + 1
+            ), // Pass zIndex
           }),
         });
 
         const noteData = await noteResponse.json();
 
+        // 移除临时便签
+        noteElement.remove();
+
         if (noteData.success && noteData.note) {
           console.log("AI便签已添加，ID:", noteData.note.id);
-
-          // 移除临时便签
-          noteElement.remove();
 
           // 创建正式的Note实例替代临时便签
           const note = new Note(
             noteData.note.id,
-            data.text,
+            noteData.note.text,
             noteData.note.x || x,
             noteData.note.y || y,
             noteData.note.title || finalTitle,
-            colorClass
+            noteData.note.colorClass // Use color from server or temp note
           );
 
-          // 确保新创建的便签在最上层
+          // 确保新创建的便签在最上层 (使用服务器返回的zIndex或临时便签的)
           if (note.element) {
-            note.element.style.zIndex = getHighestZIndex() + 1;
+            note.element.style.zIndex =
+              noteData.note.zIndex ||
+              parseInt(noteElement.style.zIndex || getHighestZIndex() + 1);
           }
 
           // 添加到notes数组
           this.notes.push(note);
+
+          // 添加高亮效果
+          note.element.classList.add("new-note-highlight");
+          setTimeout(() => {
+            note.element.classList.remove("new-note-highlight");
+          }, 1500);
+
+          // this.showMessage("AI 便签生成成功！", "success"); // Commented out: Do not show success message for AI note generation
         } else {
           console.error("创建AI便签失败:", noteData);
-          throw new Error("无法创建AI便签");
+          throw new Error(noteData.message || "无法创建AI便签");
         }
 
         // 清空输入框
         promptElement.value = "";
         this.updateButtonVisibility(); // 更新按钮状态
       } else {
-        throw new Error("服务器返回了无效的数据");
+        // 移除临时便签
+        noteElement.remove();
+        throw new Error(data.message || "服务器返回了无效的数据");
       }
     } catch (error) {
       console.error("生成AI便签出错:", error);
-      // 显示更友好的错误提示
-      const errorMsg = document.createElement("div");
-      errorMsg.className = "error-message";
-      errorMsg.textContent = `生成失败: ${error.message}`;
-      document.body.appendChild(errorMsg);
-
-      setTimeout(() => {
-        errorMsg.classList.add("show");
-        setTimeout(() => {
-          errorMsg.classList.remove("show");
-          setTimeout(() => {
-            document.body.removeChild(errorMsg);
-          }, 300);
-        }, 3000);
-      }, 10);
+      // 确保在出错时也移除临时便签 (如果它还存在)
+      if (noteElement && noteElement.parentNode) {
+        noteElement.remove();
+      }
+      this.showMessage(`生成失败: ${error.message}`, "error"); // Keep error message display
     } finally {
       // 恢复按钮和输入框状态
       generateButton.disabled = false;
@@ -661,7 +656,7 @@ class App {
     }
   }
 
-  // 添加打字机效果方法
+  // 添加打字机效果方法 (恢复)
   async displayTypingEffect(noteElement, fullText) {
     return new Promise((resolve) => {
       let currentContent = "";
@@ -670,18 +665,24 @@ class App {
       // 设置内容区域为Markdown
       const contentElement = noteElement.querySelector(".note-content");
       const previewElement = noteElement.querySelector(".markdown-preview");
-      contentElement.classList.add("markdown");
+      // Ensure markdown class is present if needed, or handle based on content type
+      contentElement.classList.add("markdown"); // Assuming AI content is markdown
 
       // 确保预览区域就绪
       if (previewElement) {
         previewElement.style.display = "block";
-        contentElement.style.display = "none";
+        contentElement.style.display = "none"; // Hide textarea during typing
       }
+
+      // 移除加载指示器
+      const loader = noteElement.querySelector(".ai-typing-indicator");
+      if (loader) loader.remove();
 
       // 模拟打字效果
       const typingInterval = setInterval(() => {
         if (charIndex < fullText.length) {
           currentContent += fullText.charAt(charIndex);
+          // 注意：updateNoteContent 需要在 note.js 中恢复
           updateNoteContent(noteElement, currentContent);
           charIndex++;
         } else {
@@ -1120,26 +1121,24 @@ class App {
     this.showMessage("正在测试API连接...", "info");
 
     try {
-      const response = await fetch("/api/test");
+      // 使用专门的测试连接端点
+      const response = await fetch("/api/test-ai-connection");
       const data = await response.json();
 
       if (data.success) {
-        this.showMessage("✓ 连接成功！API密钥有效。", "success");
+        this.showMessage(
+          `✓ 连接成功！模型: ${data.model || "未知"}`,
+          "success"
+        );
       } else {
-        // 如果有更详细的配置状态信息
         let errorMessage = `✗ 连接失败: ${data.message || "未知错误"}`;
-
-        if (data.configStatus) {
-          const details = [];
-          if (!data.configStatus.hasApiKey) details.push("缺少API密钥");
-          if (!data.configStatus.hasBaseUrl) details.push("缺少基础URL");
-          if (!data.configStatus.hasModel) details.push("缺少模型设置");
-
-          if (details.length > 0) {
-            errorMessage += ` (${details.join(", ")})`;
-          }
+        if (data.details) {
+          const missing = Object.entries(data.details)
+            .filter(([, value]) => value)
+            .map(([key]) => key.replace("missing", "").toLowerCase())
+            .join(", ");
+          if (missing) errorMessage += ` (缺少: ${missing})`;
         }
-
         this.showMessage(errorMessage, "error");
       }
     } catch (error) {
@@ -1147,59 +1146,35 @@ class App {
     }
   }
 
-  // 显示消息提示
+  // 显示消息提示 - 统一在屏幕顶部居中显示
   showMessage(message, type = "info") {
-    // 检查设置弹窗是否打开
-    const settingsModal = document.getElementById("settings-modal");
-    const isSettingsOpen = settingsModal.classList.contains("visible");
+    // 移除旧的消息元素（如果存在）以避免重叠
+    const existingMessage = document.querySelector(".message-top-center");
+    if (existingMessage) {
+      existingMessage.remove();
+    }
 
-    if (isSettingsOpen) {
-      // 在设置弹窗中显示消息
-      const msgContainer = document.getElementById(
-        "settings-message-container"
-      );
+    // 创建新的消息元素
+    const msgElement = document.createElement("div");
+    // 添加基础类和类型特定的类，以及新的定位类
+    msgElement.className = `message-top-center message-${type}`;
+    msgElement.textContent = message;
+    document.body.appendChild(msgElement);
 
-      // 清除现有消息
-      while (msgContainer.firstChild) {
-        msgContainer.removeChild(msgContainer.firstChild);
-      }
-
-      // 创建新消息
-      const msgElement = document.createElement("div");
-      msgElement.className = `settings-message message-${type}`;
-      msgElement.textContent = message;
-
-      // 添加消息到容器
-      msgContainer.appendChild(msgElement);
-      msgContainer.classList.add("has-message");
-
+    // 显示动画 (通过添加 'show' 类触发 CSS 动画)
+    setTimeout(() => {
+      msgElement.classList.add("show");
       // 设置定时器自动移除消息
       setTimeout(() => {
-        msgContainer.classList.remove("has-message");
+        msgElement.classList.remove("show");
+        // 等待动画完成后再从DOM中移除
         setTimeout(() => {
-          while (msgContainer.firstChild) {
-            msgContainer.removeChild(msgContainer.firstChild);
-          }
-        }, 300);
-      }, 3000);
-    } else {
-      // 如果设置弹窗未打开，使用原来的全局消息显示
-      const msgElement = document.createElement("div");
-      msgElement.className = `message message-${type}`;
-      msgElement.textContent = message;
-      document.body.appendChild(msgElement);
-
-      // 显示动画
-      setTimeout(() => {
-        msgElement.classList.add("show");
-        setTimeout(() => {
-          msgElement.classList.remove("show");
-          setTimeout(() => {
+          if (msgElement.parentNode) {
             document.body.removeChild(msgElement);
-          }, 300);
-        }, 3000);
-      }, 10);
-    }
+          }
+        }, 500); // 动画持续时间 (应与 CSS 中的 transition/animation duration 匹配)
+      }, 3000); // 消息显示时间
+    }, 10); // 短暂延迟以触发动画
   }
 
   // 导出便签数据

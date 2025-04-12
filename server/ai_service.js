@@ -9,6 +9,7 @@ class AIService {
     this.lastVerifiedTime = 0; // 上次验证时间
     this.verificationCacheTime = 30 * 60 * 1000; // 验证结果缓存时间（30分钟）
     this.isVerifying = false; // 是否正在验证中
+    this.authError = null; // 保存验证错误信息
 
     // 注册全局配置更新函数
     global.aiConfigUpdated = () => {
@@ -146,16 +147,20 @@ class AIService {
 
   /**
    * 验证API密钥是否有效
+   * @param {boolean} force - 是否强制重新验证，忽略缓存
    * @returns {Promise<boolean>} 验证结果
    */
-  async verifyApiKey() {
+  async verifyApiKey(force = false) {
     if (!this.openai) {
+      this.isVerified = false;
+      this.authError = "AI服务未初始化或配置不完整";
       return false;
     }
 
-    // 如果已经验证过且在缓存时间内，直接返回缓存的结果
     const now = Date.now();
+    // 如果不强制刷新，并且在缓存时间内，直接返回缓存的结果
     if (
+      !force &&
       this.lastVerifiedTime > 0 &&
       now - this.lastVerifiedTime < this.verificationCacheTime
     ) {
@@ -163,39 +168,62 @@ class AIService {
       return this.isVerified;
     }
 
+    // 防止并发验证
+    if (this.isVerifying) {
+      console.log("验证已在进行中，等待结果...");
+      // 等待正在进行的验证完成
+      await new Promise((resolve) => {
+        const interval = setInterval(() => {
+          if (!this.isVerifying) {
+            clearInterval(interval);
+            resolve();
+          }
+        }, 100);
+      });
+      // 返回最新的验证结果
+      return this.isVerified;
+    }
+
+    this.isVerifying = true;
+    this.authError = null; // 清除旧错误
+    console.log("正在验证API密钥...");
+
     try {
       // 使用更轻量的请求验证API密钥
-      const response = await this.openai.chat.completions.create({
+      await this.openai.chat.completions.create({
         model: this.config.model,
         messages: [{ role: "user", content: "test" }],
-        max_tokens: 1, // 只请求1个token以减少开销
+        max_tokens: 1,
         temperature: 0,
       });
 
       this.isVerified = true;
-      this.lastVerifiedTime = now;
       console.log("API密钥验证成功");
       return true;
     } catch (error) {
       console.error("API密钥验证失败:", error.message);
       this.isVerified = false;
-      this.lastVerifiedTime = now; // 即使失败也更新验证时间，避免频繁重试失败的密钥
 
       // 根据错误类型设置更友好的错误消息
-      if (error.response && error.response.status === 401) {
-        this.authError = "API密钥无效或已过期，请更新您的API密钥";
-      } else if (error.response && error.response.status === 403) {
-        this.authError = "API密钥权限不足，请检查您的账户权限";
-      } else if (
-        error.message.includes("network") ||
-        error.message.includes("timeout")
-      ) {
-        this.authError = "网络连接问题，请检查您的网络连接和API地址";
+      if (error.response) {
+        if (error.response.status === 401) {
+          this.authError = "API密钥无效或已过期，请更新您的API密钥";
+        } else if (error.response.status === 403) {
+          this.authError = "API密钥权限不足，请检查您的账户权限";
+        } else {
+          this.authError = `API服务返回错误: ${error.response.status} ${
+            error.response.statusText || ""
+          }`;
+        }
+      } else if (error.request) {
+        this.authError = "无法连接到API服务，请检查网络连接和API地址";
       } else {
-        this.authError = `API服务出错: ${error.message}`;
+        this.authError = `验证请求设置出错: ${error.message}`;
       }
-
       return false;
+    } finally {
+      this.lastVerifiedTime = Date.now(); // 记录验证时间
+      this.isVerifying = false;
     }
   }
 
@@ -205,104 +233,95 @@ class AIService {
    * @returns {Promise<string>} - 生成的文本
    */
   async generateText(prompt) {
-    try {
-      // 首先检查是否已配置AI服务
-      if (!this.openai) {
-        throw new Error("AI服务尚未配置，请在设置中配置API密钥、URL和模型");
-      }
+    // 首先检查是否已配置AI服务
+    if (!this.openai) {
+      throw new Error("AI服务尚未配置，请在设置中配置API密钥、URL和模型");
+    }
 
-      // 验证API密钥（使用缓存结果）
-      if (!this.isVerified) {
-        const now = Date.now();
-        // 如果从未验证过或者距离上次验证失败超过缓存时间，则重新验证
+    // 验证API密钥（如果需要）
+    if (!this.isVerified) {
+      const isValid = await this.verifyApiKey();
+      if (!isValid) {
+        throw new Error(this.authError || "API密钥验证失败，请检查您的配置");
+      }
+    }
+
+    // 检查缓存 (保持简单缓存逻辑)
+    const cacheKey = this._generateCacheKey(prompt);
+    if (this.cache.has(cacheKey)) {
+      console.log("从缓存返回结果");
+      return this.cache.get(cacheKey);
+    }
+
+    console.log("使用OpenAI SDK发送请求");
+    console.log("基础URL:", this.config.baseURL);
+    console.log("使用模型:", this.config.model);
+
+    // 使用重试机制 (保持现有逻辑)
+    let retries = 0;
+    const maxRetries = this.config.fallbackConfig?.maxRetries || 3;
+    const retryDelay = this.config.fallbackConfig?.retryDelay || 1000;
+
+    while (true) {
+      try {
+        const completion = await this.openai.chat.completions.create({
+          model: this.config.model,
+          messages: [
+            {
+              role: "system",
+              content:
+                "你是一个便签生成助手，根据用户的提示生成简短、有帮助的便签内容。",
+            },
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+          max_tokens: this.config.maxTokens,
+          temperature: this.config.temperature,
+        });
+
+        console.log("API响应成功");
+
         if (
-          this.lastVerifiedTime === 0 ||
-          now - this.lastVerifiedTime >= this.verificationCacheTime
+          completion.choices &&
+          completion.choices.length > 0 &&
+          completion.choices[0].message?.content
         ) {
-          const isValid = await this.verifyApiKey();
-          if (!isValid) {
-            throw new Error(
-              this.authError || "API密钥验证失败，请检查您的配置"
-            );
-          }
-        } else if (!this.isVerified) {
-          // 如果在缓存期内已知密钥无效，直接返回错误
-          throw new Error(this.authError || "API密钥验证失败，请检查您的配置");
+          const generatedText = completion.choices[0].message.content.trim();
+          console.log(
+            "生成的文本预览:",
+            generatedText.substring(0, 50) + "..."
+          );
+          // 存入缓存
+          this.cache.set(cacheKey, generatedText);
+          return generatedText;
+        } else {
+          console.error("API响应格式异常或内容为空:", completion);
+          throw new Error("API响应格式无效或内容为空");
         }
-      }
-
-      // 检查缓存
-      const cacheKey = this._generateCacheKey(prompt);
-      if (this.cache.has(cacheKey)) {
-        console.log("从缓存返回结果");
-        return this.cache.get(cacheKey);
-      }
-
-      console.log("使用OpenAI SDK发送请求");
-      console.log("基础URL:", this.config.baseURL);
-      console.log("使用模型:", this.config.model);
-
-      // 使用重试机制
-      let retries = 0;
-      const maxRetries = this.config.fallbackConfig?.maxRetries || 3;
-      const retryDelay = this.config.fallbackConfig?.retryDelay || 1000;
-
-      while (true) {
-        try {
-          const completion = await this.openai.chat.completions.create({
-            model: this.config.model,
-            messages: [
-              {
-                role: "system",
-                content:
-                  "你是一个便签生成助手，根据用户的提示生成简短、有帮助的便签内容。",
-              },
-              {
-                role: "user",
-                content: prompt,
-              },
-            ],
-            max_tokens: this.config.maxTokens,
-            temperature: this.config.temperature,
-          });
-
-          console.log("API响应成功");
-
-          if (completion.choices && completion.choices.length > 0) {
-            const generatedText = completion.choices[0].message.content.trim();
-            console.log(
-              "生成的文本预览:",
-              generatedText.substring(0, 50) + "..."
-            );
-
-            // 存入缓存
-            this.cache.set(cacheKey, generatedText);
-
-            return generatedText;
-          } else {
-            console.error("API响应格式异常:", completion);
-            throw new Error("API响应格式无效");
+      } catch (error) {
+        console.error(
+          `AI API 调用失败 (尝试 ${retries + 1}/${maxRetries}):`,
+          error.message
+        );
+        retries++;
+        if (retries >= maxRetries) {
+          // 如果是认证错误，则标记为未验证
+          if (
+            error.response &&
+            (error.response.status === 401 || error.response.status === 403)
+          ) {
+            this.isVerified = false;
+            this.lastVerifiedTime = 0; // 强制下次重新验证
+            this.authError = `API认证失败 (${error.response.status})，请检查密钥或权限`;
+            throw new Error(this.authError);
           }
-        } catch (error) {
-          retries++;
-          if (retries >= maxRetries) {
-            throw error; // 重试次数用尽，抛出错误
-          }
-          console.log(`请求失败，${retries}/${maxRetries} 次重试...`);
-          await this._sleep(retryDelay * retries); // 指数退避
+          throw error; // 重试次数用尽，抛出原始错误
         }
+        console.log(`等待 ${retryDelay * retries}ms 后重试...`);
+        await this._sleep(retryDelay * retries); // 指数退避
       }
-    } catch (error) {
-      console.error("调用AI API出错:");
-
-      if (error.response) {
-        console.error("状态码:", error.response.status);
-        console.error("错误信息:", error.response.data);
-      } else {
-        console.error("错误详情:", error.message);
-      }
-
-      throw new Error(`AI生成失败: ${error.message || "未知错误"}`);
     }
   }
 

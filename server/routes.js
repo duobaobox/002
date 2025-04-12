@@ -83,11 +83,9 @@ const writeNotesData = (data) => {
       if (!fs.existsSync(dataDir)) {
         fs.mkdirSync(dataDir, { recursive: true });
       }
-
       // 将对象转换为JSON字符串
       const jsonData = JSON.stringify(data, null, 2);
-
-      // 使用指定的编码写入文件，处理中文路径
+      // 使用指定的编码写入文件
       fs.writeFileSync(notesFilePath, jsonData, {
         encoding: "utf8",
         flag: "w",
@@ -95,23 +93,7 @@ const writeNotesData = (data) => {
       resolve();
     } catch (error) {
       console.error("写入便签数据失败:", error);
-      // 尝试以不同方式写入
-      try {
-        const tempPath = path.join(dataDir, "notes_temp.json");
-        fs.writeFileSync(tempPath, JSON.stringify(data, null, 2), "utf8");
-
-        // 先删除原文件，再重命名临时文件
-        if (fs.existsSync(notesFilePath)) {
-          fs.unlinkSync(notesFilePath);
-        }
-        fs.renameSync(tempPath, notesFilePath);
-
-        console.log("使用备用方法写入数据成功");
-        resolve();
-      } catch (fallbackError) {
-        console.error("备用写入方法失败:", fallbackError);
-        reject(fallbackError);
-      }
+      reject(error); // 直接拒绝 Promise
     }
   });
 };
@@ -223,72 +205,41 @@ router.put("/notes/:id", validateNoteData, async (req, res) => {
     const { text, x, y, title, width, height, colorClass, zIndex } = req.body;
     console.log(`更新便签 ID=${noteId}, x=${x}, y=${y}`);
 
-    try {
-      // 读取现有数据
-      const data = await readNotesData();
+    // 读取现有数据
+    const data = await readNotesData();
 
-      // 查找便签
-      const noteIndex = data.notes.findIndex((note) => note.id === noteId);
+    // 查找便签
+    const noteIndex = data.notes.findIndex((note) => note.id === noteId);
 
-      if (noteIndex === -1) {
-        return res.status(404).json({
-          success: false,
-          message: `ID为${noteId}的便签不存在`,
-        });
-      }
-
-      // 更新便签
-      const updatedNote = { ...data.notes[noteIndex] };
-      if (text !== undefined) updatedNote.text = text;
-      if (x !== undefined) updatedNote.x = x;
-      if (y !== undefined) updatedNote.y = y;
-      if (title !== undefined) updatedNote.title = title;
-      if (width !== undefined) updatedNote.width = width;
-      if (height !== undefined) updatedNote.height = height;
-      if (colorClass !== undefined) updatedNote.colorClass = colorClass;
-      if (zIndex !== undefined) updatedNote.zIndex = zIndex;
-      updatedNote.updatedAt = new Date().toISOString();
-
-      // 将更新后的便签放回数组
-      data.notes[noteIndex] = updatedNote;
-
-      // 保存数据
-      await writeNotesData(data);
-
-      console.log(`便签 ID=${noteId} 更新成功`);
-      res.json({ success: true, note: updatedNote });
-    } catch (dataError) {
-      console.error("数据处理错误:", dataError);
-
-      // 尝试直接更新便签，不依赖当前数据文件
-      const fallbackData = {
-        notes: [
-          {
-            id: noteId,
-            text: text || "",
-            x: x || 0,
-            y: y || 0,
-            title: title || `便签 ${noteId}`,
-            width: width,
-            height: height,
-            colorClass: colorClass,
-            zIndex: zIndex || 1,
-            updatedAt: new Date().toISOString(),
-          },
-        ],
-        nextId: noteId + 1,
-      };
-
-      try {
-        await writeNotesData(fallbackData);
-        console.log(`使用备用方法更新便签 ID=${noteId}`);
-        res.json({ success: true, note: fallbackData.notes[0] });
-      } catch (fallbackError) {
-        console.error("备用更新方法失败:", fallbackError);
-        throw fallbackError;
-      }
+    if (noteIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: `ID为${noteId}的便签不存在`,
+      });
     }
+
+    // 更新便签
+    const updatedNote = { ...data.notes[noteIndex] };
+    if (text !== undefined) updatedNote.text = text;
+    if (x !== undefined) updatedNote.x = x;
+    if (y !== undefined) updatedNote.y = y;
+    if (title !== undefined) updatedNote.title = title;
+    if (width !== undefined) updatedNote.width = width;
+    if (height !== undefined) updatedNote.height = height;
+    if (colorClass !== undefined) updatedNote.colorClass = colorClass;
+    if (zIndex !== undefined) updatedNote.zIndex = zIndex;
+    updatedNote.updatedAt = new Date().toISOString();
+
+    // 将更新后的便签放回数组
+    data.notes[noteIndex] = updatedNote;
+
+    // 保存数据
+    await writeNotesData(data);
+
+    console.log(`便签 ID=${noteId} 更新成功`);
+    res.json({ success: true, note: updatedNote });
   } catch (error) {
+    // 简化错误处理
     console.error("更新便签失败:", error);
     res.status(500).json({
       success: false,
@@ -412,34 +363,6 @@ router.post("/generate", async (req, res) => {
       success: false,
       message: `AI调用错误: ${error.message || "未知AI服务错误"}`,
       error: process.env.NODE_ENV === "development" ? error.stack : undefined,
-    });
-  }
-});
-
-// 添加新的API端点 - 获取AI设置
-router.get("/settings/ai", async (req, res) => {
-  try {
-    // 从配置文件中读取设置
-    const aiSettings = getApiConfig();
-
-    // 处理API密钥 - 出于安全考虑，返回一个掩码版本
-    if (aiSettings.apiKey) {
-      // 仅显示前四位和后四位
-      const prefix = aiSettings.apiKey.substring(0, 4);
-      const suffix = aiSettings.apiKey.substring(aiSettings.apiKey.length - 4);
-      aiSettings.apiKey = `${prefix}${"*".repeat(10)}${suffix}`;
-      aiSettings.hasApiKey = true; // 添加标志表示已设置密钥
-    } else {
-      aiSettings.hasApiKey = false;
-    }
-
-    res.json({ success: true, settings: aiSettings });
-  } catch (error) {
-    console.error("获取AI设置失败:", error);
-    res.status(500).json({
-      success: false,
-      message: "无法获取AI设置",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 });
@@ -607,41 +530,6 @@ router.post("/settings/ai/clear", async (req, res) => {
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
-});
-
-// 添加测试端点，用于检查API连接
-router.get("/test", (req, res) => {
-  // 检查AI配置是否存在
-  const hasAIConfig =
-    process.env.AI_API_KEY && process.env.AI_BASE_URL && process.env.AI_MODEL;
-
-  if (!hasAIConfig) {
-    // 提供更详细的配置状态
-    return res.json({
-      success: false,
-      message: "AI服务尚未配置，请先在设置中配置API密钥、URL和模型",
-      configStatus: {
-        hasApiKey: !!process.env.AI_API_KEY,
-        hasBaseUrl: !!process.env.AI_BASE_URL,
-        hasModel: !!process.env.AI_MODEL,
-      },
-      timestamp: new Date().toISOString(),
-    });
-  }
-
-  // 检查配置文件是否存在
-  const configFilePath = path.join(__dirname, "../data/api_config.json");
-  const fileExists = fs.existsSync(configFilePath);
-
-  res.json({
-    success: true,
-    message: "API服务正常工作",
-    timestamp: new Date().toISOString(),
-    configFile: {
-      exists: fileExists,
-      path: configFilePath,
-    },
-  });
 });
 
 // 添加测试AI连接的新接口

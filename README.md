@@ -65,7 +65,7 @@ npm start
 
 - 前端：原生 JavaScript, HTML5, CSS3
 - 后端：Node.js, Express
-- AI API：DeepSeek API
+- AI API：OpenAI compatible (e.g., DeepSeek, Kimi, OpenAI)
 
 ## 贡献
 

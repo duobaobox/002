@@ -468,3 +468,73 @@
   font-size: 12px;
   letter-spacing: 2px;
 }
+
+/* --- Top Center Notification Styles --- */
+.message-top-center {
+  position: fixed; /* 固定定位，相对于视口 */
+  top: 20px; /* 距离顶部 20px */
+  left: 50%; /* 水平居中 */
+  transform: translateX(-50%) translateY(-100px); /* 初始位置在屏幕上方外，并水平居中 */
+  padding: 12px 25px;
+  border-radius: 8px;
+  background-color: rgba(50, 50, 50, 0.9); /* 深灰色背景，带透明度 */
+  color: #fff; /* 白色文字 */
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 10000; /* 确保在最上层 */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
+    opacity 0.4s ease-out; /* 平滑过渡效果 */
+  pointer-events: none; /* 避免遮挡下方元素 */
+  max-width: 80%; /* 最大宽度，防止过长 */
+  text-align: center;
+}
+
+.message-top-center.show {
+  transform: translateX(-50%) translateY(0); /* 动画结束状态：移动到目标位置 */
+  opacity: 1;
+}
+
+/* 不同类型的通知颜色 */
+.message-top-center.message-success {
+  background-color: rgba(76, 175, 80, 0.9); /* 绿色 */
+}
+
+.message-top-center.message-error {
+  background-color: rgba(244, 67, 54, 0.9); /* 红色 */
+}
+
+.message-top-center.message-warning {
+  background-color: rgba(255, 152, 0, 0.9); /* 橙色 */
+}
+
+.message-top-center.message-info {
+  background-color: rgba(33, 150, 243, 0.9); /* 蓝色 */
+}
+
+/* 移除旧的底部消息样式 (如果存在) */
+/* .message { ... } */
+/* .message.show { ... } */
+/* .message-success { ... } */
+/* etc. */
+
+/* 可以在这里添加新的高亮效果样式 */
+.new-note-highlight {
+  animation: highlight-fade 1.5s ease-out;
+}
+
+@keyframes highlight-fade {
+  0% {
+    box-shadow: 0 0 0 8px rgba(76, 175, 80, 0.5); /* 初始绿色高亮 */
+    transform: scale(1.02);
+  }
+  70% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); /* 阴影消失 */
+    transform: scale(1);
+  }
+  100% {
+    box-shadow: none;
+    transform: scale(1);
+  }
+}

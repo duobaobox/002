@@ -97,7 +97,6 @@ class Note {
     // 创建 Markdown 预览区域
     const markdownPreview = document.createElement("div");
     markdownPreview.className = "markdown-preview";
-    markdownPreview.innerHTML = this.renderMarkdown(this.text);
 
     // 创建独立的编辑提示元素（注意：之前这里有重复定义）
     const editHint = document.createElement("div");
@@ -119,7 +118,7 @@ class Note {
     // 为预览区域添加双击事件，切换回编辑模式
     markdownPreview.addEventListener("dblclick", () => {
       this.editMode = true;
-      this.toggleEditPreviewMode(textarea, markdownPreview);
+      this.toggleEditPreviewMode();
       setTimeout(() => textarea.focus(), 10); // 聚焦到文本区域
     });
 
@@ -128,7 +127,7 @@ class Note {
       if (!this.editMode) {
         e.stopPropagation();
         this.editMode = true;
-        this.toggleEditPreviewMode(textarea, markdownPreview);
+        this.toggleEditPreviewMode();
         setTimeout(() => textarea.focus(), 10);
       }
     });
@@ -153,9 +152,15 @@ class Note {
 
     // 文本区域失去焦点时，如果有内容则切换到预览模式
     textarea.addEventListener("blur", () => {
+      // Save changes before switching mode
+      this.text = textarea.value;
+      document.dispatchEvent(
+        new CustomEvent("note-updated", { detail: { id: this.id } })
+      );
+
       if (this.text.trim() !== "") {
         this.editMode = false;
-        this.toggleEditPreviewMode(textarea, markdownPreview);
+        this.toggleEditPreviewMode();
       }
     });
 
@@ -213,7 +218,7 @@ class Note {
     this.setupResizeObserver(note);
 
     // 初始切换模式 - 有内容的便签默认显示预览模式
-    this.toggleEditPreviewMode(textarea, markdownPreview);
+    this.toggleEditPreviewMode();
 
     // 初始化滚动条
     this.updateScrollbar(
@@ -296,32 +301,26 @@ class Note {
     }
   }
 
-  // 切换编辑/预览模式
-  toggleEditPreviewMode(textarea, preview) {
+  // 切换编辑/预览模式 - Simplified
+  toggleEditPreviewMode() {
+    const textarea = this.element.querySelector(".note-content");
+    const preview = this.element.querySelector(".markdown-preview");
+    const scrollbarThumb = this.element.querySelector(".scrollbar-thumb");
+    const editHint = this.element.querySelector(".edit-hint");
+
     if (this.editMode) {
-      // 切换到编辑模式
       textarea.style.display = "block";
       preview.style.display = "none";
-
-      // 更新滚动条
-      const scrollbarThumb = this.element.querySelector(".scrollbar-thumb");
+      editHint.style.opacity = "0";
+      editHint.style.pointerEvents = "none";
       this.updateScrollbar(textarea, scrollbarThumb);
     } else {
-      // 切换到预览模式
       textarea.style.display = "none";
       preview.style.display = "block";
-
-      // 确保预览内容是最新的
-      preview.innerHTML = this.renderMarkdown(this.text);
-
-      // 更新滚动条
-      const scrollbarThumb = this.element.querySelector(".scrollbar-thumb");
+      preview.innerHTML = this.renderMarkdown(this.text); // Render on switch
+      editHint.style.opacity = "1"; // Show hint in preview mode
+      editHint.style.pointerEvents = "auto";
       this.updateScrollbar(preview, scrollbarThumb);
-    }
-
-    // 更新编辑提示可见性
-    if (this.updateEditHintVisibility) {
-      this.updateEditHintVisibility();
     }
   }
 
@@ -519,27 +518,37 @@ class Note {
   update(text) {
     this.text = text;
     const textarea = this.element.querySelector(".note-content");
-    const preview = this.element.querySelector(".markdown-preview");
     if (textarea) {
       textarea.value = text;
-
-      // 更新预览内容
+    }
+    // Update preview immediately if not in edit mode
+    if (!this.editMode) {
+      const preview = this.element.querySelector(".markdown-preview");
       if (preview) {
         preview.innerHTML = this.renderMarkdown(text);
       }
-
-      // 更新滚动条
-      const scrollbarThumb = this.element.querySelector(".scrollbar-thumb");
-      this.updateScrollbar(textarea, scrollbarThumb);
-
-      // 有内容时默认显示预览
-      if (text.trim() !== "") {
-        this.editMode = false;
-        this.toggleEditPreviewMode(textarea, preview);
-      }
     }
 
-    // 发送更新事件
+    // Update scrollbar based on current mode
+    const scrollbarThumb = this.element.querySelector(".scrollbar-thumb");
+    const currentElement = this.editMode
+      ? textarea
+      : this.element.querySelector(".markdown-preview");
+    if (currentElement) {
+      this.updateScrollbar(currentElement, scrollbarThumb);
+    }
+
+    // Decide whether to switch mode based on content
+    if (text.trim() !== "" && this.editMode) {
+      // If content added in edit mode, consider switching to preview on blur
+    } else if (text.trim() === "" && !this.editMode) {
+      // If content removed, switch back to edit mode
+      this.editMode = true;
+      this.toggleEditPreviewMode();
+    }
+
+    // 发送更新事件 (debounced or immediate based on needs)
+    // Debounce might be better handled in the event listener in app.js
     document.dispatchEvent(
       new CustomEvent("note-updated", { detail: { id: this.id } })
     );
@@ -614,38 +623,61 @@ function getHighestZIndex() {
   return highest;
 }
 
-// 修改更新便签内容的方法
+// --- Restored Helper Functions ---
+
+// 修改更新便签内容的方法 (恢复)
 function updateNoteContent(noteElement, content) {
   const contentElement = noteElement.querySelector(".note-content");
   const previewElement = noteElement.querySelector(".markdown-preview");
 
   // 如果内容是Markdown格式，则解析它并更新预览区域
-  if (contentElement.classList.contains("markdown")) {
-    // 保存原始文本到文本区域
-    contentElement.value = content;
+  // Check if markdown class exists or determine based on content
+  if (previewElement && contentElement.classList.contains("markdown")) {
+    // 保存原始文本到文本区域 (optional, maybe not needed for temp note)
+    // contentElement.value = content;
 
     // 更新预览区域显示解析后的HTML
-    if (previewElement) {
-      previewElement.innerHTML = marked.parse(content);
+    previewElement.innerHTML = marked.parse(content); // Assuming 'marked' is globally available
 
-      // 如果有代码块且hljs已定义，才应用高亮
-      previewElement.querySelectorAll("pre code").forEach((block) => {
-        if (typeof hljs !== "undefined") {
-          hljs.highlightElement(block);
-        }
-      });
+    // 如果有代码块且hljs已定义，才应用高亮
+    previewElement.querySelectorAll("pre code").forEach((block) => {
+      if (typeof hljs !== "undefined") {
+        hljs.highlightElement(block);
+      }
+    });
 
-      // 确保预览区域可见，文本区域隐藏
-      previewElement.style.display = "block";
-      contentElement.style.display = "none";
+    // 确保预览区域可见，文本区域隐藏 (during typing effect)
+    previewElement.style.display = "block";
+    contentElement.style.display = "none";
+
+    // Update scrollbar for preview element
+    const scrollbarThumb = noteElement.querySelector(".scrollbar-thumb");
+    if (scrollbarThumb) {
+      const scrollHeight = previewElement.scrollHeight;
+      const clientHeight = previewElement.clientHeight;
+      if (scrollHeight <= clientHeight) {
+        scrollbarThumb.style.display = "none";
+      } else {
+        scrollbarThumb.style.display = "block";
+        const scrollRatio = clientHeight / scrollHeight;
+        const thumbHeight = Math.max(30, scrollRatio * clientHeight);
+        scrollbarThumb.style.height = `${thumbHeight}px`;
+        const scrollableDistance = scrollHeight - clientHeight;
+        const scrollPosition = previewElement.scrollTop;
+        const scrollPercentage = scrollPosition / scrollableDistance;
+        const thumbPosition = scrollPercentage * (clientHeight - thumbHeight);
+        scrollbarThumb.style.top = `${thumbPosition}px`;
+      }
     }
   } else {
-    // 普通文本模式，直接更新文本区域
+    // Fallback or non-markdown mode: update textarea
     contentElement.value = content;
+    previewElement.style.display = "none";
+    contentElement.style.display = "block";
   }
 }
 
-// 修复 createEmptyAiNote 函数
+// 修复 createEmptyAiNote 函数 (恢复)
 function createEmptyAiNote() {
   // 随机位置
   const x = 100 + Math.random() * 200;
@@ -664,14 +696,14 @@ function createEmptyAiNote() {
 
   // 创建便签元素
   const note = document.createElement("div");
-  const noteId = "note-" + Date.now();
+  const noteId = "temp-ai-note-" + Date.now(); // Use a distinct ID format
   note.id = noteId;
   note.className = `note ${colorClass}`;
   note.style.left = `${x}px`;
   note.style.top = `${y}px`;
 
   // 设置最高层级，确保新便签显示在最上层
-  note.style.zIndex = getHighestZIndex() + 10;
+  note.style.zIndex = getHighestZIndex() + 10; // Use a higher z-index temporarily
 
   // 设置便签默认大小
   const DEFAULT_NOTE_SIZE = {
@@ -695,7 +727,12 @@ function createEmptyAiNote() {
   const closeBtn = document.createElement("div");
   closeBtn.className = "note-close";
   closeBtn.innerHTML = "&times;";
-  closeBtn.addEventListener("click", () => note.remove());
+  // Close button should remove the temp note
+  closeBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    note.remove();
+    // Optionally, signal cancellation to app.js if needed
+  });
 
   header.appendChild(title);
   header.appendChild(closeBtn);
@@ -705,15 +742,17 @@ function createEmptyAiNote() {
   const body = document.createElement("div");
   body.className = "note-body";
 
-  // 创建文本区域
+  // 创建文本区域 (hidden during typing)
   const textarea = document.createElement("textarea");
   textarea.className = "note-content";
   textarea.placeholder = "AI 正在生成内容...";
+  textarea.style.display = "none"; // Hide initially
   body.appendChild(textarea);
 
-  // 创建预览区域
+  // 创建预览区域 (visible during typing)
   const preview = document.createElement("div");
   preview.className = "markdown-preview";
+  preview.style.display = "block"; // Show initially
   body.appendChild(preview);
 
   // 创建自定义滚动条容器和滑块，与Note类结构相同
@@ -737,13 +776,13 @@ function createEmptyAiNote() {
   // 组装便签
   note.appendChild(body);
   note.appendChild(resizeHandle);
-  note.appendChild(loader);
+  note.appendChild(loader); // Add loader initially
 
-  // 添加到DOM
-  document.getElementById("note-canvas").appendChild(note);
+  // 添加到DOM (添加到 note-container)
+  document.getElementById("note-container").appendChild(note);
 
-  // 使便签可拖动
-  setupDragEvents(note, header);
+  // 使便签可拖动 (Use the restored specific drag handler)
+  setupDragEventsForTemp(note, header);
 
   // 为临时AI便签添加大小调整监控
   setupResizeObserverForTemp(note, noteId);
@@ -751,17 +790,13 @@ function createEmptyAiNote() {
   // 添加点击事件，确保便签点击时提升到最上层
   note.addEventListener("mousedown", () => {
     note.style.zIndex = getHighestZIndex() + 1;
-
-    // 添加此行以触发事件
-    document.dispatchEvent(
-      new CustomEvent("note-zindex-changed", { detail: { id: noteId } })
-    );
+    // No need to dispatch z-index change for temp note
   });
 
   return { noteElement: note, noteId };
 }
 
-// 为临时AI便签添加ResizeObserver
+// 为临时AI便签添加ResizeObserver (恢复)
 function setupResizeObserverForTemp(note, noteId) {
   if (typeof ResizeObserver !== "undefined") {
     let lastWidth = note.offsetWidth;
@@ -779,10 +814,25 @@ function setupResizeObserverForTemp(note, noteId) {
           lastWidth = newWidth;
           lastHeight = newHeight;
           // 临时便签的大小变化我们不需要保存到服务器
-          // 但在此记录是为了保持一致性，实际AI返回后会创建真正的Note实例
           console.log(
             `临时AI便签 ${noteId} 大小已调整: ${newWidth}x${newHeight}`
           );
+          // Update scrollbar on resize
+          const preview = note.querySelector(".markdown-preview");
+          const scrollbarThumb = note.querySelector(".scrollbar-thumb");
+          if (preview && scrollbarThumb) {
+            const scrollHeight = preview.scrollHeight;
+            const clientHeight = preview.clientHeight;
+            if (scrollHeight <= clientHeight) {
+              scrollbarThumb.style.display = "none";
+            } else {
+              scrollbarThumb.style.display = "block";
+              const scrollRatio = clientHeight / scrollHeight;
+              const thumbHeight = Math.max(30, scrollRatio * clientHeight);
+              scrollbarThumb.style.height = `${thumbHeight}px`;
+              // Position update happens in updateNoteContent or scroll event
+            }
+          }
         }, 300);
       }
     });
@@ -794,60 +844,52 @@ function setupResizeObserverForTemp(note, noteId) {
   }
 }
 
-// 添加一个单独的拖动事件处理函数，供createEmptyAiNote使用
-function setupDragEvents(note, header) {
+// 添加一个单独的拖动事件处理函数，供createEmptyAiNote使用 (恢复)
+// Renamed to avoid conflict with Note class method if it exists globally
+function setupDragEventsForTemp(note, header) {
   let isDragging = false;
   let dragOffsetX = 0;
   let dragOffsetY = 0;
 
   header.addEventListener("mousedown", (e) => {
+    // Only drag if clicking the header itself, not buttons inside
     if (e.target === header) {
       isDragging = true;
       dragOffsetX = e.clientX - note.offsetLeft;
       dragOffsetY = e.clientY - note.offsetTop;
-      note.style.zIndex = getHighestZIndex() + 1;
+      note.style.zIndex = getHighestZIndex() + 1; // Bring to front on drag start
     }
   });
 
-  window.addEventListener("mousemove", (e) => {
+  // Use window listeners for mousemove and mouseup for better drag experience
+  const handleMouseMove = (e) => {
     if (!isDragging) return;
 
     const x = e.clientX - dragOffsetX;
     const y = e.clientY - dragOffsetY;
 
-    // 检查底部控制栏位置
-    const bottomBar = document.querySelector(".bottom-bar");
-    const bottomBarRect = bottomBar.getBoundingClientRect();
-
-    const noteHeight = note.offsetHeight;
-    const headerHeight = 30; // 便签头部高度
-    const safeBottomPosition = window.innerHeight - bottomBarRect.height - 40;
-
-    const finalY = Math.min(y, safeBottomPosition - headerHeight);
+    // Optional: Add boundary checks if needed
+    // const canvasRect = document.getElementById('note-canvas').getBoundingClientRect();
+    // const noteRect = note.getBoundingClientRect();
+    // const finalX = Math.max(0, Math.min(x, canvasRect.width - noteRect.width));
+    // const finalY = Math.max(0, Math.min(y, canvasRect.height - noteRect.height));
 
     note.style.left = `${x}px`;
-    note.style.top = `${finalY}px`;
-  });
+    note.style.top = `${y}px`;
+  };
 
-  window.addEventListener("mouseup", () => {
-    isDragging = false;
-  });
-}
-
-// 在note.js最后添加一个事件监听器，以处理便签点击的情况
-function setupNoteClickEvents(note, noteId) {
-  note.addEventListener("mousedown", (e) => {
-    // 如果点击的是便签本身而不是其内部的可编辑元素
-    if (
-      e.target.closest(".note") &&
-      !e.target.matches("textarea, input, [contenteditable='true']")
-    ) {
-      note.style.zIndex = getHighestZIndex() + 1;
-
-      // 触发层级变化事件
-      document.dispatchEvent(
-        new CustomEvent("note-zindex-changed", { detail: { id: noteId } })
-      );
+  const handleMouseUp = () => {
+    if (isDragging) {
+      isDragging = false;
+      // No need to save position for temp note
     }
-  });
+  };
+
+  window.addEventListener("mousemove", handleMouseMove);
+  window.addEventListener("mouseup", handleMouseUp);
+
+  // Store handlers on the note element to remove them later if needed
+  note._tempDragHandlers = { handleMouseMove, handleMouseUp };
 }
+
+// Removed setupNoteClickEvents as the logic is included in createEmptyAiNote
