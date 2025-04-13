@@ -199,20 +199,37 @@
                             <h3>备份与恢复</h3>
                             <div class="setting-item">
                                 <div class="setting-label">
-                                    <label>导出数据</label>
-                                    <span class="setting-description">将便签数据导出为JSON文件</span>
+                                    <label>导出便签 (JSON)</label> <!-- Modified Label -->
+                                    <span class="setting-description">将所有便签导出为JSON文件，可通过下方导入功能恢复</span>
+                                    <!-- Modified Description -->
                                 </div>
                                 <div class="setting-control">
-                                    <button class="action-button export-button">导出数据</button>
+                                    <!-- Use the same classes as the other export button -->
+                                    <button class="action-button export-button" id="export-notes-json">导出便签
+                                        (JSON)</button> <!-- Modified Text & ID -->
                                 </div>
                             </div>
                             <div class="setting-item">
                                 <div class="setting-label">
-                                    <label>导入数据</label>
-                                    <span class="setting-description">从JSON文件导入便签数据</span>
+                                    <label>导出完整备份 (.db)</label> <!-- New Label -->
+                                    <span class="setting-description">下载包含所有便签和设置的数据库文件，用于手动恢复或迁移</span>
+                                    <!-- New Description -->
                                 </div>
                                 <div class="setting-control">
-                                    <label for="import-file" class="file-input-label">选择文件</label>
+                                    <!-- Use the same classes as the other export button -->
+                                    <button class="action-button export-button" id="export-database-db">导出数据库
+                                        (.db)</button>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-label">
+                                    <label>导入便签 (JSON)</label> <!-- Clarified Label -->
+                                    <span class="setting-description">从JSON文件导入便签数据 (将替换现有便签)</span>
+                                    <!-- Clarified Description -->
+                                </div>
+                                <div class="setting-control">
+                                    <label for="import-file" class="file-input-label">选择 JSON 文件</label>
+                                    <!-- Clarified Label -->
                                     <input type="file" id="import-file" accept=".json" class="file-input">
                                 </div>
                             </div>

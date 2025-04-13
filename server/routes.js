@@ -11,8 +11,12 @@ import {
   // Settings functions
   getAllAiSettings,
   setSetting,
+  // Import dbFilePath
+  dbFilePath,
 } from "./database.js";
 import { validateNoteData } from "./middleware.js";
+// Need path for basename
+import path from "path";
 
 const router = express.Router();
 
@@ -390,6 +394,36 @@ router.get("/health", (req, res) => {
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
   });
+});
+
+// --- Database Export Route ---
+router.get("/database/export", (req, res) => {
+  try {
+    const filename = path.basename(dbFilePath);
+    // Use res.download to send the file as an attachment
+    res.download(dbFilePath, filename, (err) => {
+      if (err) {
+        // Handle errors, e.g., file not found, permissions
+        console.error("导出数据库文件失败:", err);
+        // Avoid sending another response if headers already sent
+        if (!res.headersSent) {
+          res
+            .status(500)
+            .json({ success: false, message: "无法导出数据库文件" });
+        }
+      } else {
+        console.log("数据库文件已成功发送:", filename);
+      }
+    });
+  } catch (error) {
+    // Catch unexpected errors before starting download
+    console.error("准备导出数据库文件时出错:", error);
+    if (!res.headersSent) {
+      res
+        .status(500)
+        .json({ success: false, message: "准备导出数据库文件时出错" });
+    }
+  }
 });
 
 // Export only the router (readSettingsData is no longer needed externally)

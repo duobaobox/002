@@ -393,4 +393,6 @@ export {
   deleteNote,
   importNotes,
   resetNotes,
+  // Export the database file path
+  dbFilePath,
 };
