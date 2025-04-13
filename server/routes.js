@@ -145,20 +145,30 @@ router.delete("/notes/:id", async (req, res) => {
 
 // 导入便签数据 - 导入到数据库
 router.post("/notes/import", async (req, res) => {
+  console.log("[API /notes/import] Received import request."); // Log request received
   const { notes } = req.body;
 
   if (!Array.isArray(notes)) {
-    return res
-      .status(400)
-      .json({ success: false, message: "无效的导入数据格式" });
+    console.error(
+      "[API /notes/import] Invalid data format: 'notes' is not an array.",
+      req.body
+    ); // Log error
+    return res.status(400).json({
+      success: false,
+      message: "无效的导入数据格式，'notes' 必须是数组",
+    });
   }
+  console.log(`[API /notes/import] Received ${notes.length} notes to import.`); // Log note count
 
   try {
+    console.log("[API /notes/import] Calling database importNotes function..."); // Log before DB call
     const importedCount = await importNotes(notes);
-    console.log(`成功导入 ${importedCount} 个便签到数据库`);
+    console.log(
+      `[API /notes/import] Database import successful. Count: ${importedCount}`
+    ); // Log DB success
     res.json({ success: true, importedCount });
   } catch (error) {
-    console.error("导入便签数据失败:", error);
+    console.error("[API /notes/import] Import failed:", error); // Log failure
     res.status(500).json({
       success: false,
       message: "导入便签数据失败",

@@ -1256,47 +1256,105 @@ class App {
     }
   }
 
-  // 导入便签数据
+  // Rename existing import function for clarity
   async importNotesFromJson(file) {
     // Renamed from importNotesData
     try {
-      this.showMessage("正在读取 JSON 文件...", "info"); // Updated message
-      // ... rest of the existing JSON import logic remains the same ...
+      this.showMessage("正在读取 JSON 文件...", "info");
+      console.log("[Import] Starting import process for file:", file.name); // Log start
+
+      // 检查文件类型
       if (file.type !== "application/json" && !file.name.endsWith(".json")) {
+        console.error("[Import] Invalid file type:", file.type || file.name); // Log error
         throw new Error("只能导入JSON格式的文件");
       }
+
+      // 读取文件内容
       const reader = new FileReader();
+      console.log("[Import] Reading file content..."); // Log reading start
+
+      // 创建一个Promise包装FileReader
       const fileData = await new Promise((resolve, reject) => {
-        /* ... */
+        reader.onload = (event) => {
+          console.log("[Import] File read successfully."); // Log success
+          resolve(event.target.result);
+        };
+        reader.onerror = (error) => {
+          console.error("[Import] File reading failed:", error); // Log error
+          reject(new Error("文件读取失败"));
+        };
+        reader.readAsText(file);
       });
+
+      // 解析JSON
       let importedData;
       try {
+        console.log("[Import] Parsing JSON data..."); // Log parsing start
         importedData = JSON.parse(fileData);
+        console.log(
+          "[Import] JSON parsed successfully. Found keys:",
+          Object.keys(importedData)
+        ); // Log parsed keys
       } catch (error) {
+        console.error("[Import] JSON parsing failed:", error); // Log error
         throw new Error("文件格式无效，无法解析JSON");
       }
+
+      // 验证导入数据的格式
       if (!importedData.notes || !Array.isArray(importedData.notes)) {
+        console.error(
+          "[Import] Invalid data format: 'notes' array not found or not an array.",
+          importedData
+        ); // Log error
         throw new Error("文件格式无效，缺少便签数据");
       }
-      if (!(confirm(/* ... */))) {
+      console.log(
+        `[Import] Found ${importedData.notes.length} notes in the file.`
+      ); // Log note count
+
+      // 确认导入
+      if (
+        !confirm(
+          `确定要导入 ${importedData.notes.length} 个便签吗？这将替换当前的所有便签数据。`
+        )
+      ) {
+        console.log("[Import] Import cancelled by user."); // Log cancellation
         this.showMessage("导入已取消", "info");
         return;
       }
+
+      // 发送数据到服务器进行导入
+      console.log("[Import] Sending data to /api/notes/import..."); // Log API call start
       const response = await fetch("/api/notes/import", {
-        /* ... */
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ notes: importedData.notes }), // Ensure payload is correct
       });
+      console.log(
+        "[Import] Received response from server:",
+        response.status,
+        response.statusText
+      ); // Log response status
+
       const result = await response.json();
+      console.log("[Import] Parsed server response:", result); // Log parsed response
+
       if (result.success) {
+        console.log("[Import] Server reported success. Reloading notes..."); // Log success
         await this.loadNotes();
         this.showMessage(
           `成功导入 ${result.importedCount} 个便签！`,
           "success"
         );
       } else {
+        console.error("[Import] Server reported failure:", result.message); // Log server error message
         throw new Error(result.message || "导入失败");
       }
     } catch (error) {
-      console.error("导入便签 JSON 失败:", error); // Updated message
+      // This catch block now catches errors from reading, parsing, validation, or API call
+      console.error("导入便签 JSON 失败 (Overall Catch):", error); // Updated message
       this.showMessage(`导入便签 JSON 失败: ${error.message}`, "error"); // Updated message
     }
   }

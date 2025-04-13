@@ -302,34 +302,51 @@ async function deleteNote(id) {
  */
 async function importNotes(notesToImport) {
   if (!db) throw new Error("数据库未初始化");
+  console.log(
+    `[DB importNotes] Starting import for ${notesToImport.length} notes.`
+  ); // Log start
 
   // 使用 exec 进行事务处理更方便
   return new Promise((resolve, reject) => {
     db.serialize(async () => {
       // Use serialize to ensure sequential execution
       try {
+        console.log("[DB importNotes] Beginning transaction..."); // Log transaction start
         await dbExec("BEGIN TRANSACTION");
+
+        console.log("[DB importNotes] Deleting existing notes..."); // Log delete start
         await dbExec("DELETE FROM notes");
+        console.log("[DB importNotes] Existing notes deleted."); // Log delete end
 
         const sql = `
-                    INSERT INTO notes (text, x, y, title, colorClass, zIndex, width, height, createdAt, updatedAt)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `;
-        // Prepare statement within the transaction
+          INSERT INTO notes (text, x, y, title, colorClass, zIndex, width, height, createdAt, updatedAt)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        console.log("[DB importNotes] Preparing INSERT statement..."); // Log prepare start
         const stmt = db.prepare(sql);
+        console.log("[DB importNotes] INSERT statement prepared."); // Log prepare end
 
         let importedCount = 0;
-        for (const note of notesToImport) {
+        for (const [index, note] of notesToImport.entries()) {
+          // Add index for logging
+          // console.log(`[DB importNotes] Processing note ${index + 1}/${notesToImport.length}:`, note); // Log each note (can be verbose)
           const text = note.text || "";
           const x = note.x || 50;
           const y = note.y || 50;
           const title = note.title || "";
           const colorClass = note.colorClass || "note-yellow";
           const zIndex = note.zIndex || 1;
-          const width = note.width;
-          const height = note.height;
-          const createdAt = note.createdAt || new Date().toISOString();
-          const updatedAt = note.updatedAt || new Date().toISOString();
+          const width = note.width; // Keep as potentially undefined
+          const height = note.height; // Keep as potentially undefined
+          // Ensure dates are valid ISO strings or null/default
+          const createdAt =
+            note.createdAt && !isNaN(new Date(note.createdAt))
+              ? new Date(note.createdAt).toISOString()
+              : new Date().toISOString();
+          const updatedAt =
+            note.updatedAt && !isNaN(new Date(note.updatedAt))
+              ? new Date(note.updatedAt).toISOString()
+              : new Date().toISOString();
 
           // Use stmt.run with a promise wrapper
           await new Promise((res, rej) => {
@@ -345,27 +362,54 @@ async function importNotes(notesToImport) {
               createdAt,
               updatedAt,
               function (err) {
-                if (err) rej(err);
-                else res();
+                // Use standard function for 'this' context if needed, though not used here
+                if (err) {
+                  console.error(
+                    `[DB importNotes] Error inserting note ${index + 1}:`,
+                    err
+                  ); // Log insert error
+                  rej(err);
+                } else {
+                  // console.log(`[DB importNotes] Note ${index + 1} inserted successfully.`); // Log insert success (verbose)
+                  res();
+                }
               }
             );
           });
           importedCount++;
         }
+        console.log(
+          `[DB importNotes] Finished inserting ${importedCount} notes.`
+        ); // Log loop end
+
+        console.log("[DB importNotes] Finalizing statement..."); // Log finalize start
         await new Promise((res, rej) =>
           stmt.finalize((err) => (err ? rej(err) : res()))
-        ); // Finalize statement
+        );
+        console.log("[DB importNotes] Statement finalized."); // Log finalize end
 
+        console.log("[DB importNotes] Committing transaction..."); // Log commit start
         await dbExec("COMMIT");
+        console.log("[DB importNotes] Transaction committed."); // Log commit end
         resolve(importedCount);
       } catch (error) {
-        console.error("导入便签时发生错误:", error);
+        console.error(
+          "[DB importNotes] Error during import transaction:",
+          error
+        ); // Log transaction error
         try {
-          await dbExec("ROLLBACK"); // Attempt rollback
+          console.warn(
+            "[DB importNotes] Attempting to rollback transaction..."
+          ); // Log rollback attempt
+          await dbExec("ROLLBACK");
+          console.warn("[DB importNotes] Transaction rolled back."); // Log rollback success
         } catch (rollbackError) {
-          console.error("回滚事务失败:", rollbackError);
+          console.error(
+            "[DB importNotes] Failed to rollback transaction:",
+            rollbackError
+          ); // Log rollback failure
         }
-        reject(new Error("导入便签失败"));
+        reject(new Error("导入便签失败")); // Reject the main promise
       }
     });
   });

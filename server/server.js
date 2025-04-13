@@ -2,13 +2,12 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import bodyParser from "body-parser";
-import routes from "./routes.js"; // No longer need readSettingsData here
+import routes from "./routes.js";
 import fs from "fs";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-import { initializeDatabase, getAllAiSettings } from "./database.js"; // Import getAllAiSettings
-import aiService from "./ai_service.js"; // Import the service instance
-import { loadConfigToEnv } from "./api_config_store.js";
+import { initializeDatabase, getAllAiSettings } from "./database.js";
+import aiService from "./ai_service.js";
 
 // 尝试加载.env文件 (如果存在)
 try {
@@ -17,9 +16,6 @@ try {
 } catch (error) {
   console.log(".env模块不可用或.env文件不存在，使用默认环境变量");
 }
-
-// 从存储文件加载API配置到环境变量
-loadConfigToEnv();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -187,15 +183,6 @@ async function startServer() {
     const server = app.listen(PORT, () => {
       console.log(`服务器运行在 http://localhost:${PORT}`);
       console.log(`环境: ${process.env.NODE_ENV || "development"}`);
-
-      // 服务器启动后，主动触发AI服务初始化
-      if (
-        global.aiConfigUpdated &&
-        typeof global.aiConfigUpdated === "function"
-      ) {
-        console.log("服务器启动完成，主动触发AI服务初始化...");
-        global.aiConfigUpdated();
-      }
     });
   } catch (error) {
     console.error("服务器启动失败:", error);
