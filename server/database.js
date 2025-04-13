@@ -106,6 +106,31 @@ async function initializeDatabase() {
         await setSettingIfNotExists("temperature", "0.7");
         console.log('数据库表 "settings" 已准备就绪。');
 
+        // 创建 users 表
+        await dbExec(`
+          CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+        console.log('数据库表 "users" 已准备就绪。');
+
+        // 检查是否存在默认管理员账户，如果不存在则创建
+        const adminUser = await dbGet(
+          "SELECT * FROM users WHERE username = ?",
+          ["admin"]
+        );
+        if (!adminUser) {
+          // 在实际生产环境中应该使用加密密码，但这里是MVP所以使用明文
+          await dbRun("INSERT INTO users (username, password) VALUES (?, ?)", [
+            "admin",
+            "duobaobox",
+          ]);
+          console.log("创建默认管理员账户");
+        }
+
         resolve(); // Initialization successful
       } catch (initError) {
         console.error("初始化数据库表失败:", initError);
@@ -424,6 +449,47 @@ async function resetNotes() {
   await dbExec("DELETE FROM notes");
 }
 
+/**
+ * 验证用户登录
+ * @param {string} username 用户名
+ * @param {string} password 密码
+ * @returns {Promise<object|null>} 用户对象或null
+ */
+async function validateUserLogin(username, password) {
+  if (!db) throw new Error("数据库未初始化");
+
+  try {
+    const user = await dbGet(
+      "SELECT id, username FROM users WHERE username = ? AND password = ?",
+      [username, password]
+    );
+    return user || null;
+  } catch (error) {
+    console.error("验证用户登录失败:", error);
+    throw error;
+  }
+}
+
+/**
+ * 更新用户密码
+ * @param {number} userId 用户ID
+ * @param {string} newPassword 新密码
+ * @returns {Promise<void>}
+ */
+async function updateUserPassword(userId, newPassword) {
+  if (!db) throw new Error("数据库未初始化");
+
+  try {
+    await dbRun("UPDATE users SET password = ? WHERE id = ?", [
+      newPassword,
+      userId,
+    ]);
+  } catch (error) {
+    console.error("更新用户密码失败:", error);
+    throw error;
+  }
+}
+
 export {
   initializeDatabase,
   // Settings functions
@@ -439,4 +505,6 @@ export {
   resetNotes,
   // Export the database file path
   dbFilePath,
+  validateUserLogin,
+  updateUserPassword,
 };

@@ -1,0 +1,133 @@
+/* 登录页面样式 */
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: #f5f7fa;
+  background-image: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.login-box {
+  background: white;
+  width: 400px;
+  max-width: 90%;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.login-logo {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 15px;
+}
+
+.login-header h1 {
+  font-size: 24px;
+  color: #333;
+  font-weight: 500;
+}
+
+.login-form {
+  margin-bottom: 30px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #555;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 16px;
+  transition: border-color 0.3s;
+}
+
+.form-group input:focus {
+  border-color: #4a90e2;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+.login-button {
+  width: 100%;
+  padding: 12px;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.login-button:hover {
+  background-color: #3a80d2;
+}
+
+.login-button:disabled {
+  background-color: #a0c4e8;
+  cursor: not-allowed;
+}
+
+.login-footer {
+  text-align: center;
+}
+
+.login-footer p {
+  color: #888;
+  font-size: 13px;
+}
+
+/* 消息样式 */
+.message-container {
+  margin-bottom: 20px;
+  padding: 10px;
+  border-radius: 6px;
+  display: none;
+}
+
+.message-container.error {
+  display: block;
+  background-color: rgba(255, 73, 73, 0.1);
+  color: #e53935;
+  border-left: 4px solid #e53935;
+}
+
+.message-container.success {
+  display: block;
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #43a047;
+  border-left: 4px solid #43a047;
+}
+
+/* 响应式布局调整 */
+@media (max-width: 480px) {
+  .login-box {
+    padding: 20px;
+  }
+
+  .login-logo {
+    width: 60px;
+    height: 60px;
+  }
+
+  .login-header h1 {
+    font-size: 20px;
+  }
+}

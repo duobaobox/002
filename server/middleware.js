@@ -23,3 +23,18 @@ export function validateNoteData(req, res, next) {
 }
 
 // Add other middleware functions here if needed
+
+/**
+ * 验证用户是否已登录的中间件
+ */
+export function requireAuth(req, res, next) {
+  if (req.session && req.session.user) {
+    return next();
+  } else {
+    return res.status(401).json({
+      success: false,
+      message: "请先登录",
+      redirectTo: "/login.html",
+    });
+  }
+}

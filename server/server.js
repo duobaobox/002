@@ -6,6 +6,7 @@ import routes from "./routes.js";
 import fs from "fs";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import session from "express-session";
 import { initializeDatabase, getAllAiSettings } from "./database.js";
 import aiService from "./ai_service.js";
 
@@ -74,6 +75,19 @@ const aiGenerateLimiter = rateLimit({
 // 给AI生成接口添加更严格的速率限制
 app.use("/api/generate", aiGenerateLimiter);
 
+// 会话配置
+app.use(
+  session({
+    secret: "ai-note-canvas-secret", // 在生产环境中，这应该是一个环境变量
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 24 * 60 * 60 * 1000, // 1天
+    },
+  })
+);
+
 // 简单日志中间件
 app.use((req, res, next) => {
   const start = Date.now();
@@ -116,9 +130,27 @@ app.use(express.static(path.join(__dirname, "../public")));
 // 设置路由
 app.use("/api", routes);
 
+// 确保登录页面可访问
+app.get("/login.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/login.html"));
+});
+
+// 主页重定向到登录页（如果未登录）
+app.get("/", (req, res, next) => {
+  if (req.session && req.session.user) {
+    next(); // 已登录，继续到下一个处理程序
+  } else {
+    res.redirect("/login.html"); // 未登录，重定向到登录页
+  }
+});
+
 // 捕获所有其他路由，提供前端应用
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../public/index.html"));
+  if (req.path !== "/login.html" && !(req.session && req.session.user)) {
+    res.redirect("/login.html"); // 未登录时重定向到登录页
+  } else {
+    res.sendFile(path.join(__dirname, "../public/index.html"));
+  }
 });
 
 // 错误处理中间件

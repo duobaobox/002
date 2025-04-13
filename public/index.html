@@ -62,6 +62,8 @@
                     <span class="ai-model">deepseek-chat</span>
                 </div>
 
+                <!-- 移除用户状态和登出按钮，将其移至设置面板 -->
+
                 <!-- 折叠/展开控制按钮 -->
                 <button class="toggle-bar-button" title="折叠/展开输入区域">
                     <i class="icon-chevron-up"></i>
@@ -86,6 +88,7 @@
                         <button class="nav-item active" data-tab="ai">AI 设置</button>
                         <button class="nav-item" data-tab="appearance">外观</button>
                         <button class="nav-item" data-tab="backup">备份恢复</button>
+                        <button class="nav-item" data-tab="profile">个人中心</button>
                         <button class="nav-item" data-tab="about">关于</button>
                     </div>
 
@@ -262,17 +265,63 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- 个人中心面板 (原用户管理面板) -->
+                        <div class="settings-panel" id="profile-panel">
+                            <h3>个人中心</h3>
+                            <div class="profile-container">
+                                <!-- 个人信息卡片 -->
+                                <div class="profile-card">
+                                    <div class="profile-header">
+                                        <div class="profile-avatar">
+                                            <i class="icon-user">👤</i>
+                                        </div>
+                                        <div class="profile-info">
+                                            <h2 class="profile-name">admin</h2>
+                                            <span class="profile-badge">管理员</span>
+                                        </div>
+                                    </div>
+                                    <div class="profile-actions">
+                                        <button id="settings-logout-button" class="profile-action-button logout-button">
+                                            <i class="icon-logout">⎋</i>
+                                            <span>退出登录</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 安全设置卡片 -->
+                                <div class="profile-card">
+                                    <div class="profile-card-header">
+                                        <h4>安全设置</h4>
+                                    </div>
+                                    <div class="password-form">
+                                        <div class="form-group">
+                                            <label for="current-password">当前密码</label>
+                                            <input type="password" id="current-password" placeholder="输入当前密码">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="new-password">新密码</label>
+                                            <input type="password" id="new-password" placeholder="输入新密码">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="confirm-password">确认新密码</label>
+                                            <input type="password" id="confirm-password" placeholder="再次输入新密码">
+                                        </div>
+                                        <div class="form-actions">
+                                            <button id="change-password-button" class="primary-button">更新密码</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- 引入JavaScript文件 -->
-        <!-- 便签相关功能脚本 -->
-        <script src="js/note.js"></script>
-        <!-- 画布相关功能脚本 -->
-        <script src="js/canvas.js"></script>
-        <!-- 主应用程序脚本 -->
+        <script src="js/note.js"></script> <!-- 便签相关功能脚本 -->
+        <script src="js/canvas.js"></script> <!-- 画布相关功能脚本 -->
         <script src="js/app.js"></script>
     </div>
 </body>

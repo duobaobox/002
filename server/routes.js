@@ -11,14 +11,148 @@ import {
   // Settings functions
   getAllAiSettings,
   setSetting,
+  // User functions
+  validateUserLogin,
   // Import dbFilePath
   dbFilePath,
 } from "./database.js";
-import { validateNoteData } from "./middleware.js";
+import { validateNoteData, requireAuth } from "./middleware.js";
 // Need path for basename
 import path from "path";
 
 const router = express.Router();
+
+// --- 认证路由 ---
+
+// 登录
+router.post("/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    // 基础验证
+    if (!username || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "请输入用户名和密码",
+      });
+    }
+
+    // 验证登录
+    const user = await validateUserLogin(username, password);
+
+    if (user) {
+      // 存储用户信息到会话（不包含密码）
+      req.session.user = user;
+      res.json({
+        success: true,
+        message: "登录成功",
+        user: {
+          id: user.id,
+          username: user.username,
+        },
+      });
+    } else {
+      res.status(401).json({
+        success: false,
+        message: "用户名或密码错误",
+      });
+    }
+  } catch (error) {
+    console.error("登录失败:", error);
+    res.status(500).json({
+      success: false,
+      message: "登录发生错误",
+    });
+  }
+});
+
+// 登出
+router.post("/logout", (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        message: "登出失败",
+      });
+    }
+    res.json({
+      success: true,
+      message: "已成功登出",
+    });
+  });
+});
+
+// 检查登录状态
+router.get("/session", (req, res) => {
+  if (req.session && req.session.user) {
+    res.json({
+      success: true,
+      isLoggedIn: true,
+      user: {
+        id: req.session.user.id,
+        username: req.session.user.username,
+      },
+    });
+  } else {
+    res.json({
+      success: true,
+      isLoggedIn: false,
+    });
+  }
+});
+
+// 修改密码
+router.post("/change-password", requireAuth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.session.user.id;
+
+    // 基础验证
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "当前密码和新密码都必须提供",
+      });
+    }
+
+    // 验证当前密码
+    const user = await validateUserLogin(
+      req.session.user.username,
+      currentPassword
+    );
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "当前密码不正确",
+      });
+    }
+
+    // 更新密码
+    await updateUserPassword(userId, newPassword);
+
+    res.json({
+      success: true,
+      message: "密码已成功更新",
+    });
+  } catch (error) {
+    console.error("更新密码失败:", error);
+    res.status(500).json({
+      success: false,
+      message: "密码更新失败",
+    });
+  }
+});
+
+// --- 所有需要认证的 API 路由 ---
+
+// 为所有便签和设置相关的API添加认证中间件
+router.use("/notes", requireAuth);
+router.use("/generate", requireAuth);
+router.use("/ai-settings", requireAuth);
+router.use("/settings", requireAuth);
+router.use("/database", requireAuth);
+router.use("/test-ai-connection", requireAuth);
 
 // --- Note Routes ---
 
