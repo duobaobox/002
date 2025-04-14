@@ -722,41 +722,46 @@
   cursor: not-allowed;
 }
 
-/* 个人中心样式 - 替换原用户管理面板样式 */
+/* 个人中心样式 - 更新为与AI设置风格一致 */
 .profile-container {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px; /* 减小卡片间距，与AI设置保持一致 */
 }
 
 .profile-card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
+  background-color: rgba(250, 250, 250, 0.5); /* 更淡的背景色，与AI设置一致 */
+  border-radius: 8px;
+  padding: 16px; /* 调整内边距，更接近AI设置卡片 */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03); /* 减少阴影明显程度 */
+  border: 1px solid rgba(0, 0, 0, 0.04); /* 添加微妙的边框 */
   transition: box-shadow 0.2s ease;
-  border: 1px solid rgba(0, 0, 0, 0.04);
+  overflow: visible; /* 改为visible，避免部分UI元素被裁切 */
+}
+
+.profile-card:hover {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); /* 减弱悬停阴影效果 */
 }
 
 .profile-header {
   display: flex;
   align-items: center;
-  padding: 24px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  padding: 16px; /* 减少内边距 */
+  background: none; /* 移除渐变背景 */
 }
 
 .profile-avatar {
-  width: 80px;
-  height: 80px;
-  background-color: #e7f5ff;
+  width: 60px; /* 缩小头像大小 */
+  height: 60px;
+  background-color: #f0f2f5; /* 更淡的背景色 */
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 38px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-  margin-right: 24px;
-  color: #339af0;
+  font-size: 28px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05); /* 减轻阴影 */
+  margin-right: 20px;
+  color: #4a90e2;
 }
 
 .profile-info {
@@ -764,120 +769,63 @@
 }
 
 .profile-name {
-  font-size: 24px;
-  font-weight: 600;
-  margin: 0 0 8px 0;
-  color: #212529;
+  font-size: 18px; /* 减小字体大小 */
+  font-weight: 500;
+  margin: 0 0 5px 0;
+  color: #333;
 }
 
 .profile-badge {
   display: inline-block;
-  padding: 4px 12px;
-  background-color: #e7f5ff;
+  padding: 2px 8px; /* 减小内边距 */
+  background-color: rgba(74, 144, 226, 0.1);
   color: #1971c2;
-  border-radius: 20px;
-  font-size: 14px;
+  border-radius: 12px;
+  font-size: 12px;
   font-weight: 500;
 }
 
 .profile-actions {
-  padding: 16px 24px;
+  padding: 10px 16px; /* 减少内边距 */
   border-top: 1px solid #f1f3f5;
   display: flex;
   justify-content: flex-end;
 }
 
-.profile-action-button {
-  padding: 8px 16px;
-  background: none;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #495057;
-  transition: all 0.2s ease;
-}
-
-.profile-action-button:hover {
-  background-color: #f8f9fa;
-}
-
-.profile-action-button.logout-button:hover {
-  background-color: #fff5f5;
-  color: #e03131;
-  border-color: #ffc9c9;
-}
-
 .profile-card-header {
-  padding: 20px 24px;
+  padding: 16px; /* 减少内边距，与AI设置保持一致 */
   border-bottom: 1px solid #f1f3f5;
 }
 
 .profile-card-header h4 {
   margin: 0;
   color: #343a40;
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 16px; /* 减小字体大小 */
+  font-weight: 500; /* 减轻字体粗细 */
 }
 
-.password-form {
-  padding: 24px;
+.password-form,
+.invite-code-container {
+  padding: 16px; /* 减少内边距 */
 }
 
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 14px;
-  color: #495057;
-  font-weight: 500;
-}
-
-.form-group input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  font-size: 15px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.form-group input:focus {
-  border-color: #339af0;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(51, 154, 240, 0.1);
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 28px;
-}
-
+/* 调整按钮样式，使其更接近AI设置中的按钮 */
+.profile-action-button,
 .primary-button {
-  padding: 10px 20px;
-  background-color: #339af0;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
+  padding: 8px 16px;
+  font-size: 14px;
 }
 
-.primary-button:hover {
-  background-color: #1c7ed6;
+/* 更新邀请码相关元素样式 */
+.invite-codes-list h5 {
+  font-size: 14px;
+  margin: 0 0 12px 0;
 }
 
-.primary-button:active {
-  background-color: #1971c2;
+.invite-code-item {
+  padding: 8px 12px; /* 减少内边距 */
+  margin-bottom: 8px; /* 减少下边距 */
+  border: 1px solid #e9ecef;
 }
 
 /* 邀请码管理样式 */

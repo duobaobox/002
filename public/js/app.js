@@ -1015,6 +1015,16 @@ class App {
         }
       });
     }
+
+    // 激活默认标签 (修改为AI设置)
+    document.querySelectorAll(".nav-item").forEach((item) => {
+      item.classList.remove("active");
+    });
+    document.querySelectorAll(".settings-panel").forEach((panel) => {
+      panel.classList.remove("active");
+    });
+    document.querySelector('.nav-item[data-tab="ai"]').classList.add("active");
+    document.getElementById("ai-panel").classList.add("active");
   }
 
   // 修改密码
