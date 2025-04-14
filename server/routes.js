@@ -540,6 +540,91 @@ router.get("/health", (req, res) => {
   });
 });
 
+// --- 邀请码路由 ---
+
+// 获取所有可用邀请码
+router.get("/invite-codes", requireAuth, async (req, res) => {
+  // 确保只有admin用户可以管理邀请码
+  if (req.session.user.username !== "admin") {
+    return res.status(403).json({
+      success: false,
+      message: "只有管理员可以管理邀请码",
+    });
+  }
+
+  try {
+    const inviteCodes = await getAvailableInviteCodes();
+    res.json({
+      success: true,
+      inviteCodes,
+    });
+  } catch (error) {
+    console.error("获取邀请码失败:", error);
+    res.status(500).json({
+      success: false,
+      message: "获取邀请码失败",
+    });
+  }
+});
+
+// 创建新邀请码
+router.post("/invite-codes", requireAuth, async (req, res) => {
+  // 确保只有admin用户可以创建邀请码
+  if (req.session.user.username !== "admin") {
+    return res.status(403).json({
+      success: false,
+      message: "只有管理员可以创建邀请码",
+    });
+  }
+
+  try {
+    const inviteCode = await createInviteCode(req.session.user.id);
+    res.json({
+      success: true,
+      inviteCode,
+    });
+  } catch (error) {
+    console.error("创建邀请码失败:", error);
+    res.status(500).json({
+      success: false,
+      message: "创建邀请码失败",
+    });
+  }
+});
+
+// 删除邀请码
+router.delete("/invite-codes/:code", requireAuth, async (req, res) => {
+  // 确保只有admin用户可以删除邀请码
+  if (req.session.user.username !== "admin") {
+    return res.status(403).json({
+      success: false,
+      message: "只有管理员可以删除邀请码",
+    });
+  }
+
+  try {
+    const success = await deleteInviteCode(req.params.code);
+
+    if (success) {
+      res.json({
+        success: true,
+        message: "邀请码已成功删除",
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        message: "邀请码不存在或已使用",
+      });
+    }
+  } catch (error) {
+    console.error("删除邀请码失败:", error);
+    res.status(500).json({
+      success: false,
+      message: "删除邀请码失败",
+    });
+  }
+});
+
 // --- Database Export Route ---
 router.get("/database/export", (req, res) => {
   try {

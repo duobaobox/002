@@ -310,7 +310,7 @@
 }
 
 .settings-status-message.status-info:before {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230d47a1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cline x1='12' y1='16' x2='12' y2='12'%3E%3C/line%3E%3Cline x1='12' y1='8' x2='12.01' y2='8'%3E%3C/line%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230d47a1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3C/circle%3E%3C/circle%3E%3Cline x1='12' y1='16' x2='12' y2='12'%3E%3C/line%3E%3Cline x1='12' y1='8' x2='12.01' y2='8'%3E%3C/line%3E%3C/svg%3E");
 }
 
 /* 加载中状态 */
@@ -878,4 +878,130 @@
 
 .primary-button:active {
   background-color: #1971c2;
+}
+
+/* 邀请码管理样式 */
+.invite-code-container {
+  padding: 24px;
+}
+
+.invite-actions {
+  margin-bottom: 24px;
+}
+
+.icon-plus {
+  font-style: normal;
+  margin-right: 4px;
+}
+
+.invite-codes-list h5 {
+  font-size: 16px;
+  color: #495057;
+  margin: 0 0 16px 0;
+  font-weight: 500;
+}
+
+.empty-state {
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  text-align: center;
+  color: #6c757d;
+}
+
+#invite-codes-container {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.invite-code-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #e9ecef;
+}
+
+.invite-code {
+  flex: 1;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 14px;
+  color: #495057;
+  letter-spacing: 1px;
+  background-color: #e9ecef;
+  padding: 4px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.invite-code-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: 12px;
+}
+
+.invite-code-button {
+  background: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 4px 8px;
+  transition: all 0.2s;
+}
+
+.copy-button {
+  color: #1971c2;
+}
+
+.copy-button:hover {
+  background-color: #e7f5ff;
+}
+
+.delete-button {
+  color: #e03131;
+}
+
+.delete-button:hover {
+  background-color: #fff5f5;
+}
+
+.copied-feedback {
+  display: inline-block;
+  font-size: 12px;
+  color: #2b8a3e;
+  margin-left: 8px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.copied-feedback.show {
+  opacity: 1;
+}
+
+/* API不可用消息样式 */
+.api-unavailable-message {
+  padding: 20px;
+  background-color: #fff5f5;
+  border-radius: 8px;
+  text-align: center;
+  color: #e03131;
+  border: 1px dashed #ffc9c9;
+  margin: 15px 0;
+}
+
+.api-unavailable-message p {
+  margin: 5px 0;
+}
+
+/* 禁用的按钮样式 */
+.primary-button:disabled {
+  background-color: #adb5bd;
+  cursor: not-allowed;
+  opacity: 0.7;
 }

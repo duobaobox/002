@@ -11,6 +11,10 @@ class App {
     this.updateButtonVisibility();
     this.initSettingsModal(); // 新增初始化设置弹窗
     this.checkAuth(); // 检查认证状态
+
+    // 初始化邀请码管理
+    this.inviteCodes = [];
+    this.inviteApiAvailable = false; // 标记API是否可用
   }
 
   // 检查认证状态
@@ -28,10 +32,45 @@ class App {
         if (userDisplay && data.user) {
           userDisplay.textContent = data.user.username;
         }
+
+        // 在检查登录成功后，加载邀请码
+        if (
+          data.success &&
+          data.isLoggedIn &&
+          data.user &&
+          data.user.username === "admin"
+        ) {
+          // 尝试加载邀请码
+          this.checkIfInviteApiAvailable();
+        }
       }
     } catch (error) {
       console.error("检查认证状态失败:", error);
       this.showMessage("检查登录状态失败", "error");
+    }
+  }
+
+  // 检查邀请码API是否可用
+  async checkIfInviteApiAvailable() {
+    try {
+      const response = await fetch("/api/invite-codes", {
+        method: "HEAD", // 使用HEAD请求只检查API存在性，不获取数据
+      });
+
+      // 如果状态码是404或其他非2xx状态，API可能不可用
+      this.inviteApiAvailable = response.ok;
+
+      if (this.inviteApiAvailable) {
+        // API可用，可以加载邀请码
+        this.loadInviteCodes();
+      } else {
+        console.warn("邀请码API尚未实现，邀请码功能将不可用");
+        this.updateInviteUIForUnavailableAPI();
+      }
+    } catch (error) {
+      console.warn("检查邀请码API失败:", error);
+      this.inviteApiAvailable = false;
+      this.updateInviteUIForUnavailableAPI();
     }
   }
 
@@ -366,6 +405,16 @@ class App {
     if (logoutButton) {
       logoutButton.addEventListener("click", () => {
         this.logout();
+      });
+    }
+
+    // 邀请码生成按钮
+    const generateInviteCodeButton = document.getElementById(
+      "generate-invite-code"
+    );
+    if (generateInviteCodeButton) {
+      generateInviteCodeButton.addEventListener("click", () => {
+        this.generateInviteCode();
       });
     }
   }
@@ -956,6 +1005,16 @@ class App {
         this.changePassword();
       });
     }
+
+    // 当个人中心标签被点击时，检查邀请码API是否可用
+    const profileTab = document.querySelector('.nav-item[data-tab="profile"]');
+    if (profileTab) {
+      profileTab.addEventListener("click", () => {
+        if (this.inviteApiAvailable) {
+          this.loadInviteCodes();
+        }
+      });
+    }
   }
 
   // 修改密码
@@ -1457,6 +1516,185 @@ class App {
 
     console.log("自定义模型选择器初始化跳过");
     // 根据需要添加模型选择器初始化代码
+  }
+
+  // 生成新的邀请码
+  async generateInviteCode() {
+    if (!this.inviteApiAvailable) {
+      this.showMessage("邀请码功能尚未实现", "error");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/invite-codes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // 添加新邀请码到列表
+        this.inviteCodes.push(data.inviteCode);
+        this.renderInviteCodes();
+        this.showMessage("已生成新邀请码", "success");
+      } else {
+        this.showMessage(data.message || "生成邀请码失败", "error");
+      }
+    } catch (error) {
+      console.error("生成邀请码出错:", error);
+      this.showMessage("生成邀请码请求失败", "error");
+    }
+  }
+
+  // 加载邀请码列表
+  async loadInviteCodes() {
+    if (!this.inviteApiAvailable) {
+      return; // 如果API不可用，直接返回
+    }
+
+    try {
+      const response = await fetch("/api/invite-codes");
+
+      // 首先检查响应类型
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        console.error("邀请码API返回了非JSON响应:", contentType);
+        this.inviteApiAvailable = false;
+        this.updateInviteUIForUnavailableAPI();
+        return;
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        this.inviteCodes = data.inviteCodes || [];
+        this.renderInviteCodes();
+      } else {
+        console.error("加载邀请码失败:", data.message);
+      }
+    } catch (error) {
+      console.error("加载邀请码出错:", error);
+      this.inviteApiAvailable = false;
+      this.updateInviteUIForUnavailableAPI();
+    }
+  }
+
+  // 更新UI以显示API不可用状态
+  updateInviteUIForUnavailableAPI() {
+    const container = document.querySelector(".invite-code-container");
+    if (container) {
+      container.innerHTML = `
+        <div class="api-unavailable-message">
+          <p>邀请码功能尚未在服务器端实现。</p>
+          <p>请联系管理员完成后端API设置。</p>
+        </div>
+      `;
+    }
+
+    // 禁用生成按钮（如果存在）
+    const generateBtn = document.getElementById("generate-invite-code");
+    if (generateBtn) {
+      generateBtn.disabled = true;
+      generateBtn.title = "邀请码API尚未实现";
+    }
+  }
+
+  // 删除邀请码
+  async deleteInviteCode(code) {
+    try {
+      const response = await fetch(
+        `/api/invite-codes/${encodeURIComponent(code)}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        // 从列表中移除
+        this.inviteCodes = this.inviteCodes.filter((c) => c.code !== code);
+        this.renderInviteCodes();
+        this.showMessage("邀请码已删除", "success");
+      } else {
+        this.showMessage(data.message || "删除邀请码失败", "error");
+      }
+    } catch (error) {
+      console.error("删除邀请码出错:", error);
+      this.showMessage("删除邀请码请求失败", "error");
+    }
+  }
+
+  // 渲染邀请码列表
+  renderInviteCodes() {
+    const container = document.getElementById("invite-codes-container");
+    const emptyState = document.getElementById("no-invite-codes");
+
+    if (!container) return;
+
+    // 清空当前列表
+    container.innerHTML = "";
+
+    // 显示或隐藏空状态
+    if (this.inviteCodes.length === 0) {
+      if (emptyState) emptyState.style.display = "block";
+      return;
+    } else {
+      if (emptyState) emptyState.style.display = "none";
+    }
+
+    // 添加邀请码项
+    this.inviteCodes.forEach((inviteCode) => {
+      const item = document.createElement("li");
+      item.className = "invite-code-item";
+
+      const code = document.createElement("div");
+      code.className = "invite-code";
+      code.textContent = inviteCode.code;
+
+      const actions = document.createElement("div");
+      actions.className = "invite-code-actions";
+
+      const copyButton = document.createElement("button");
+      copyButton.className = "invite-code-button copy-button";
+      copyButton.innerHTML = '<i class="icon-copy">📋</i>';
+      copyButton.title = "复制邀请码";
+      copyButton.addEventListener("click", () =>
+        this.copyInviteCode(inviteCode.code)
+      );
+
+      const deleteButton = document.createElement("button");
+      deleteButton.className = "invite-code-button delete-button";
+      deleteButton.innerHTML = '<i class="icon-delete">🗑️</i>';
+      deleteButton.title = "删除邀请码";
+      deleteButton.addEventListener("click", () =>
+        this.deleteInviteCode(inviteCode.code)
+      );
+
+      actions.appendChild(copyButton);
+      actions.appendChild(deleteButton);
+
+      item.appendChild(code);
+      item.appendChild(actions);
+
+      container.appendChild(item);
+    });
+  }
+
+  // 复制邀请码到剪贴板
+  copyInviteCode(code) {
+    navigator.clipboard
+      .writeText(code)
+      .then(() => {
+        this.showMessage("邀请码已复制到剪贴板", "success");
+      })
+      .catch((err) => {
+        console.error("复制失败:", err);
+        this.showMessage("复制邀请码失败", "error");
+      });
   }
 }
 

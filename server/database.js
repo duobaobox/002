@@ -117,6 +117,22 @@ async function initializeDatabase() {
         `);
         console.log('数据库表 "users" 已准备就绪。');
 
+        // 创建 invitation_codes 表
+        await dbExec(`
+          CREATE TABLE IF NOT EXISTS invitation_codes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            code TEXT UNIQUE NOT NULL,
+            created_by INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            is_used INTEGER DEFAULT 0,
+            used_by INTEGER,
+            used_at DATETIME,
+            FOREIGN KEY (created_by) REFERENCES users(id),
+            FOREIGN KEY (used_by) REFERENCES users(id)
+          );
+        `);
+        console.log('数据库表 "invitation_codes" 已准备就绪。');
+
         // 检查是否存在默认管理员账户，如果不存在则创建
         const adminUser = await dbGet(
           "SELECT * FROM users WHERE username = ?",
@@ -490,6 +506,133 @@ async function updateUserPassword(userId, newPassword) {
   }
 }
 
+/**
+ * 创建新的邀请码
+ * @param {number} userId 创建者ID
+ * @returns {Promise<object>} 邀请码对象
+ */
+async function createInviteCode(userId) {
+  if (!db) throw new Error("数据库未初始化");
+
+  // 生成随机邀请码
+  const code = generateRandomCode(8);
+
+  try {
+    await dbRun(
+      "INSERT INTO invitation_codes (code, created_by) VALUES (?, ?)",
+      [code, userId]
+    );
+
+    return {
+      code,
+      createdAt: new Date().toISOString(),
+      isUsed: false,
+    };
+  } catch (error) {
+    console.error("创建邀请码失败:", error);
+    throw error;
+  }
+}
+
+/**
+ * 获取所有可用的邀请码
+ * @returns {Promise<Array>} 邀请码数组
+ */
+async function getAvailableInviteCodes() {
+  if (!db) throw new Error("数据库未初始化");
+
+  try {
+    return await dbAll(
+      `SELECT code, created_at as createdAt, created_by as createdBy, 
+      is_used as isUsed, used_by as usedBy, used_at as usedAt 
+      FROM invitation_codes 
+      WHERE is_used = 0 
+      ORDER BY created_at DESC`
+    );
+  } catch (error) {
+    console.error("获取邀请码失败:", error);
+    throw error;
+  }
+}
+
+/**
+ * 删除邀请码
+ * @param {string} code 要删除的邀请码
+ * @returns {Promise<boolean>} 是否成功删除
+ */
+async function deleteInviteCode(code) {
+  if (!db) throw new Error("数据库未初始化");
+
+  try {
+    const result = await dbRun(
+      "DELETE FROM invitation_codes WHERE code = ? AND is_used = 0",
+      [code]
+    );
+
+    return result.changes > 0;
+  } catch (error) {
+    console.error("删除邀请码失败:", error);
+    throw error;
+  }
+}
+
+/**
+ * 验证邀请码有效性
+ * @param {string} code 邀请码
+ * @returns {Promise<boolean>} 是否有效
+ */
+async function validateInviteCode(code) {
+  if (!db) throw new Error("数据库未初始化");
+
+  try {
+    const inviteCode = await dbGet(
+      "SELECT * FROM invitation_codes WHERE code = ? AND is_used = 0",
+      [code]
+    );
+
+    return !!inviteCode;
+  } catch (error) {
+    console.error("验证邀请码失败:", error);
+    throw error;
+  }
+}
+
+/**
+ * 标记邀请码为已使用
+ * @param {string} code 邀请码
+ * @param {number} userId 使用者ID
+ * @returns {Promise<boolean>} 是否成功标记
+ */
+async function markInviteCodeAsUsed(code, userId) {
+  if (!db) throw new Error("数据库未初始化");
+
+  try {
+    const result = await dbRun(
+      "UPDATE invitation_codes SET is_used = 1, used_by = ?, used_at = CURRENT_TIMESTAMP WHERE code = ? AND is_used = 0",
+      [userId, code]
+    );
+
+    return result.changes > 0;
+  } catch (error) {
+    console.error("标记邀请码为已使用失败:", error);
+    throw error;
+  }
+}
+
+/**
+ * 生成随机邀请码
+ * @param {number} length 长度
+ * @returns {string} 随机码
+ */
+function generateRandomCode(length = 8) {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
 export {
   initializeDatabase,
   // Settings functions
@@ -507,4 +650,9 @@ export {
   dbFilePath,
   validateUserLogin,
   updateUserPassword,
+  createInviteCode,
+  getAvailableInviteCodes,
+  deleteInviteCode,
+  validateInviteCode,
+  markInviteCodeAsUsed,
 };
