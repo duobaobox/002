@@ -1,133 +1,497 @@
-/* 登录页面样式 */
-.login-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  background-color: #f5f7fa;
-  background-image: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+/* 登录页面基础样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-.login-box {
-  background: white;
+body {
+  font-family: "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #1d1d1f;
+  background-color: #f5f5f7;
+  min-height: 100vh;
+}
+
+/* 登录页面容器 */
+.login-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* 左侧横幅区域 - CSS生成的背景 */
+.login-banner {
+  flex: 1;
+  position: relative;
+  color: white;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  /* 采用苹果风格的渐变色 - 柔和的深蓝色到浅蓝色渐变 */
+  background: linear-gradient(135deg, #0071e3 0%, #42a1ec 100%);
+  /* 去除之前的图片背景 */
+}
+
+/* 添加装饰性几何图形 */
+.login-banner::before {
+  content: "";
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  z-index: 0;
+}
+
+.login-banner::after {
+  content: "";
+  position: absolute;
+  bottom: -80px;
+  left: -80px;
   width: 400px;
-  max-width: 90%;
-  padding: 30px;
+  height: 400px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  z-index: 0;
+}
+
+/* 添加浮动的小圆点 */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0) translateX(0);
+  }
+  25% {
+    transform: translateY(-10px) translateX(5px);
+  }
+  50% {
+    transform: translateY(0) translateX(10px);
+  }
+  75% {
+    transform: translateY(10px) translateX(5px);
+  }
+}
+
+.login-banner .brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 2;
+}
+
+.banner-logo {
+  width: 40px;
+  height: 40px;
+}
+
+.brand span {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* 创建装饰性的浮动元素 */
+.login-banner::before,
+.login-banner::after {
+  animation: float 15s ease-in-out infinite;
+}
+
+/* 添加更多装饰元素 */
+.banner-decor {
+  position: absolute;
+  z-index: 1;
+  opacity: 0.15;
+}
+
+.banner-decor-1 {
+  top: 25%;
+  left: 15%;
+  width: 80px;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  transform: rotate(45deg);
+  animation: float 20s ease-in-out infinite;
+}
+
+.banner-decor-2 {
+  top: 60%;
+  right: 10%;
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 30px;
+  animation: float 17s ease-in-out infinite reverse;
+}
+
+.banner-decor-3 {
+  bottom: 15%;
+  left: 20%;
+  width: 120px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  transform: rotate(-15deg);
+  animation: float 25s ease-in-out infinite 2s;
+}
+
+/* 添加网格背景效果 */
+.banner-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: linear-gradient(
+      rgba(255, 255, 255, 0.05) 1px,
+      transparent 1px
+    ),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 30px 30px;
+  z-index: 1;
+}
+
+.banner-content {
+  max-width: 480px;
+  margin-bottom: 60px;
+  position: relative;
+  z-index: 2;
+}
+
+.banner-content h1 {
+  font-size: 48px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  line-height: 1.2;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.banner-content p {
+  font-size: 18px;
+  line-height: 1.6;
+  opacity: 0.9;
+  max-width: 400px;
+}
+
+/* 右侧登录表单区域 */
+.login-form-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background-color: #ffffff;
+}
+
+.login-form-wrapper {
+  width: 100%;
+  max-width: 440px;
+  padding: 20px;
 }
 
 .login-header {
+  margin-bottom: 32px;
   text-align: center;
-  margin-bottom: 30px;
 }
 
-.login-logo {
-  width: 80px;
-  height: 80px;
-  margin-bottom: 15px;
+.login-header h2 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1d1d1f; /* 苹果风格的深灰黑色 */
+  margin-bottom: 8px;
 }
 
-.login-header h1 {
-  font-size: 24px;
-  color: #333;
-  font-weight: 500;
+.login-header p {
+  font-size: 16px;
+  color: #86868b; /* 苹果风格的次要文本颜色 */
 }
 
 .login-form {
-  margin-bottom: 30px;
+  margin-bottom: 24px;
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  position: relative;
 }
 
 .form-group label {
   display: block;
   margin-bottom: 8px;
-  font-size: 14px;
-  color: #555;
+  font-size: 15px;
+  color: #1d1d1f;
+  font-weight: 500;
 }
 
 .form-group input {
   width: 100%;
-  padding: 12px 15px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  padding: 12px 16px;
+  border: 1px solid #d2d2d7; /* 苹果风格的边框颜色 */
+  border-radius: 10px; /* 稍微增加圆角半径 */
   font-size: 16px;
-  transition: border-color 0.3s;
+  color: #1d1d1f;
+  background-color: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.form-group input::placeholder {
+  color: #86868b; /* 苹果风格的占位符颜色 */
 }
 
 .form-group input:focus {
-  border-color: #4a90e2;
+  border-color: #0071e3; /* 苹果蓝色 */
   outline: none;
-  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15); /* 蓝色聚焦效果 */
+}
+
+/* 密码输入框包装器 */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper input {
+  padding-right: 45px; /* 确保文本不会被按钮遮挡 */
+}
+
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #86868b; /* 苹果风格的图标颜色 */
+  transition: color 0.2s ease;
+}
+
+.toggle-password:hover {
+  color: #0071e3; /* 悬停时变为主题色 */
+}
+
+.toggle-password:focus {
+  outline: none;
+}
+
+.toggle-password .eye-off-icon {
+  display: none;
+}
+
+.toggle-password.show-password .eye-icon {
+  display: none;
+}
+
+.toggle-password.show-password .eye-off-icon {
+  display: block;
+}
+
+.forgot-password {
+  text-align: right;
+  margin-top: 8px;
+}
+
+.forgot-password a {
+  color: #0071e3; /* 苹果蓝色链接 */
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.forgot-password a:hover {
+  text-decoration: underline;
 }
 
 .login-button {
   width: 100%;
-  padding: 12px;
-  background-color: #4a90e2;
+  padding: 12px 16px;
+  background-color: #0071e3; /* 苹果蓝色按钮 */
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.3s ease;
 }
 
 .login-button:hover {
-  background-color: #3a80d2;
+  background-color: #0077ed; /* 稍微亮一点的蓝色 */
+  box-shadow: 0 4px 12px rgba(0, 113, 227, 0.2);
+}
+
+.login-button:active {
+  background-color: #006edb; /* 点击时稍微暗一点 */
 }
 
 .login-button:disabled {
-  background-color: #a0c4e8;
+  background-color: #76b9f7; /* 淡化的蓝色 */
   cursor: not-allowed;
+  box-shadow: none;
+}
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  margin: 24px 0;
+  color: #86868b; /* 苹果风格的次要文本颜色 */
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #d2d2d7; /* 苹果风格的分隔线颜色 */
+}
+
+.login-divider span {
+  padding: 0 10px;
+  font-size: 14px;
+}
+
+.social-login {
+  margin-bottom: 24px;
+}
+
+.google-login {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background-color: #ffffff;
+  border: 1px solid #d2d2d7; /* 苹果风格的边框 */
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1d1d1f;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.google-login:hover {
+  background-color: #f5f5f7; /* 轻微的背景变化 */
+}
+
+.google-icon {
+  width: 20px;
+  height: 20px;
+  margin-right: 10px;
+}
+
+.register-prompt {
+  text-align: center;
+  margin-top: 24px;
+}
+
+.register-prompt p {
+  font-size: 15px;
+  color: #1d1d1f;
+}
+
+.register-prompt a {
+  color: #0071e3; /* 苹果蓝色链接 */
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.register-prompt a:hover {
+  text-decoration: underline;
 }
 
 .login-footer {
+  margin-top: 40px;
   text-align: center;
 }
 
 .login-footer p {
-  color: #888;
-  font-size: 13px;
+  color: #86868b; /* 苹果风格的次要文本颜色 */
+  font-size: 14px;
 }
 
-/* 消息样式 */
+/* 消息容器样式 */
 .message-container {
   margin-bottom: 20px;
-  padding: 10px;
-  border-radius: 6px;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 14px;
   display: none;
 }
 
 .message-container.error {
   display: block;
-  background-color: rgba(255, 73, 73, 0.1);
-  color: #e53935;
-  border-left: 4px solid #e53935;
+  background-color: #fff1f0; /* 温和的红色背景 */
+  color: #ff3b30; /* 苹果的错误红色 */
+  border: 1px solid #ffcccb;
 }
 
 .message-container.success {
   display: block;
-  background-color: rgba(76, 175, 80, 0.1);
-  color: #43a047;
-  border-left: 4px solid #43a047;
+  background-color: #f0fff6; /* 温和的绿色背景 */
+  color: #34c759; /* 苹果的成功绿色 */
+  border: 1px solid #d1facf;
 }
 
-/* 响应式布局调整 */
+/* 响应式布局 */
+@media (max-width: 1024px) {
+  .login-banner {
+    padding: 30px;
+  }
+
+  .banner-content h1 {
+    font-size: 42px;
+  }
+}
+
+@media (max-width: 768px) {
+  .login-container {
+    flex-direction: column;
+  }
+
+  .login-banner {
+    min-height: 300px;
+    padding: 24px;
+  }
+
+  .banner-content {
+    margin-bottom: 40px;
+  }
+
+  .banner-content h1 {
+    font-size: 36px;
+    margin-bottom: 16px;
+  }
+
+  .banner-content p {
+    font-size: 16px;
+  }
+}
+
 @media (max-width: 480px) {
-  .login-box {
-    padding: 20px;
+  .login-form-wrapper {
+    padding: 15px;
   }
 
-  .login-logo {
-    width: 60px;
-    height: 60px;
+  .login-header h2 {
+    font-size: 24px;
   }
 
-  .login-header h1 {
-    font-size: 20px;
+  .banner-content h1 {
+    font-size: 32px;
+  }
+
+  .form-group input,
+  .login-button,
+  .google-login {
+    padding: 10px 14px;
   }
 }

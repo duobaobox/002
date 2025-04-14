@@ -7,40 +7,95 @@
     <title>登录 - AI 便签画布</title>
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/login.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
     <div class="login-container">
-        <div class="login-box">
-            <div class="login-header">
-                <img src="img/logo.png" alt="Logo" class="login-logo">
-                <h1>AI 便签画布</h1>
+        <div class="login-banner">
+            <div class="banner-grid"></div>
+            <div class="banner-decor banner-decor-1"></div>
+            <div class="banner-decor banner-decor-2"></div>
+            <div class="banner-decor banner-decor-3"></div>
+
+            <div class="brand">
+                <img src="img/logo.png" alt="Logo" class="banner-logo">
+                <span>AI 便签画布</span>
             </div>
-
-            <div class="login-form">
-                <div class="message-container" id="login-message"></div>
-
-                <div class="form-group">
-                    <label for="username">用户名</label>
-                    <input type="text" id="username" name="username" placeholder="请输入用户名" autocomplete="username">
+            <div class="banner-content">
+                <h1>智能创作<br>无限可能</h1>
+                <p>让AI助力你的创意，轻松将想法转化为精美便签</p>
+            </div>
+        </div>
+        <div class="login-form-container">
+            <div class="login-form-wrapper">
+                <div class="login-header">
+                    <h2>欢迎回来</h2>
+                    <p>请登录您的账户</p>
                 </div>
 
-                <div class="form-group">
-                    <label for="password">密码</label>
-                    <input type="password" id="password" name="password" placeholder="请输入密码"
-                        autocomplete="current-password">
+                <div class="login-form">
+                    <div class="message-container" id="login-message"></div>
+
+                    <div class="form-group">
+                        <label for="username">用户名</label>
+                        <input type="text" id="username" name="username" placeholder="请输入用户名" autocomplete="username">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">密码</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="password" name="password" placeholder="请输入密码"
+                                autocomplete="current-password">
+                            <button type="button" id="toggle-password" class="toggle-password" aria-label="显示密码">
+                                <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                <svg class="eye-off-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <path
+                                        d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+                                    </path>
+                                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="forgot-password">
+                            <a href="#">忘记密码?</a>
+                        </div>
+                    </div>
+
+                    <button type="button" id="login-button" class="login-button">登录</button>
+
+                    <div class="login-divider">
+                        <span>或</span>
+                    </div>
+
+                    <div class="social-login">
+                        <button type="button" class="google-login">
+                            <img src="img/google-icon.svg" alt="Google" class="google-icon">
+                            <span>使用Google账号登录</span>
+                        </button>
+                    </div>
+
+                    <div class="register-prompt">
+                        <p>还没有账号? <a href="#">立即注册</a></p>
+                    </div>
                 </div>
 
-                <button type="button" id="login-button" class="login-button">登录</button>
-            </div>
-
-            <div class="login-footer">
-                <p>版本 1.0.0 - 使用默认管理员账户登录</p>
+                <div class="login-footer">
+                    <p>AI 便签画布 · RC版本 1.0.0</p>
+                </div>
             </div>
         </div>
     </div>
 
     <script src="js/login.js"></script>
+    <script src="js/password-toggle.js"></script>
 </body>
 
 </html>
