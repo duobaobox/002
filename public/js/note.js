@@ -427,17 +427,15 @@ class Note {
       const newHeight =
         this.resizeStartHeight + (e.clientY - this.resizeStartY);
 
-      // 应用最小和最大尺寸限制
+      // 只应用最小尺寸限制，移除最大尺寸限制
       const minWidth = 150;
       const minHeight = 150;
-      const maxWidth = 500;
-      const maxHeight = 500;
 
-      if (newWidth >= minWidth && newWidth <= maxWidth) {
+      if (newWidth >= minWidth) {
         note.style.width = `${newWidth}px`;
       }
 
-      if (newHeight >= minHeight && newHeight <= maxHeight) {
+      if (newHeight >= minHeight) {
         note.style.height = `${newHeight}px`;
       }
 
