@@ -233,21 +233,20 @@ class Note {
 
     // 添加悬停事件显示编辑提示
     note.addEventListener("mouseenter", () => {
-      editHint.style.opacity = "1";
+      // 只有在非编辑模式下才显示"双击编辑"提示
+      const editHint = this.element.querySelector(".edit-hint");
+      if (!this.editMode && editHint) {
+        editHint.style.opacity = "1";
+        editHint.style.pointerEvents = "auto";
+      }
     });
     note.addEventListener("mouseleave", () => {
-      editHint.style.opacity = "0";
-    });
-
-    // 预览模式下应该更新编辑提示的位置
-    this.updateEditHintVisibility = () => {
-      if (this.editMode) {
+      // 离开时无条件隐藏提示
+      const editHint = this.element.querySelector(".edit-hint");
+      if (editHint) {
         editHint.style.opacity = "0";
-        editHint.style.pointerEvents = "none";
-      } else {
-        editHint.style.pointerEvents = "auto"; // 预览模式下可点击
       }
-    };
+    });
 
     // 监听窗口调整大小事件，更新提示位置
     window.addEventListener("resize", () => {
@@ -306,22 +305,20 @@ class Note {
     const textarea = this.element.querySelector(".note-content");
     const preview = this.element.querySelector(".markdown-preview");
     const scrollbarThumb = this.element.querySelector(".scrollbar-thumb");
-    const editHint = this.element.querySelector(".edit-hint");
 
     if (this.editMode) {
       textarea.style.display = "block";
       preview.style.display = "none";
-      editHint.style.opacity = "0";
-      editHint.style.pointerEvents = "none";
       this.updateScrollbar(textarea, scrollbarThumb);
     } else {
       textarea.style.display = "none";
       preview.style.display = "block";
       preview.innerHTML = this.renderMarkdown(this.text); // Render on switch
-      editHint.style.opacity = "1"; // Show hint in preview mode
-      editHint.style.pointerEvents = "auto";
       this.updateScrollbar(preview, scrollbarThumb);
     }
+
+    // 调用更新方法确保提示状态始终与编辑模式同步
+    this.updateEditHintVisibility();
   }
 
   // 更新自定义滚动条
@@ -603,6 +600,21 @@ class Note {
     // 添加事件监听器
     titleElement.addEventListener("blur", saveTitle, { once: true });
     titleElement.addEventListener("keydown", handleKeyDown);
+  }
+
+  // 更新编辑提示的可见性
+  updateEditHintVisibility() {
+    if (!this.element) return;
+    const editHint = this.element.querySelector(".edit-hint");
+    if (!editHint) return;
+
+    if (this.editMode) {
+      editHint.style.opacity = "0";
+      editHint.style.pointerEvents = "none";
+    } else {
+      editHint.style.opacity = "1"; // 在预览模式下显示提示
+      editHint.style.pointerEvents = "auto"; // 预览模式下可点击
+    }
   }
 }
 

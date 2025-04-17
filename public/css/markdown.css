@@ -60,8 +60,10 @@
   border: 1px solid rgba(0, 0, 0, 0.05) !important;
 }
 
+/* 修改悬停规则，只在非编辑模式下显示提示 */
 .note:hover .edit-hint {
-  opacity: 0.9 !important;
+  /* 删除这里的直接设置，改由 JavaScript 控制 */
+  /* opacity: 0.9 !important; */
 }
 
 /* Markdown 格式化样式 */
