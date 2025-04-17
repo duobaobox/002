@@ -1,7 +1,7 @@
 import sqlite3 from "sqlite3";
-// import { open } from 'sqlite/build/esm/index.js'; // Remove sqlite wrapper import
 import path from "path";
 import fs from "fs";
+import bcrypt from "bcrypt"; // 引入bcrypt库用于密码哈希
 
 // 确保 data 目录存在
 const dataDir = path.join(process.cwd(), "data");
@@ -9,7 +9,7 @@ if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
-const dbFilePath = path.join(dataDir, "notes.db");
+const dbFilePath = path.join(dataDir, "app_data.db");
 let db; // This will be the sqlite3.Database instance
 
 // Helper function to promisify db.run, db.get, db.all, db.exec
@@ -139,15 +139,31 @@ async function initializeDatabase() {
           ["admin"]
         );
         if (!adminUser) {
-          // 在实际生产环境中应该使用加密密码，但这里是MVP所以使用明文
-          await dbRun("INSERT INTO users (username, password) VALUES (?, ?)", [
-            "admin",
-            "duobaobox",
-          ]);
-          console.log("创建默认管理员账户");
+          // 使用 bcrypt 哈希默认密码
+          const saltRounds = 10; // 哈希计算轮数，越高越安全但越慢
+          const defaultPassword = "duobaobox"; // 默认密码
+          bcrypt
+            .hash(defaultPassword, saltRounds)
+            .then((hashedPassword) => {
+              return dbRun(
+                "INSERT INTO users (username, password) VALUES (?, ?)",
+                [
+                  "admin",
+                  hashedPassword, // 存储哈希后的密码
+                ]
+              );
+            })
+            .then(() => {
+              console.log("创建默认管理员账户 (密码已哈希)");
+              resolve();
+            })
+            .catch((err) => {
+              console.error("创建默认管理员账户失败:", err);
+              reject(err);
+            });
+        } else {
+          resolve(); // 管理员账户已存在，初始化成功
         }
-
-        resolve(); // Initialization successful
       } catch (initError) {
         console.error("初始化数据库表失败:", initError);
         reject(initError);
@@ -475,11 +491,25 @@ async function validateUserLogin(username, password) {
   if (!db) throw new Error("数据库未初始化");
 
   try {
+    // 1. 根据用户名查找用户及其密码哈希
     const user = await dbGet(
-      "SELECT id, username FROM users WHERE username = ? AND password = ?",
-      [username, password]
+      "SELECT id, username, password FROM users WHERE username = ?",
+      [username]
     );
-    return user || null;
+
+    if (!user) {
+      return null; // 用户不存在
+    }
+
+    // 2. 比较提供的密码和存储的哈希值
+    const match = await bcrypt.compare(password, user.password);
+
+    if (match) {
+      // 密码匹配，返回用户信息（不包含密码哈希）
+      return { id: user.id, username: user.username };
+    } else {
+      return null; // 密码不匹配
+    }
   } catch (error) {
     console.error("验证用户登录失败:", error);
     throw error;
@@ -496,8 +526,12 @@ async function updateUserPassword(userId, newPassword) {
   if (!db) throw new Error("数据库未初始化");
 
   try {
+    // 哈希新密码
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
     await dbRun("UPDATE users SET password = ? WHERE id = ?", [
-      newPassword,
+      hashedPassword, // 存储哈希后的密码
       userId,
     ]);
   } catch (error) {
