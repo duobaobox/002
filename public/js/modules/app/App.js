@@ -20,6 +20,11 @@ export class App {
     this.canvas = new Canvas();
     this.nextId = 1;
 
+    // 添加一个防抖延迟对象，用于跟踪每个便签的更新请求
+    this.updateDebounceTimers = {};
+    // 设置防抖延迟时间(毫秒)
+    this.updateDebounceDelay = 1000;
+
     // 从服务器加载便签数据
     this.loadNotes();
 
@@ -556,43 +561,63 @@ export class App {
     const element = note.element;
     if (!element) return;
 
-    try {
-      // 获取便签的当前位置和尺寸
-      const rect = element.getBoundingClientRect();
-      const x = parseInt(element.style.left);
-      const y = parseInt(element.style.top);
-      const width = Math.round(rect.width);
-      const height = Math.round(rect.height);
-      const zIndex = parseInt(
-        element.style.zIndex || window.getComputedStyle(element).zIndex
-      );
-
-      // 发送更新请求到服务器
-      const response = await fetch(`/api/notes/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          text: note.text,
-          title: note.title,
-          x,
-          y,
-          width,
-          height,
-          colorClass: note.colorClass,
-          zIndex, // 添加zIndex值到更新请求
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!data.success) {
-        console.error("更新便签失败:", data.message);
-      }
-    } catch (error) {
-      console.error("更新便签时发生错误:", error);
+    // 清除之前的防抖延迟
+    if (this.updateDebounceTimers[id]) {
+      clearTimeout(this.updateDebounceTimers[id]);
     }
+
+    // 设置新的防抖延迟
+    this.updateDebounceTimers[id] = setTimeout(async () => {
+      try {
+        // 获取便签的当前位置和尺寸
+        const rect = element.getBoundingClientRect();
+        const x = parseInt(element.style.left);
+        const y = parseInt(element.style.top);
+        const width = Math.round(rect.width);
+        const height = Math.round(rect.height);
+        const zIndex = parseInt(
+          element.style.zIndex || window.getComputedStyle(element).zIndex
+        );
+
+        // 发送更新请求到服务器
+        const response = await fetch(`/api/notes/${id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text: note.text,
+            title: note.title,
+            x,
+            y,
+            width,
+            height,
+            colorClass: note.colorClass,
+            zIndex, // 添加zIndex值到更新请求
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          console.error("更新便签失败:", data.message);
+        } else {
+          // 成功更新后清除此ID的计时器
+          delete this.updateDebounceTimers[id];
+        }
+      } catch (error) {
+        console.error("更新便签时发生错误:", error);
+        // 发生错误时稍后再尝试更新
+        setTimeout(() => {
+          // 只有当元素和便签仍然存在时才重试
+          const noteStillExists = this.notes.some((n) => n.id === id);
+          if (noteStillExists && this.updateDebounceTimers[id]) {
+            delete this.updateDebounceTimers[id]; // 删除当前定时器引用
+            this.updateNoteOnServer(id); // 重试更新
+          }
+        }, 2000); // 2秒后重试
+      }
+    }, this.updateDebounceDelay);
   }
 
   // 从服务器删除便签
