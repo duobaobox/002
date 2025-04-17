@@ -1,3 +1,12 @@
+// 导入需要的模块
+import {
+  Canvas,
+  Note,
+  createEmptyAiNote,
+  getHighestZIndex,
+  updateNoteContent,
+} from "./modules/index.js";
+
 class App {
   constructor() {
     this.notes = [];
