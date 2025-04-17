@@ -13,10 +13,26 @@ class AIService {
       maxTokens: 800,
       temperature: 0.7,
       isEmpty: true,
+      // 添加应用信息，用于OpenRouter排名统计
+      appName: "AI便签画布",
+      appUrl: "https://ai-note-canvas.app", // 可根据实际情况修改
     };
     this.openai = null;
     this.isConfigured = false; // Start as not configured
     console.log("[AI Service] Instance created. Waiting for configuration.");
+  }
+
+  // 检查是否使用OpenRouter
+  isOpenRouter() {
+    return this.config.baseURL && this.config.baseURL.includes("openrouter.ai");
+  }
+
+  // 检测模型是否为OpenRouter格式 (provider/model:variant)
+  isOpenRouterModelFormat() {
+    return (
+      this.config.model &&
+      (this.config.model.includes("/") || this.config.model.includes(":"))
+    );
   }
 
   /**
@@ -36,6 +52,8 @@ class AIService {
         maxTokens: 800,
         temperature: 0.7,
         isEmpty: true,
+        appName: "AI便签画布",
+        appUrl: "https://ai-note-canvas.app",
       };
       this.isConfigured = false;
       this.openai = null;
@@ -59,6 +77,9 @@ class AIService {
       isEmpty:
         newConfig.isEmpty === true ||
         !(newConfig.apiKey && newConfig.baseURL && newConfig.model),
+      // 保留应用信息
+      appName: this.config.appName || "AI便签画布",
+      appUrl: this.config.appUrl || "https://ai-note-canvas.app",
     };
 
     console.log(
@@ -74,6 +95,18 @@ class AIService {
         this.isConfigured ? "CONFIGURED" : "NOT CONFIGURED"
       }.`
     );
+
+    // Log if using OpenRouter
+    if (this.isOpenRouter()) {
+      console.log("[AI Service] Using OpenRouter as API provider");
+      console.log(
+        `[AI Service] Model format: ${
+          this.isOpenRouterModelFormat()
+            ? "OpenRouter format"
+            : "Standard format"
+        }`
+      );
+    }
   }
 
   // Internal method to initialize/re-initialize the OpenAI client based on current this.config
@@ -137,26 +170,50 @@ class AIService {
     }
 
     try {
-      const completion = await this.openai.chat.completions.create({
+      // 基础请求参数
+      const requestParams = {
         model: this.config.model,
         messages: [{ role: "user", content: prompt }],
         max_tokens: this.config.maxTokens,
         temperature: this.config.temperature,
-      });
-      // Log the raw response for debugging
-      // console.log("OpenAI API Raw Response:", completion);
+      };
 
-      // Check if the response structure is as expected
-      if (
-        completion &&
-        completion.choices &&
-        completion.choices.length > 0 &&
-        completion.choices[0].message
-      ) {
-        return completion.choices[0].message.content.trim();
+      // 为OpenRouter添加特有的参数
+      if (this.isOpenRouter()) {
+        // 添加额外的头部信息，用于OpenRouter统计
+        const extraHeaders = {
+          "HTTP-Referer": this.config.appUrl,
+          "X-Title": this.config.appName,
+        };
+
+        console.log(
+          "[AI Service] Adding OpenRouter specific headers:",
+          extraHeaders
+        );
+
+        const completion = await this.openai.chat.completions.create(
+          requestParams,
+          { headers: extraHeaders }
+        );
+
+        // 检查响应格式
+        if (completion?.choices?.[0]?.message) {
+          return completion.choices[0].message.content.trim();
+        } else {
+          throw new Error("OpenRouter响应格式异常");
+        }
       } else {
-        console.error("OpenAI API响应格式不符合预期:", completion);
-        throw new Error("AI未能生成有效内容，响应格式异常");
+        // 标准OpenAI兼容API调用（如DeepSeek等）
+        const completion = await this.openai.chat.completions.create(
+          requestParams
+        );
+
+        // 检查响应格式
+        if (completion?.choices?.[0]?.message) {
+          return completion.choices[0].message.content.trim();
+        } else {
+          throw new Error("AI响应格式异常");
+        }
       }
     } catch (error) {
       console.error("AI生成文本时出错:", error);
@@ -198,15 +255,36 @@ class AIService {
       console.log(
         "[AI Service] Attempting simple chat completion for connection test..."
       );
-      await this.openai.chat.completions.create({
+
+      const testParams = {
         model: this.config.model,
-        messages: [{ role: "user", content: "Test connection" }], // Slightly more descriptive
+        messages: [{ role: "user", content: "Test connection" }],
         max_tokens: 1,
-      });
+      };
+
+      // 为OpenRouter添加特有的参数
+      if (this.isOpenRouter()) {
+        const extraHeaders = {
+          "HTTP-Referer": this.config.appUrl,
+          "X-Title": this.config.appName,
+        };
+
+        await this.openai.chat.completions.create(testParams, {
+          headers: extraHeaders,
+        });
+      } else {
+        await this.openai.chat.completions.create(testParams);
+      }
+
       console.log(
         "[AI Service] Test successful: Simple chat completion succeeded."
       );
-      return { success: true, message: "连接成功", model: this.config.model };
+      return {
+        success: true,
+        message: "连接成功",
+        model: this.config.model,
+        provider: this.isOpenRouter() ? "OpenRouter" : "标准API",
+      };
     } catch (error) {
       console.error("[AI Service] Test failed during API call:", error);
       let message = `连接测试失败: ${error.message}`;
@@ -219,9 +297,26 @@ class AIService {
       } else if (error.code) {
         message += ` (Code: ${error.code})`;
       }
+
+      // 为OpenRouter模型添加建议
+      if (
+        this.isOpenRouter() &&
+        message.includes("404") &&
+        this.isOpenRouterModelFormat()
+      ) {
+        message +=
+          "\n\n建议: 尝试其他可用的OpenRouter免费模型，例如:\n- anthropic/claude-3-haiku:free\n- mistralai/mistral-7b-instruct:free\n- google/gemini-1.5-pro:free";
+      }
+
       // Return the specific message format expected by the frontend
       return { success: false, message: message };
     }
+  }
+
+  // 后台验证方法
+  async backgroundVerify() {
+    // 实现从以前的代码中移动过来
+    return await this.testConnection();
   }
 }
 
