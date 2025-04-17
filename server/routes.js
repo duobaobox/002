@@ -13,6 +13,7 @@ import {
   setSetting,
   // User functions
   validateUserLogin,
+  updateUserPassword,
   // Import dbFilePath
   dbFilePath,
 } from "./database.js";
@@ -106,6 +107,7 @@ router.post("/change-password", requireAuth, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     const userId = req.session.user.id;
+    const username = req.session.user.username;
 
     // 基础验证
     if (!currentPassword || !newPassword) {
@@ -115,11 +117,8 @@ router.post("/change-password", requireAuth, async (req, res) => {
       });
     }
 
-    // 验证当前密码
-    const user = await validateUserLogin(
-      req.session.user.username,
-      currentPassword
-    );
+    // 验证当前密码 - 使用更新后的validateUserLogin函数
+    const user = await validateUserLogin(username, currentPassword);
 
     if (!user) {
       return res.status(401).json({
@@ -128,7 +127,7 @@ router.post("/change-password", requireAuth, async (req, res) => {
       });
     }
 
-    // 更新密码
+    // 更新密码 - updateUserPassword已经会处理密码哈希
     await updateUserPassword(userId, newPassword);
 
     res.json({
@@ -139,7 +138,7 @@ router.post("/change-password", requireAuth, async (req, res) => {
     console.error("更新密码失败:", error);
     res.status(500).json({
       success: false,
-      message: "密码更新失败",
+      message: "密码更新失败，请稍后重试",
     });
   }
 });
