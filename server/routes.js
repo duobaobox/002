@@ -11,6 +11,16 @@ import {
   // Settings functions
   getAllAiSettings,
   setSetting,
+  // API 历史记录函数
+  addOrUpdateApiKeyHistory,
+  addOrUpdateBaseUrlHistory,
+  addOrUpdateModelHistory,
+  getApiKeyHistory,
+  getBaseUrlHistory,
+  getModelHistory,
+  deleteApiKeyHistory,
+  deleteBaseUrlHistory,
+  deleteModelHistory,
   // User functions
   validateUserLogin,
   updateUserPassword,
@@ -373,6 +383,18 @@ router.post("/settings/ai", async (req, res) => {
     await setSetting("temperature", settingsToSaveInDb.temperature);
     console.log("AI设置已保存到数据库:", settingsToSaveInDb);
 
+    // 将设置添加到历史记录
+    if (settingsToSaveInDb.apiKey) {
+      await addOrUpdateApiKeyHistory(settingsToSaveInDb.apiKey);
+    }
+    if (settingsToSaveInDb.baseURL) {
+      await addOrUpdateBaseUrlHistory(settingsToSaveInDb.baseURL);
+    }
+    if (settingsToSaveInDb.model) {
+      await addOrUpdateModelHistory(settingsToSaveInDb.model);
+    }
+    console.log("AI设置已添加到历史记录");
+
     // Prepare settings for aiService (correct types)
     const settingsForService = {
       apiKey: settingsToSaveInDb.apiKey,
@@ -651,6 +673,118 @@ router.get("/database/export", (req, res) => {
         .status(500)
         .json({ success: false, message: "准备导出数据库文件时出错" });
     }
+  }
+});
+
+// --- API 配置历史记录路由 ---
+
+// 为所有API历史记录相关API添加认证中间件
+router.use("/api-history", requireAuth);
+
+// 获取 API 密钥历史记录
+router.get("/api-history/key", async (req, res) => {
+  try {
+    const apiKeys = await getApiKeyHistory();
+    res.json({ success: true, history: apiKeys });
+  } catch (error) {
+    console.error("获取API密钥历史记录失败:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "获取API密钥历史记录失败" });
+  }
+});
+
+// 获取基础 URL 历史记录
+router.get("/api-history/url", async (req, res) => {
+  try {
+    const urls = await getBaseUrlHistory();
+    res.json({ success: true, history: urls });
+  } catch (error) {
+    console.error("获取基础URL历史记录失败:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "获取基础URL历史记录失败" });
+  }
+});
+
+// 获取模型名称历史记录
+router.get("/api-history/model", async (req, res) => {
+  try {
+    const models = await getModelHistory();
+    res.json({ success: true, history: models });
+  } catch (error) {
+    console.error("获取模型历史记录失败:", error);
+    res.status(500).json({ success: false, message: "获取模型历史记录失败" });
+  }
+});
+
+// 删除 API 密钥历史记录
+router.delete("/api-history/key/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ success: false, message: "无效的ID格式" });
+    }
+
+    const success = await deleteApiKeyHistory(id);
+    if (success) {
+      res.json({ success: true, message: "API密钥历史记录已删除" });
+    } else {
+      res
+        .status(404)
+        .json({ success: false, message: "未找到指定的API密钥历史记录" });
+    }
+  } catch (error) {
+    console.error("删除API密钥历史记录失败:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "删除API密钥历史记录失败" });
+  }
+});
+
+// 删除基础 URL 历史记录
+router.delete("/api-history/url/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ success: false, message: "无效的ID格式" });
+    }
+
+    const success = await deleteBaseUrlHistory(id);
+    if (success) {
+      res.json({ success: true, message: "基础URL历史记录已删除" });
+    } else {
+      res
+        .status(404)
+        .json({ success: false, message: "未找到指定的基础URL历史记录" });
+    }
+  } catch (error) {
+    console.error("删除基础URL历史记录失败:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "删除基础URL历史记录失败" });
+  }
+});
+
+// 删除模型名称历史记录
+router.delete("/api-history/model/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ success: false, message: "无效的ID格式" });
+    }
+
+    const success = await deleteModelHistory(id);
+    if (success) {
+      res.json({ success: true, message: "模型历史记录已删除" });
+    } else {
+      res
+        .status(404)
+        .json({ success: false, message: "未找到指定的模型历史记录" });
+    }
+  } catch (error) {
+    console.error("删除模型历史记录失败:", error);
+    res.status(500).json({ success: false, message: "删除模型历史记录失败" });
   }
 });
 
