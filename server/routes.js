@@ -479,9 +479,9 @@ router.post("/generate", async (req, res) => {
   console.log("收到生成请求，提示:", prompt);
 
   try {
-    // 使用更短的超时时间，提高用户体验
+    // 使用更长的超时时间
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("AI生成请求超时")), 20000);
+      setTimeout(() => reject(new Error("AI生成请求超时")), 60000); // 增加到60秒
     });
 
     // 快速检查是否已验证过API密钥
@@ -532,6 +532,202 @@ router.post("/generate", async (req, res) => {
       message: `AI调用错误: ${error.message || "未知AI服务错误"}`,
       error: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
+  }
+});
+
+// 新增：流式生成 API 路由
+router.post("/generate-stream", requireAuth, async (req, res) => {
+  const { prompt } = req.body;
+
+  // 输入验证
+  if (!prompt || typeof prompt !== "string") {
+    return res.status(400).json({
+      success: false,
+      message: "提示不能为空且必须是字符串",
+    });
+  }
+
+  // 限制提示长度
+  if (prompt.length > 500) {
+    return res.status(400).json({
+      success: false,
+      message: "提示文本过长，请限制在500字符以内",
+    });
+  }
+
+  console.log("收到流式生成请求，提示:", prompt);
+
+  try {
+    // 快速检查是否已验证过API密钥
+    if (!aiService.isVerified && aiService.lastVerifiedTime === 0) {
+      setTimeout(() => {
+        aiService
+          .backgroundVerify()
+          .catch((e) => console.error("后台验证出错:", e));
+      }, 0);
+
+      return res.status(202).json({
+        success: false,
+        needVerification: true,
+        message: "正在验证API密钥，请稍后再试",
+      });
+    }
+
+    // 设置SSE响应头
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    // 确保不缓存响应
+    res.setHeader("X-Accel-Buffering", "no");
+
+    // 发送初始事件
+    res.write(`data: ${JSON.stringify({ event: "start" })}\n\n`);
+
+    // 开始流式生成
+    try {
+      await aiService.generateTextStream(prompt, (chunk, fullText) => {
+        // 发送每个文本块作为SSE事件
+        res.write(
+          `data: ${JSON.stringify({
+            event: "chunk",
+            chunk: chunk,
+            fullText: fullText,
+          })}\n\n`
+        );
+      });
+
+      // 发送完成事件
+      res.write(`data: ${JSON.stringify({ event: "end" })}\n\n`);
+      res.end();
+    } catch (error) {
+      // 发送错误事件并结束流
+      res.write(
+        `data: ${JSON.stringify({
+          event: "error",
+          message: error.message || "生成过程中发生错误",
+        })}\n\n`
+      );
+      res.end();
+      console.error("流式生成过程中出错:", error);
+    }
+  } catch (error) {
+    console.error("启动AI流式生成失败:", error);
+    // 如果还没发送任何响应头，发送JSON错误
+    if (!res.headersSent) {
+      return res.status(500).json({
+        success: false,
+        message: `AI流式生成错误: ${error.message || "未知AI服务错误"}`,
+      });
+    } else {
+      // 已经开始发送流，发送错误事件
+      res.write(
+        `data: ${JSON.stringify({
+          event: "error",
+          message: error.message || "启动生成过程失败",
+        })}\n\n`
+      );
+      res.end();
+    }
+  }
+});
+
+// 存储活跃的 SSE 连接及其关联的提示
+const sseConnections = new Map();
+
+// 初始化 SSE 连接路由 - 使用 GET 请求
+router.get("/stream-connection/:sessionId", requireAuth, (req, res) => {
+  const sessionId = req.params.sessionId;
+
+  console.log(`建立 SSE 连接, 会话 ID: ${sessionId}`);
+
+  // 设置 SSE 头部
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+
+  // 保持连接活跃
+  const keepAliveInterval = setInterval(() => {
+    res.write(": keepalive\n\n");
+  }, 30000);
+
+  // 发送初始连接事件
+  res.write(`data: ${JSON.stringify({ event: "connected", sessionId })}\n\n`);
+
+  // 存储 SSE 响应对象和清理函数
+  sseConnections.set(sessionId, {
+    res,
+    prompt: null,
+    cleanup: () => {
+      clearInterval(keepAliveInterval);
+      sseConnections.delete(sessionId);
+    },
+  });
+
+  // 客户端断开连接时清理
+  req.on("close", () => {
+    console.log(`SSE 连接关闭, 会话 ID: ${sessionId}`);
+    const connection = sseConnections.get(sessionId);
+    if (connection) {
+      connection.cleanup();
+    }
+  });
+});
+
+// 发送提示到指定的 SSE 连接 - 使用 POST 请求
+router.post("/process-stream/:sessionId", requireAuth, async (req, res) => {
+  const sessionId = req.params.sessionId;
+  const { prompt } = req.body;
+
+  console.log(`收到流式生成请求, 会话 ID: ${sessionId}, 提示: ${prompt}`);
+
+  // 验证参数
+  if (!sessionId || !prompt) {
+    return res.status(400).json({
+      success: false,
+      message: "缺少会话ID或提示内容",
+    });
+  }
+
+  // 检查 SSE 连接是否存在
+  const connection = sseConnections.get(sessionId);
+  if (!connection) {
+    return res.status(404).json({
+      success: false,
+      message: "找不到指定的 SSE 连接，请先建立连接",
+    });
+  }
+
+  // 立即返回成功响应，表示已接收请求
+  res.json({ success: true, message: "请求已接收，开始处理" });
+
+  try {
+    // 发送开始生成事件
+    connection.res.write(`data: ${JSON.stringify({ event: "start" })}\n\n`);
+
+    // 使用 AI 服务生成内容
+    await aiService.generateTextStream(prompt, (chunk, fullText) => {
+      // 发送内容块
+      connection.res.write(
+        `data: ${JSON.stringify({
+          event: "chunk",
+          chunk,
+          fullText,
+        })}\n\n`
+      );
+    });
+
+    // 发送完成事件
+    connection.res.write(`data: ${JSON.stringify({ event: "end" })}\n\n`);
+  } catch (error) {
+    console.error("流式生成出错:", error);
+    // 发送错误事件
+    connection.res.write(
+      `data: ${JSON.stringify({
+        event: "error",
+        message: error.message || "生成过程中发生错误",
+      })}\n\n`
+    );
   }
 });
 
