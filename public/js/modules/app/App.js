@@ -1376,7 +1376,365 @@ export class App {
 
   // 设置模型选择器
   setupModelSelector() {
-    // ...省略方法实现，保持与原方法相同
+    // 获取相关DOM元素
+    const modelInput = document.getElementById("ai-model");
+    const modelDropdown = document.getElementById("model-dropdown");
+    const dropdownToggle = document.querySelector(".select-toggle");
+    const selectOptions = document.querySelectorAll(
+      "#model-dropdown .select-option"
+    );
+
+    if (!modelInput || !modelDropdown || !dropdownToggle) {
+      console.warn("模型选择器初始化失败：缺少必要的DOM元素");
+      return;
+    }
+
+    // 处理下拉按钮点击事件
+    dropdownToggle.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      modelDropdown.classList.toggle("active");
+
+      // 添加活跃状态的类名，用于样式调整
+      dropdownToggle.classList.toggle("active");
+    });
+
+    // 处理选项点击事件
+    selectOptions.forEach((option) => {
+      option.addEventListener("click", () => {
+        const selectedValue = option.getAttribute("data-value");
+        console.log("选中模型:", selectedValue);
+
+        // 更新输入框的值
+        modelInput.value = selectedValue;
+
+        // 关闭下拉菜单
+        modelDropdown.classList.remove("active");
+        dropdownToggle.classList.remove("active");
+
+        // 触发输入事件以便其他监听可以响应
+        modelInput.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    });
+
+    // 点击页面其他区域时关闭下拉菜单
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".custom-select-container")) {
+        modelDropdown.classList.remove("active");
+        dropdownToggle.classList.remove("active");
+      }
+    });
+
+    // 允许用户手动输入模型名称
+    modelInput.addEventListener("focus", () => {
+      modelInput.setAttribute("placeholder", "");
+    });
+
+    modelInput.addEventListener("blur", () => {
+      if (!modelInput.value) {
+        modelInput.setAttribute(
+          "placeholder",
+          "例如: gpt-3.5-turbo, gpt-4-turbo"
+        );
+      }
+    });
+
+    // 初始化历史记录功能
+    this.initApiHistoryFeatures();
+  }
+
+  // API 配置历史记录功能初始化
+  async initApiHistoryFeatures() {
+    // 获取所有历史记录按钮和下拉菜单
+    const apiKeyHistoryToggle = document.getElementById(
+      "api-key-history-toggle"
+    );
+    const baseUrlHistoryToggle = document.getElementById(
+      "base-url-history-toggle"
+    );
+    const modelHistoryToggle = document.getElementById("model-history-toggle");
+
+    const apiKeyHistoryDropdown = document.getElementById(
+      "api-key-history-dropdown"
+    );
+    const baseUrlHistoryDropdown = document.getElementById(
+      "base-url-history-dropdown"
+    );
+    const modelHistoryDropdown = document.getElementById(
+      "model-history-dropdown"
+    );
+
+    // 获取相关输入框
+    const apiKeyInput = document.getElementById("ai-api-key");
+    const baseUrlInput = document.getElementById("ai-base-url");
+    const modelInput = document.getElementById("ai-model");
+
+    // 添加按钮点击事件
+    if (apiKeyHistoryToggle && apiKeyHistoryDropdown) {
+      apiKeyHistoryToggle.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // 关闭其他所有下拉菜单
+        baseUrlHistoryDropdown?.classList.remove("active");
+        modelHistoryDropdown?.classList.remove("active");
+        document.getElementById("model-dropdown")?.classList.remove("active");
+
+        // 切换当前下拉菜单
+        apiKeyHistoryDropdown.classList.toggle("active");
+
+        // 如果打开了下拉菜单，加载历史记录
+        if (apiKeyHistoryDropdown.classList.contains("active")) {
+          this.loadApiKeyHistory(apiKeyHistoryDropdown);
+        }
+      });
+    }
+
+    if (baseUrlHistoryToggle && baseUrlHistoryDropdown) {
+      baseUrlHistoryToggle.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // 关闭其他所有下拉菜单
+        apiKeyHistoryDropdown?.classList.remove("active");
+        modelHistoryDropdown?.classList.remove("active");
+        document.getElementById("model-dropdown")?.classList.remove("active");
+
+        // 切换当前下拉菜单
+        baseUrlHistoryDropdown.classList.toggle("active");
+
+        // 如果打开了下拉菜单，加载历史记录
+        if (baseUrlHistoryDropdown.classList.contains("active")) {
+          this.loadBaseUrlHistory(baseUrlHistoryDropdown);
+        }
+      });
+    }
+
+    if (modelHistoryToggle && modelHistoryDropdown) {
+      modelHistoryToggle.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // 关闭其他所有下拉菜单
+        apiKeyHistoryDropdown?.classList.remove("active");
+        baseUrlHistoryDropdown?.classList.remove("active");
+        document.getElementById("model-dropdown")?.classList.remove("active");
+
+        // 切换当前下拉菜单
+        modelHistoryDropdown.classList.toggle("active");
+
+        // 如果打开了下拉菜单，加载历史记录
+        if (modelHistoryDropdown.classList.contains("active")) {
+          this.loadModelHistory(modelHistoryDropdown);
+        }
+      });
+    }
+
+    // 点击页面其他区域关闭所有历史记录下拉菜单
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".history-input-container")) {
+        apiKeyHistoryDropdown?.classList.remove("active");
+        baseUrlHistoryDropdown?.classList.remove("active");
+        modelHistoryDropdown?.classList.remove("active");
+      }
+    });
+  }
+
+  // 加载 API 密钥历史记录
+  async loadApiKeyHistory(dropdownElement) {
+    try {
+      const response = await fetch("/api/api-history/key");
+      const data = await response.json();
+
+      if (data.success) {
+        this.renderHistoryItems(
+          dropdownElement,
+          data.history,
+          "apiKey",
+          (value) => {
+            // 密钥显示处理 - 显示部分隐藏的密钥
+            return value.length > 8
+              ? `${value.substring(0, 4)}...${value.substring(
+                  value.length - 4
+                )}`
+              : value;
+          },
+          document.getElementById("ai-api-key")
+        );
+      } else {
+        this.renderHistoryError(dropdownElement, "无法加载历史记录");
+      }
+    } catch (error) {
+      console.error("加载API密钥历史记录失败:", error);
+      this.renderHistoryError(dropdownElement, "加载失败");
+    }
+  }
+
+  // 加载基础 URL 历史记录
+  async loadBaseUrlHistory(dropdownElement) {
+    try {
+      const response = await fetch("/api/api-history/url");
+      const data = await response.json();
+
+      if (data.success) {
+        this.renderHistoryItems(
+          dropdownElement,
+          data.history,
+          "baseUrl",
+          null,
+          document.getElementById("ai-base-url")
+        );
+      } else {
+        this.renderHistoryError(dropdownElement, "无法加载历史记录");
+      }
+    } catch (error) {
+      console.error("加载基础URL历史记录失败:", error);
+      this.renderHistoryError(dropdownElement, "加载失败");
+    }
+  }
+
+  // 加载模型历史记录
+  async loadModelHistory(dropdownElement) {
+    try {
+      const response = await fetch("/api/api-history/model");
+      const data = await response.json();
+
+      if (data.success) {
+        this.renderHistoryItems(
+          dropdownElement,
+          data.history,
+          "modelName",
+          null,
+          document.getElementById("ai-model")
+        );
+      } else {
+        this.renderHistoryError(dropdownElement, "无法加载历史记录");
+      }
+    } catch (error) {
+      console.error("加载模型历史记录失败:", error);
+      this.renderHistoryError(dropdownElement, "加载失败");
+    }
+  }
+
+  // 渲染历史记录项目
+  renderHistoryItems(
+    dropdownElement,
+    historyItems,
+    valueKey,
+    valueFormatter,
+    inputElement
+  ) {
+    const contentElement = dropdownElement.querySelector(
+      ".history-dropdown-content"
+    );
+    contentElement.innerHTML = "";
+
+    if (!historyItems || historyItems.length === 0) {
+      contentElement.innerHTML =
+        '<div class="history-empty">暂无历史记录</div>';
+      return;
+    }
+
+    historyItems.forEach((item) => {
+      const historyItem = document.createElement("div");
+      historyItem.className = "history-item";
+
+      // 格式化使用时间
+      const lastUsedDate = new Date(item.lastUsed);
+      const formattedDate = lastUsedDate.toLocaleDateString();
+
+      // 格式化显示的值 (对API密钥进行部分隐藏处理)
+      const displayValue = valueFormatter
+        ? valueFormatter(item[valueKey])
+        : item[valueKey];
+
+      historyItem.innerHTML = `
+        <div class="history-item-value" title="${item[valueKey]}">${displayValue}</div>
+        <div class="history-item-info">
+          使用次数: ${item.useCount} | 最后使用: ${formattedDate}
+        </div>
+        <div class="history-item-actions">
+          <button class="history-item-delete" title="删除此记录">×</button>
+        </div>
+      `;
+
+      // 添加点击事件，选择此历史记录
+      historyItem.addEventListener("click", (e) => {
+        if (!e.target.classList.contains("history-item-delete")) {
+          if (inputElement) {
+            inputElement.value = item[valueKey];
+            if (inputElement.type === "password") {
+              // 如果是密码输入框，触发show-password效果提示用户看到了变化
+              inputElement.type = "text";
+              setTimeout(() => {
+                inputElement.type = "password";
+              }, 500);
+            }
+            inputElement.dispatchEvent(new Event("input"));
+          }
+          dropdownElement.classList.remove("active");
+        }
+      });
+
+      // 添加删除按钮点击事件
+      const deleteButton = historyItem.querySelector(".history-item-delete");
+      deleteButton.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.deleteHistoryItem(item.id, valueKey, dropdownElement);
+      });
+
+      contentElement.appendChild(historyItem);
+    });
+  }
+
+  // 渲染历史记录错误
+  renderHistoryError(dropdownElement, errorMessage) {
+    const contentElement = dropdownElement.querySelector(
+      ".history-dropdown-content"
+    );
+    contentElement.innerHTML = `<div class="history-empty">${errorMessage}</div>`;
+  }
+
+  // 删除历史记录项目
+  async deleteHistoryItem(id, type, dropdownElement) {
+    try {
+      let endpoint;
+      switch (type) {
+        case "apiKey":
+          endpoint = `/api/api-history/key/${id}`;
+          break;
+        case "baseUrl":
+          endpoint = `/api/api-history/url/${id}`;
+          break;
+        case "modelName":
+          endpoint = `/api/api-history/model/${id}`;
+          break;
+        default:
+          throw new Error("未知的历史记录类型");
+      }
+
+      const response = await fetch(endpoint, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // 重新加载对应的历史记录
+        if (type === "apiKey") {
+          this.loadApiKeyHistory(dropdownElement);
+        } else if (type === "baseUrl") {
+          this.loadBaseUrlHistory(dropdownElement);
+        } else if (type === "modelName") {
+          this.loadModelHistory(dropdownElement);
+        }
+      } else {
+        this.showMessage(`删除历史记录失败: ${data.message}`, "error");
+      }
+    } catch (error) {
+      console.error("删除历史记录失败:", error);
+      this.showMessage("删除历史记录失败", "error");
+    }
   }
 
   // 生成新的邀请码

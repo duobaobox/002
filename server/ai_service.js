@@ -287,15 +287,44 @@ class AIService {
       };
     } catch (error) {
       console.error("[AI Service] Test failed during API call:", error);
-      let message = `连接测试失败: ${error.message}`;
+
+      // 改进错误处理逻辑，确保不会出现undefined错误类型
+      let message = "";
+
       if (error instanceof OpenAI.APIError) {
-        message = `连接测试失败: ${error.status} ${error.name} - ${error.message}`;
+        // OpenAI API错误 - 有详细信息
+        message = `连接测试失败: ${error.status || ""} ${
+          error.name || "Error"
+        } - ${error.message || "未知错误"}`;
         console.error("[AI Service] OpenAI API Error Details:", {
           status: error.status,
           error: error.error,
         });
       } else if (error.code) {
-        message += ` (Code: ${error.code})`;
+        // 网络错误，有错误代码
+        message = `连接测试失败: ${error.name || "Error"} - ${
+          error.message || "未知错误"
+        } (Code: ${error.code})`;
+      } else if (
+        error.name === "TypeError" &&
+        error.message.includes("fetch")
+      ) {
+        // Fetch API错误 - 通常是网络问题
+        message = `连接测试失败: 网络连接错误 - 请检查API服务器地址是否正确或网络是否可用`;
+      } else if (error.message && error.message.includes("ENOTFOUND")) {
+        // DNS解析错误
+        message = `连接测试失败: 找不到服务器 - 请检查URL是否正确`;
+      } else if (error.message && error.message.includes("ECONNREFUSED")) {
+        // 连接被拒绝
+        message = `连接测试失败: 连接被拒绝 - 服务器可能未运行或不接受连接`;
+      } else if (error.message && error.message.includes("timeout")) {
+        // 超时错误
+        message = `连接测试失败: 连接超时 - 服务器响应时间过长`;
+      } else {
+        // 其他未知错误，确保提供有意义的信息
+        message = `连接测试失败: ${error.name || "Error"} - ${
+          error.message || "网络连接错误，请检查API配置或网络状态"
+        }`;
       }
 
       // 为OpenRouter模型添加建议

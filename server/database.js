@@ -133,6 +133,42 @@ async function initializeDatabase() {
         `);
         console.log('数据库表 "invitation_codes" 已准备就绪。');
 
+        // 创建 API 密钥历史记录表
+        await dbExec(`
+          CREATE TABLE IF NOT EXISTS api_key_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            api_key TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            last_used DATETIME DEFAULT CURRENT_TIMESTAMP,
+            use_count INTEGER DEFAULT 1
+          );
+        `);
+        console.log('数据库表 "api_key_history" 已准备就绪。');
+
+        // 创建 基础 URL 历史记录表
+        await dbExec(`
+          CREATE TABLE IF NOT EXISTS base_url_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            base_url TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            last_used DATETIME DEFAULT CURRENT_TIMESTAMP,
+            use_count INTEGER DEFAULT 1
+          );
+        `);
+        console.log('数据库表 "base_url_history" 已准备就绪。');
+
+        // 创建 模型历史记录表
+        await dbExec(`
+          CREATE TABLE IF NOT EXISTS model_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            model_name TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            last_used DATETIME DEFAULT CURRENT_TIMESTAMP,
+            use_count INTEGER DEFAULT 1
+          );
+        `);
+        console.log('数据库表 "model_history" 已准备就绪。');
+
         // 检查是否存在默认管理员账户，如果不存在则创建
         const adminUser = await dbGet(
           "SELECT * FROM users WHERE username = ?",
@@ -667,6 +703,182 @@ function generateRandomCode(length = 8) {
   return result;
 }
 
+// --- API 配置历史记录函数 ---
+
+/**
+ * 添加或更新 API 密钥历史记录
+ * @param {string} apiKey - API 密钥
+ * @returns {Promise<void>}
+ */
+async function addOrUpdateApiKeyHistory(apiKey) {
+  if (!db) throw new Error("数据库未初始化");
+  if (!apiKey || apiKey.trim() === "") return; // 不记录空值
+
+  const trimmedKey = apiKey.trim();
+
+  // 检查是否已存在此 API 密钥
+  const existingKey = await dbGet(
+    "SELECT id, use_count FROM api_key_history WHERE api_key = ?",
+    [trimmedKey]
+  );
+
+  if (existingKey) {
+    // 已存在，更新使用次数和最后使用时间
+    await dbRun(
+      "UPDATE api_key_history SET use_count = use_count + 1, last_used = CURRENT_TIMESTAMP WHERE id = ?",
+      [existingKey.id]
+    );
+  } else {
+    // 新密钥，添加到历史记录
+    await dbRun("INSERT INTO api_key_history (api_key) VALUES (?)", [
+      trimmedKey,
+    ]);
+  }
+}
+
+/**
+ * 添加或更新基础 URL 历史记录
+ * @param {string} baseUrl - 基础 URL
+ * @returns {Promise<void>}
+ */
+async function addOrUpdateBaseUrlHistory(baseUrl) {
+  if (!db) throw new Error("数据库未初始化");
+  if (!baseUrl || baseUrl.trim() === "") return; // 不记录空值
+
+  const trimmedUrl = baseUrl.trim();
+
+  // 检查是否已存在此基础 URL
+  const existingUrl = await dbGet(
+    "SELECT id, use_count FROM base_url_history WHERE base_url = ?",
+    [trimmedUrl]
+  );
+
+  if (existingUrl) {
+    // 已存在，更新使用次数和最后使用时间
+    await dbRun(
+      "UPDATE base_url_history SET use_count = use_count + 1, last_used = CURRENT_TIMESTAMP WHERE id = ?",
+      [existingUrl.id]
+    );
+  } else {
+    // 新 URL，添加到历史记录
+    await dbRun("INSERT INTO base_url_history (base_url) VALUES (?)", [
+      trimmedUrl,
+    ]);
+  }
+}
+
+/**
+ * 添加或更新模型名称历史记录
+ * @param {string} modelName - 模型名称
+ * @returns {Promise<void>}
+ */
+async function addOrUpdateModelHistory(modelName) {
+  if (!db) throw new Error("数据库未初始化");
+  if (!modelName || modelName.trim() === "") return; // 不记录空值
+
+  const trimmedModelName = modelName.trim();
+
+  // 检查是否已存在此模型名称
+  const existingModel = await dbGet(
+    "SELECT id, use_count FROM model_history WHERE model_name = ?",
+    [trimmedModelName]
+  );
+
+  if (existingModel) {
+    // 已存在，更新使用次数和最后使用时间
+    await dbRun(
+      "UPDATE model_history SET use_count = use_count + 1, last_used = CURRENT_TIMESTAMP WHERE id = ?",
+      [existingModel.id]
+    );
+  } else {
+    // 新模型，添加到历史记录
+    await dbRun("INSERT INTO model_history (model_name) VALUES (?)", [
+      trimmedModelName,
+    ]);
+  }
+}
+
+/**
+ * 获取 API 密钥历史记录列表
+ * @param {number} limit - 限制返回数量，默认为10
+ * @returns {Promise<Array>} API 密钥历史记录数组
+ */
+async function getApiKeyHistory(limit = 10) {
+  if (!db) throw new Error("数据库未初始化");
+  return await dbAll(
+    `SELECT id, api_key as apiKey, created_at as createdAt, last_used as lastUsed, use_count as useCount 
+     FROM api_key_history 
+     ORDER BY last_used DESC, use_count DESC 
+     LIMIT ?`,
+    [limit]
+  );
+}
+
+/**
+ * 获取基础 URL 历史记录列表
+ * @param {number} limit - 限制返回数量，默认为10
+ * @returns {Promise<Array>} 基础 URL 历史记录数组
+ */
+async function getBaseUrlHistory(limit = 10) {
+  if (!db) throw new Error("数据库未初始化");
+  return await dbAll(
+    `SELECT id, base_url as baseUrl, created_at as createdAt, last_used as lastUsed, use_count as useCount 
+     FROM base_url_history 
+     ORDER BY last_used DESC, use_count DESC 
+     LIMIT ?`,
+    [limit]
+  );
+}
+
+/**
+ * 获取模型名称历史记录列表
+ * @param {number} limit - 限制返回数量，默认为10
+ * @returns {Promise<Array>} 模型名称历史记录数组
+ */
+async function getModelHistory(limit = 10) {
+  if (!db) throw new Error("数据库未初始化");
+  return await dbAll(
+    `SELECT id, model_name as modelName, created_at as createdAt, last_used as lastUsed, use_count as useCount 
+     FROM model_history 
+     ORDER BY last_used DESC, use_count DESC 
+     LIMIT ?`,
+    [limit]
+  );
+}
+
+/**
+ * 删除 API 密钥历史记录
+ * @param {number} id - 记录 ID
+ * @returns {Promise<boolean>} 是否成功删除
+ */
+async function deleteApiKeyHistory(id) {
+  if (!db) throw new Error("数据库未初始化");
+  const result = await dbRun("DELETE FROM api_key_history WHERE id = ?", [id]);
+  return result.changes > 0;
+}
+
+/**
+ * 删除基础 URL 历史记录
+ * @param {number} id - 记录 ID
+ * @returns {Promise<boolean>} 是否成功删除
+ */
+async function deleteBaseUrlHistory(id) {
+  if (!db) throw new Error("数据库未初始化");
+  const result = await dbRun("DELETE FROM base_url_history WHERE id = ?", [id]);
+  return result.changes > 0;
+}
+
+/**
+ * 删除模型名称历史记录
+ * @param {number} id - 记录 ID
+ * @returns {Promise<boolean>} 是否成功删除
+ */
+async function deleteModelHistory(id) {
+  if (!db) throw new Error("数据库未初始化");
+  const result = await dbRun("DELETE FROM model_history WHERE id = ?", [id]);
+  return result.changes > 0;
+}
+
 export {
   initializeDatabase,
   // Settings functions
@@ -689,4 +901,14 @@ export {
   deleteInviteCode,
   validateInviteCode,
   markInviteCodeAsUsed,
+  // API 配置历史记录函数
+  addOrUpdateApiKeyHistory,
+  addOrUpdateBaseUrlHistory,
+  addOrUpdateModelHistory,
+  getApiKeyHistory,
+  getBaseUrlHistory,
+  getModelHistory,
+  deleteApiKeyHistory,
+  deleteBaseUrlHistory,
+  deleteModelHistory,
 };
