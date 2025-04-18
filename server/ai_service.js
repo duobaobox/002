@@ -236,6 +236,80 @@ class AIService {
     }
   }
 
+  // 新增：流式生成方法
+  async generateTextStream(prompt, onChunk) {
+    if (!this.isReady()) {
+      throw new Error("AI服务未配置或初始化失败");
+    }
+
+    try {
+      // 基础请求参数
+      const requestParams = {
+        model: this.config.model,
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: this.config.maxTokens,
+        temperature: this.config.temperature,
+        stream: true, // 启用流式输出
+      };
+
+      console.log("[AI Service] Starting streaming generation...");
+
+      // 为OpenRouter添加特有的参数
+      if (this.isOpenRouter()) {
+        // 添加额外的头部信息，用于OpenRouter统计
+        const extraHeaders = {
+          "HTTP-Referer": this.config.appUrl,
+          "X-Title": this.config.appName,
+        };
+
+        const stream = await this.openai.chat.completions.create(
+          requestParams,
+          { headers: extraHeaders }
+        );
+
+        let fullText = "";
+        for await (const chunk of stream) {
+          const content = chunk.choices[0]?.delta?.content || "";
+          if (content) {
+            fullText += content;
+            // 调用回调，传递当前块和累积文本
+            onChunk && onChunk(content, fullText);
+          }
+        }
+        return fullText.trim();
+      } else {
+        // 标准OpenAI兼容API调用（如DeepSeek等）
+        const stream = await this.openai.chat.completions.create(requestParams);
+
+        let fullText = "";
+        for await (const chunk of stream) {
+          const content = chunk.choices[0]?.delta?.content || "";
+          if (content) {
+            fullText += content;
+            // 调用回调，传递当前块和累积文本
+            onChunk && onChunk(content, fullText);
+          }
+        }
+        return fullText.trim();
+      }
+    } catch (error) {
+      console.error("AI流式生成文本时出错:", error);
+      // Provide more specific error messages if possible
+      if (error.response) {
+        console.error("OpenAI API错误详情:", error.response.data);
+        throw new Error(
+          `AI服务API错误: ${error.response.status} ${
+            error.response.data?.error?.message || error.message
+          }`
+        );
+      } else if (error.request) {
+        throw new Error("无法连接到AI服务，请检查网络或API地址");
+      } else {
+        throw new Error(`AI生成失败: ${error.message}`);
+      }
+    }
+  }
+
   // Method to test connection
   async testConnection() {
     console.log("[AI Service] Testing AI connection...");

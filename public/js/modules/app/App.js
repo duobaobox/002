@@ -555,6 +555,16 @@ export class App {
 
   // 在服务器上更新便签
   async updateNoteOnServer(id) {
+    // 如果 id 无效或者便签已经被删除，直接返回
+    if (!id || !this.notes.some((note) => note.id === id)) {
+      // 清除已有的定时器
+      if (this.updateDebounceTimers[id]) {
+        clearTimeout(this.updateDebounceTimers[id]);
+        delete this.updateDebounceTimers[id];
+      }
+      return;
+    }
+
     const note = this.notes.find((n) => n.id === id);
     if (!note) return;
 
@@ -569,6 +579,13 @@ export class App {
     // 设置新的防抖延迟
     this.updateDebounceTimers[id] = setTimeout(async () => {
       try {
+        // 再次确认便签是否仍然存在（可能在延迟期间被删除）
+        if (!this.notes.some((n) => n.id === id)) {
+          console.log(`便签 ${id} 已被删除，取消更新操作`);
+          delete this.updateDebounceTimers[id];
+          return;
+        }
+
         // 获取便签的当前位置和尺寸
         const rect = element.getBoundingClientRect();
         const x = parseInt(element.style.left);
@@ -600,18 +617,26 @@ export class App {
         const data = await response.json();
 
         if (!data.success) {
-          console.error("更新便签失败:", data.message);
-        } else {
-          // 成功更新后清除此ID的计时器
-          delete this.updateDebounceTimers[id];
+          // 如果是404错误（便签不存在），可能是便签已被删除，我们应该从内存中移除它
+          if (response.status === 404) {
+            console.log(`服务器找不到便签 ${id}，可能已被删除`);
+            // 确保从本地列表中也删除该便签
+            this.notes = this.notes.filter((n) => n.id !== id);
+          } else {
+            console.error("更新便签失败:", data.message);
+          }
         }
+        // 无论成功与否，清除定时器
+        delete this.updateDebounceTimers[id];
       } catch (error) {
         console.error("更新便签时发生错误:", error);
-        // 发生错误时稍后再尝试更新
+        // 发生错误时稍后再尝试更新，但首先检查便签是否还存在
         setTimeout(() => {
-          // 只有当元素和便签仍然存在时才重试
-          const noteStillExists = this.notes.some((n) => n.id === id);
-          if (noteStillExists && this.updateDebounceTimers[id]) {
+          // 只有当便签仍然存在时才重试
+          if (
+            this.notes.some((n) => n.id === id) &&
+            this.updateDebounceTimers[id]
+          ) {
             delete this.updateDebounceTimers[id]; // 删除当前定时器引用
             this.updateNoteOnServer(id); // 重试更新
           }
@@ -659,15 +684,13 @@ export class App {
     generateButton.disabled = true;
     generateButton.classList.add("generating"); // 添加生成中的动画类
     promptElement.disabled = true; // 禁用文本输入框
-    // 不在这里显示全局消息，由打字效果提供反馈
 
     // 首先创建一个空便签，准备接收流式内容
-    // 注意：createEmptyAiNote 现在需要在 note.js 中恢复
     const { noteElement, noteId } = createEmptyAiNote();
 
     try {
       // 在发送请求前先检查AI配置状态
-      const configCheckResponse = await fetch("/api/test-ai-connection"); // Use the specific test endpoint
+      const configCheckResponse = await fetch("/api/test-ai-connection");
       const configCheckData = await configCheckResponse.json();
 
       if (!configCheckData.success) {
@@ -678,14 +701,14 @@ export class App {
         );
         // 打开设置面板并切换到AI设置选项卡
         document.getElementById("settings-modal").classList.add("visible");
-        document.querySelector(".nav-item[data-tab='ai']").click(); // Simulate click to switch tab
+        document.querySelector(".nav-item[data-tab='ai']").click();
 
         // 移除临时便签
         noteElement.remove();
-        throw new Error("AI配置需要"); // Stop execution
+        throw new Error("AI配置需要完成");
       }
 
-      // 设置便签标题 - 修改为使用正确的标题元素
+      // 设置便签标题
       const titleElem = noteElement.querySelector(".note-title");
       if (titleElem) {
         titleElem.textContent =
@@ -697,129 +720,242 @@ export class App {
       const y = parseInt(noteElement.style.top) || 100 + Math.random() * 200;
       const colorClass = noteElement.classList[1]; // 获取当前颜色类
 
-      console.log("发送AI生成请求，提示:", prompt);
+      console.log("发送AI流式生成请求，提示:", prompt);
 
-      // API请求AI内容生成
-      const response = await fetch("/api/generate", {
+      // 准备接收流式内容
+      const contentElement = noteElement.querySelector(".note-content");
+      const previewElement = noteElement.querySelector(".markdown-preview");
+
+      // 确保预览区域就绪
+      if (previewElement) {
+        previewElement.style.display = "block";
+        contentElement.style.display = "none"; // 隐藏文本区域
+      }
+
+      // 移除加载指示器并设置初始状态
+      const loader = noteElement.querySelector(".ai-typing-indicator");
+      if (loader) loader.remove();
+
+      // 创建光标元素
+      const cursorElement = document.createElement("span");
+      cursorElement.className = "typing-cursor";
+      cursorElement.textContent = "|";
+      previewElement.appendChild(cursorElement);
+
+      // 生成会话ID - 使用时间戳确保唯一性
+      const sessionId = `session_${Date.now()}_${Math.random()
+        .toString(36)
+        .substring(2, 9)}`;
+
+      // 初始化内容变量
+      let fullText = "";
+
+      // 首先，建立 SSE 连接
+      const eventSource = new EventSource(
+        `/api/stream-connection/${sessionId}`
+      );
+
+      // 一旦连接建立，发送提示内容
+      eventSource.addEventListener("open", async () => {
+        console.log("SSE 连接已建立，发送提示内容...");
+
+        try {
+          // 发送提示内容
+          const processResponse = await fetch(
+            `/api/process-stream/${sessionId}`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ prompt }),
+            }
+          );
+
+          if (!processResponse.ok) {
+            const errorData = await processResponse.json();
+            throw new Error(errorData.message || "处理请求失败");
+          }
+
+          // 注意：不需要等待响应完成，数据会通过 SSE 连接接收
+        } catch (error) {
+          console.error("发送提示内容失败:", error);
+          eventSource.close();
+          throw error;
+        }
+      });
+
+      // 处理 SSE 事件
+      eventSource.addEventListener("message", (event) => {
+        try {
+          const data = JSON.parse(event.data);
+
+          switch (data.event) {
+            case "connected":
+              console.log("已连接到SSE流，会话ID:", data.sessionId);
+              break;
+
+            case "start":
+              console.log("AI开始生成内容...");
+              break;
+
+            case "chunk":
+              // 收到一块新内容
+              fullText = data.fullText || fullText + (data.chunk || "");
+              // 更新便签内容，保持光标可见
+              updateNoteContent(noteElement, fullText);
+              previewElement.appendChild(cursorElement);
+              break;
+
+            case "end":
+              console.log("AI生成内容完成");
+              // 流结束，完成处理
+              eventSource.close();
+              // 最后一次更新，移除光标
+              cursorElement.remove();
+              this.saveStreamingNoteToServer(
+                noteElement,
+                fullText,
+                x,
+                y,
+                prompt,
+                colorClass
+              );
+              break;
+
+            case "error":
+              console.error("AI生成错误:", data.message);
+              // 处理错误
+              eventSource.close();
+              throw new Error(data.message || "生成过程中发生错误");
+          }
+        } catch (error) {
+          if (error.message !== "生成过程中发生错误") {
+            console.error("处理SSE事件失败:", error);
+          }
+          eventSource.close();
+
+          // 如果已有一些内容，尝试保存
+          if (fullText.trim()) {
+            cursorElement.remove();
+            this.saveStreamingNoteToServer(
+              noteElement,
+              fullText,
+              x,
+              y,
+              prompt,
+              colorClass
+            );
+          } else {
+            noteElement.remove();
+            throw error;
+          }
+        }
+      });
+
+      // 处理连接错误
+      eventSource.addEventListener("error", (error) => {
+        console.error("SSE连接错误:", error);
+        eventSource.close();
+
+        // 如果已有一些内容，尝试保存
+        if (fullText.trim()) {
+          cursorElement.remove();
+          this.saveStreamingNoteToServer(
+            noteElement,
+            fullText,
+            x,
+            y,
+            prompt,
+            colorClass
+          );
+        } else {
+          noteElement.remove();
+          throw new Error("生成过程中连接中断");
+        }
+      });
+    } catch (error) {
+      console.error("生成AI便签出错:", error);
+      // 确保在出错时也移除临时便签
+      if (noteElement && noteElement.parentNode) {
+        noteElement.remove();
+      }
+      this.showMessage(`生成失败: ${error.message}`, "error");
+    } finally {
+      // 恢复按钮和输入框状态
+      generateButton.disabled = false;
+      generateButton.classList.remove("generating");
+      promptElement.disabled = false;
+    }
+  }
+
+  // 将流式生成的便签保存到服务器
+  async saveStreamingNoteToServer(noteElement, text, x, y, prompt, colorClass) {
+    try {
+      // AI标题
+      const aiTitle =
+        prompt.length > 15 ? prompt.substring(0, 15) + "..." : prompt;
+      const finalTitle = `AI: ${aiTitle}`;
+
+      // 创建便签到服务器
+      const noteResponse = await fetch("/api/notes", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({
+          text: text,
+          x,
+          y,
+          title: finalTitle,
+          colorClass: colorClass,
+          zIndex: parseInt(noteElement.style.zIndex || getHighestZIndex() + 1),
+        }),
       });
 
-      const data = await response.json();
+      const noteData = await noteResponse.json();
 
-      // 处理API密钥验证中的情况 (保持之前的逻辑)
-      if (!response.ok && response.status === 202 && data.needVerification) {
-        if (noteElement) {
-          const contentElement = noteElement.querySelector(".note-content");
-          if (contentElement) {
-            contentElement.innerHTML =
-              "<p><i>正在验证API连接，请稍候...</i></p>";
-          }
+      // 移除临时便签
+      noteElement.remove();
+
+      if (noteData.success && noteData.note) {
+        console.log("AI便签已添加，ID:", noteData.note.id);
+
+        // 创建正式的Note实例替代临时便签
+        const note = new Note(
+          noteData.note.id,
+          noteData.note.text,
+          noteData.note.x || x,
+          noteData.note.y || y,
+          noteData.note.title || finalTitle,
+          noteData.note.colorClass
+        );
+
+        // 确保新创建的便签在最上层
+        if (note.element) {
+          note.element.style.zIndex =
+            noteData.note.zIndex || getHighestZIndex() + 1;
         }
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        noteElement.remove();
-        this.showMessage("API正在初始化中，请稍后再试", "info");
-        return; // Stop execution here
-      }
 
-      if (!response.ok) {
-        console.error("服务器响应错误:", data);
-        // 移除临时便签
-        noteElement.remove();
-        throw new Error(data.message || `服务器响应错误: ${response.status}`);
-      }
+        // 添加到notes数组
+        this.notes.push(note);
 
-      if (data.success && data.text) {
-        // 显示打字机效果
-        // 注意：updateNoteContent 需要在 note.js 中恢复
-        await this.displayTypingEffect(noteElement, data.text);
-
-        // AI标题
-        const aiTitle =
-          prompt.length > 15 ? prompt.substring(0, 15) + "..." : prompt;
-        const finalTitle = `AI: ${aiTitle}`;
-
-        // 创建便签到服务器
-        const noteResponse = await fetch("/api/notes", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            text: data.text,
-            x,
-            y,
-            title: finalTitle,
-            colorClass: colorClass,
-            zIndex: parseInt(
-              noteElement.style.zIndex || getHighestZIndex() + 1
-            ), // Pass zIndex
-          }),
-        });
-
-        const noteData = await noteResponse.json();
-
-        // 移除临时便签
-        noteElement.remove();
-
-        if (noteData.success && noteData.note) {
-          console.log("AI便签已添加，ID:", noteData.note.id);
-
-          // 创建正式的Note实例替代临时便签
-          const note = new Note(
-            noteData.note.id,
-            noteData.note.text,
-            noteData.note.x || x,
-            noteData.note.y || y,
-            noteData.note.title || finalTitle,
-            noteData.note.colorClass // Use color from server or temp note
-          );
-
-          // 确保新创建的便签在最上层 (使用服务器返回的zIndex或临时便签的)
-          if (note.element) {
-            note.element.style.zIndex =
-              noteData.note.zIndex ||
-              parseInt(noteElement.style.zIndex || getHighestZIndex() + 1);
-          }
-
-          // 添加到notes数组
-          this.notes.push(note);
-
-          // 添加高亮效果
-          note.element.classList.add("new-note-highlight");
-          setTimeout(() => {
-            note.element.classList.remove("new-note-highlight");
-          }, 1500);
-
-          // this.showMessage("AI 便签生成成功！", "success"); // Commented out: Do not show success message for AI note generation
-        } else {
-          console.error("创建AI便签失败:", noteData);
-          throw new Error(noteData.message || "无法创建AI便签");
-        }
+        // 添加高亮效果
+        note.element.classList.add("new-note-highlight");
+        setTimeout(() => {
+          note.element.classList.remove("new-note-highlight");
+        }, 1500);
 
         // 清空输入框
-        promptElement.value = "";
-        this.updateButtonVisibility(); // 更新按钮状态
+        document.getElementById("ai-prompt").value = "";
+        this.updateButtonVisibility();
       } else {
-        // 移除临时便签
-        noteElement.remove();
-        throw new Error(data.message || "服务器返回了无效的数据");
+        console.error("创建AI便签失败:", noteData);
+        throw new Error(noteData.message || "无法创建AI便签");
       }
     } catch (error) {
-      console.error("生成AI便签出错:", error);
-      // 确保在出错时也移除临时便签 (如果它还存在)
-      if (noteElement && noteElement.parentNode) {
-        noteElement.remove();
-      }
-      this.showMessage(`生成失败: ${error.message}`, "error"); // Keep error message display
-    } finally {
-      // 恢复按钮和输入框状态
-      generateButton.disabled = false;
-      generateButton.classList.remove("generating"); // 移除生成中的动画类
-      promptElement.disabled = false; // 恢复文本输入框
+      console.error("保存AI便签到服务器出错:", error);
+      this.showMessage(`保存失败: ${error.message}`, "error");
     }
   }
 
@@ -1384,6 +1520,31 @@ export class App {
       "#model-dropdown .select-option"
     );
 
+    // 添加模型历史记录下拉菜单元素
+    // 检查是否已存在，如果不存在则创建
+    let modelHistoryDropdown = document.getElementById(
+      "model-history-dropdown"
+    );
+    if (!modelHistoryDropdown) {
+      modelHistoryDropdown = document.createElement("div");
+      modelHistoryDropdown.id = "model-history-dropdown";
+      modelHistoryDropdown.className = "history-dropdown";
+
+      // 创建内容容器
+      const content = document.createElement("div");
+      content.className = "history-dropdown-content";
+      content.innerHTML = '<div class="history-item-loading">加载中...</div>';
+
+      // 将内容容器添加到下拉菜单
+      modelHistoryDropdown.appendChild(content);
+
+      // 将下拉菜单添加到容器中
+      const historyContainer = modelInput.closest(".history-input-container");
+      if (historyContainer) {
+        historyContainer.appendChild(modelHistoryDropdown);
+      }
+    }
+
     if (!modelInput || !modelDropdown || !dropdownToggle) {
       console.warn("模型选择器初始化失败：缺少必要的DOM元素");
       return;
@@ -1393,6 +1554,13 @@ export class App {
     dropdownToggle.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
+
+      // 关闭历史记录下拉菜单
+      if (modelHistoryDropdown) {
+        modelHistoryDropdown.classList.remove("active");
+      }
+
+      // 切换模型下拉菜单
       modelDropdown.classList.toggle("active");
 
       // 添加活跃状态的类名，用于样式调整
@@ -1414,6 +1582,9 @@ export class App {
 
         // 触发输入事件以便其他监听可以响应
         modelInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+        // 添加或更新模型历史记录
+        this.addOrUpdateModelHistory(selectedValue);
       });
     });
 
@@ -1428,6 +1599,16 @@ export class App {
     // 允许用户手动输入模型名称
     modelInput.addEventListener("focus", () => {
       modelInput.setAttribute("placeholder", "");
+
+      // 关闭模型选择下拉菜单
+      modelDropdown.classList.remove("active");
+      dropdownToggle.classList.remove("active");
+
+      // 显示历史记录下拉菜单
+      if (modelHistoryDropdown) {
+        modelHistoryDropdown.classList.add("active");
+        this.loadModelHistory(modelHistoryDropdown);
+      }
     });
 
     modelInput.addEventListener("blur", () => {
@@ -1439,8 +1620,38 @@ export class App {
       }
     });
 
+    // 在输入框值变化时触发添加历史记录
+    modelInput.addEventListener("change", () => {
+      if (modelInput.value.trim()) {
+        this.addOrUpdateModelHistory(modelInput.value.trim());
+      }
+    });
+
     // 初始化历史记录功能
     this.initApiHistoryFeatures();
+  }
+
+  // 添加或更新模型历史记录
+  async addOrUpdateModelHistory(modelName) {
+    if (!modelName) return;
+
+    try {
+      // 发送请求到服务器添加或更新模型历史记录
+      const response = await fetch("/api/api-history/model", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ modelName }),
+      });
+
+      const data = await response.json();
+      if (!data.success) {
+        console.warn("更新模型历史记录失败:", data.message);
+      }
+    } catch (error) {
+      console.error("添加模型历史记录出错:", error);
+    }
   }
 
   // API 配置历史记录功能初始化
@@ -1530,9 +1741,58 @@ export class App {
       });
     }
 
+    // 添加输入框焦点事件，当输入框获得焦点时显示对应的历史记录
+    if (apiKeyInput && apiKeyHistoryDropdown) {
+      apiKeyInput.addEventListener("focus", () => {
+        // 关闭其他所有下拉菜单
+        baseUrlHistoryDropdown?.classList.remove("active");
+        modelHistoryDropdown?.classList.remove("active");
+        document.getElementById("model-dropdown")?.classList.remove("active");
+
+        // 显示当前下拉菜单
+        apiKeyHistoryDropdown.classList.add("active");
+
+        // 加载历史记录
+        this.loadApiKeyHistory(apiKeyHistoryDropdown);
+      });
+    }
+
+    if (baseUrlInput && baseUrlHistoryDropdown) {
+      baseUrlInput.addEventListener("focus", () => {
+        // 关闭其他所有下拉菜单
+        apiKeyHistoryDropdown?.classList.remove("active");
+        modelHistoryDropdown?.classList.remove("active");
+        document.getElementById("model-dropdown")?.classList.remove("active");
+
+        // 显示当前下拉菜单
+        baseUrlHistoryDropdown.classList.add("active");
+
+        // 加载历史记录
+        this.loadBaseUrlHistory(baseUrlHistoryDropdown);
+      });
+    }
+
+    if (modelInput && modelHistoryDropdown) {
+      modelInput.addEventListener("focus", () => {
+        // 关闭其他所有下拉菜单
+        apiKeyHistoryDropdown?.classList.remove("active");
+        baseUrlHistoryDropdown?.classList.remove("active");
+        document.getElementById("model-dropdown")?.classList.remove("active");
+
+        // 显示当前下拉菜单
+        modelHistoryDropdown.classList.add("active");
+
+        // 加载历史记录
+        this.loadModelHistory(modelHistoryDropdown);
+      });
+    }
+
     // 点击页面其他区域关闭所有历史记录下拉菜单
     document.addEventListener("click", (e) => {
-      if (!e.target.closest(".history-input-container")) {
+      if (
+        !e.target.closest(".history-input-container") &&
+        !e.target.classList.contains("history-item-delete")
+      ) {
         apiKeyHistoryDropdown?.classList.remove("active");
         baseUrlHistoryDropdown?.classList.remove("active");
         modelHistoryDropdown?.classList.remove("active");
