@@ -98,10 +98,29 @@
                                 <div class="ai-settings-group">
                                     <h4>API 连接配置</h4>
                                     <div class="ai-settings-row">
+                                        <div class="ai-settings-label">基础 URL</div>
+                                        <div class="ai-settings-input">
+                                            <div class="history-input-container">
+                                                <input type="text" id="ai-base-url"
+                                                    placeholder="https://api.openai.com/v1">
+
+                                                <div class="history-dropdown" id="base-url-history-dropdown">
+                                                    <div class="history-dropdown-content">
+                                                        <!-- 基础 URL 历史记录将通过 JavaScript 动态添加 -->
+                                                        <div class="history-item-loading">加载中...</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="ai-settings-description">API 服务的基础 URL 地址</div>
+
+                                    <div class="ai-settings-row">
                                         <div class="ai-settings-label">API 密钥</div>
                                         <div class="ai-settings-input api-key-container">
                                             <div class="history-input-container">
                                                 <input type="password" id="ai-api-key" placeholder="输入您的 API 密钥">
+
                                                 <button type="button" id="toggle-api-key" class="toggle-visibility"
                                                     data-state="hidden" title="显示/隐藏密钥">
                                                     <span class="eye-icon"></span>
@@ -116,36 +135,24 @@
                                         </div>
                                     </div>
                                     <div class="ai-settings-description">您的 API 密钥将安全地存储在服务器端</div>
-
-                                    <div class="ai-settings-row">
-                                        <div class="ai-settings-label">基础 URL</div>
-                                        <div class="ai-settings-input">
-                                            <div class="history-input-container">
-                                                <input type="text" id="ai-base-url"
-                                                    placeholder="https://api.openai.com/v1">
-                                                <div class="history-dropdown" id="base-url-history-dropdown">
-                                                    <div class="history-dropdown-content">
-                                                        <!-- 基础 URL 历史记录将通过 JavaScript 动态添加 -->
-                                                        <div class="history-item-loading">加载中...</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="ai-settings-description">API 服务的基础 URL 地址</div>
                                 </div>
 
                                 <div class="ai-settings-group">
                                     <h4>模型参数设置</h4>
                                     <div class="ai-settings-row">
                                         <div class="ai-settings-label">AI 模型</div>
-                                        <div class="ai-settings-input custom-select-container">
+                                        <div class="ai-settings-input">
                                             <div class="history-input-container">
                                                 <input type="text" id="ai-model"
                                                     placeholder="例如: gpt-3.5-turbo, gpt-4-turbo">
-                                                <button type="button" class="select-toggle" aria-label="打开模型选择列表">
-                                                    <span class="select-arrow">▼</span>
-                                                </button>
+
+
+                                                <div class="history-dropdown" id="model-history-dropdown">
+                                                    <div class="history-dropdown-content">
+                                                        <!-- 模型历史记录将通过 JavaScript 动态添加 -->
+                                                        <div class="history-item-loading">加载中...</div>
+                                                    </div>
+                                                </div>
                                                 <div class="custom-select-dropdown" id="model-dropdown">
                                                     <div class="model-group-label">标准模型</div>
                                                     <div class="select-option" data-value="gpt-3.5-turbo">gpt-3.5-turbo
@@ -213,7 +220,7 @@
                                     <button class="save-button">保存设置</button>
                                     <div class="secondary-actions">
                                         <button id="test-ai-connection" class="ai-test-button">测试 API 连接</button>
-                                        <button id="clear-ai-settings" class="ai-clear-button">清除 AI 设置</button>
+                                        <button id="clear-ai-settings" class="ai-clear-button">清除 AI 设置及历史</button>
                                     </div>
                                 </div>
                             </div>

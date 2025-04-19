@@ -388,13 +388,13 @@ export class App {
 
         // 更新按钮文本，显示还需点击几次
         if (clearAiClickCount === 1) {
-          clearAiSettingsButton.innerHTML = `再点击 2 次确认清除 <span class="reset-progress">⚫◯◯</span>`;
+          clearAiSettingsButton.innerHTML = `再点击 2 次确认清除设置及历史 <span class="reset-progress">⚫◯◯</span>`;
           clearAiSettingsButton.classList.add("reset-warning");
         } else if (clearAiClickCount === 2) {
-          clearAiSettingsButton.innerHTML = `再点击 1 次确认清除 <span class="reset-progress">⚫⚫◯</span>`;
+          clearAiSettingsButton.innerHTML = `再点击 1 次确认清除设置及历史 <span class="reset-progress">⚫⚫◯</span>`;
           clearAiSettingsButton.classList.add("reset-danger");
         } else if (clearAiClickCount >= 3) {
-          clearAiSettingsButton.innerHTML = `正在清除...`;
+          clearAiSettingsButton.innerHTML = `正在清除设置及历史...`;
           clearAiSettingsButton.disabled = true;
 
           // 执行清除操作
@@ -423,7 +423,7 @@ export class App {
                 }
 
                 // 清除完成后恢复按钮状态
-                clearAiSettingsButton.innerHTML = `清除 AI 设置`;
+                clearAiSettingsButton.innerHTML = `清除 AI 设置及历史`;
                 clearAiSettingsButton.classList.remove(
                   "reset-warning",
                   "reset-danger"
@@ -431,7 +431,7 @@ export class App {
                 clearAiSettingsButton.disabled = false;
 
                 // 显示成功消息
-                this.showMessage("所有AI设置已清除", "success");
+                this.showMessage("所有AI设置及历史已清除", "success");
               }
             })
             .catch((error) => {
@@ -439,7 +439,7 @@ export class App {
               this.showMessage(`清除失败: ${error.message}`, "error");
 
               // 恢复按钮状态
-              clearAiSettingsButton.innerHTML = `清除 AI 设置`;
+              clearAiSettingsButton.innerHTML = `清除 AI 设置及历史`;
               clearAiSettingsButton.classList.remove(
                 "reset-warning",
                 "reset-danger"
@@ -851,10 +851,13 @@ export class App {
 
       const noteData = await noteResponse.json();
 
-      // 移除临时便签
-
       if (noteData.success && noteData.note) {
         console.log("AI便签已添加，ID:", noteData.note.id);
+
+        // 先移除临时便签
+        if (noteElement && noteElement.parentNode) {
+          noteElement.remove();
+        }
 
         // 创建正式的Note实例替代临时便签
         const note = new Note(
@@ -885,10 +888,18 @@ export class App {
         document.getElementById("ai-prompt").value = "";
         this.updateButtonVisibility();
       } else {
+        // 如果创建失败，也需要移除临时便签
+        if (noteElement && noteElement.parentNode) {
+          noteElement.remove();
+        }
         console.error("创建AI便签失败:", noteData);
         throw new Error(noteData.message || "无法创建AI便签");
       }
     } catch (error) {
+      // 确保在出错时也移除临时便签
+      if (noteElement && noteElement.parentNode) {
+        noteElement.remove();
+      }
       console.error("保存AI便签到服务器出错:", error);
       this.showMessage(`保存失败: ${error.message}`, "error");
     }
@@ -1147,38 +1158,55 @@ export class App {
   // 清除AI设置
   async clearAISettings() {
     try {
-      const response = await fetch("/api/settings/ai/clear", {
+      // 清除设置
+      const settingsResponse = await fetch("/api/settings/ai/clear", {
         method: "POST",
       });
 
-      const data = await response.json();
+      const settingsData = await settingsResponse.json();
 
-      if (data.success) {
-        console.log("AI设置已清除");
-
-        // 更新底部栏的AI模型显示
-        const aiModelDisplay = document.querySelector(".ai-model");
-        if (aiModelDisplay) {
-          aiModelDisplay.textContent = "未设置";
-        }
-
-        // 更新AI设置界面的输入框
-        document.getElementById("ai-api-key").value = "";
-        document.getElementById("ai-base-url").value = "";
-        document.getElementById("ai-model").value = "";
-        document.getElementById("ai-max-tokens").value = "800";
-        document.getElementById("ai-temperature").value = "0.7";
-
-        // 更新温度显示
-        const tempValueElement = document.getElementById("temperature-value");
-        if (tempValueElement) {
-          tempValueElement.textContent = "0.7";
-        }
-
-        return true;
-      } else {
-        throw new Error(data.message || "清除设置失败");
+      if (!settingsData.success) {
+        throw new Error(settingsData.message || "清除设置失败");
       }
+
+      // 清除历史记录
+      const historyResponse = await fetch("/api/api-history/all", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // 确保包含认证Cookie
+      });
+
+      const historyData = await historyResponse.json();
+
+      if (!historyData.success) {
+        console.warn("清除历史记录失败:", historyData.message);
+        // 即使历史记录清除失败，也不影响设置清除的成功
+      }
+
+      console.log("AI设置和历史记录已清除");
+
+      // 更新底部栏的AI模型显示
+      const aiModelDisplay = document.querySelector(".ai-model");
+      if (aiModelDisplay) {
+        aiModelDisplay.textContent = "未设置";
+      }
+
+      // 更新AI设置界面的输入框
+      document.getElementById("ai-api-key").value = "";
+      document.getElementById("ai-base-url").value = "";
+      document.getElementById("ai-model").value = "";
+      document.getElementById("ai-max-tokens").value = "800";
+      document.getElementById("ai-temperature").value = "0.7";
+
+      // 更新温度显示
+      const tempValueElement = document.getElementById("temperature-value");
+      if (tempValueElement) {
+        tempValueElement.textContent = "0.7";
+      }
+
+      return true;
     } catch (error) {
       console.error("清除AI设置出错:", error);
       this.showMessage(`清除失败: ${error.message}`, "error");
@@ -1485,7 +1513,6 @@ export class App {
     // 获取相关DOM元素
     const modelInput = document.getElementById("ai-model");
     const modelDropdown = document.getElementById("model-dropdown");
-    const dropdownToggle = document.querySelector(".select-toggle");
     const selectOptions = document.querySelectorAll(
       "#model-dropdown .select-option"
     );
@@ -1515,13 +1542,13 @@ export class App {
       }
     }
 
-    if (!modelInput || !modelDropdown || !dropdownToggle) {
+    if (!modelInput || !modelDropdown) {
       console.warn("模型选择器初始化失败：缺少必要的DOM元素");
       return;
     }
 
-    // 处理下拉按钮点击事件
-    dropdownToggle.addEventListener("click", (e) => {
+    // 添加双击事件打开模型选择下拉菜单
+    modelInput.addEventListener("dblclick", (e) => {
       e.preventDefault();
       e.stopPropagation();
 
@@ -1532,9 +1559,6 @@ export class App {
 
       // 切换模型下拉菜单
       modelDropdown.classList.toggle("active");
-
-      // 添加活跃状态的类名，用于样式调整
-      dropdownToggle.classList.toggle("active");
     });
 
     // 处理选项点击事件
@@ -1548,7 +1572,6 @@ export class App {
 
         // 关闭下拉菜单
         modelDropdown.classList.remove("active");
-        dropdownToggle.classList.remove("active");
 
         // 触发输入事件以便其他监听可以响应
         modelInput.dispatchEvent(new Event("input", { bubbles: true }));
@@ -1560,9 +1583,8 @@ export class App {
 
     // 点击页面其他区域时关闭下拉菜单
     document.addEventListener("click", (e) => {
-      if (!e.target.closest(".custom-select-container")) {
+      if (!e.target.closest(".history-input-container")) {
         modelDropdown.classList.remove("active");
-        dropdownToggle.classList.remove("active");
       }
     });
 
@@ -1572,7 +1594,6 @@ export class App {
 
       // 关闭模型选择下拉菜单
       modelDropdown.classList.remove("active");
-      dropdownToggle.classList.remove("active");
 
       // 显示历史记录下拉菜单
       if (modelHistoryDropdown) {
@@ -1612,6 +1633,7 @@ export class App {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include", // 确保包含认证Cookie
         body: JSON.stringify({ modelName }),
       });
 
@@ -1626,15 +1648,7 @@ export class App {
 
   // API 配置历史记录功能初始化
   async initApiHistoryFeatures() {
-    // 获取所有历史记录按钮和下拉菜单
-    const apiKeyHistoryToggle = document.getElementById(
-      "api-key-history-toggle"
-    );
-    const baseUrlHistoryToggle = document.getElementById(
-      "base-url-history-toggle"
-    );
-    const modelHistoryToggle = document.getElementById("model-history-toggle");
-
+    // 获取下拉菜单
     const apiKeyHistoryDropdown = document.getElementById(
       "api-key-history-dropdown"
     );
@@ -1649,67 +1663,6 @@ export class App {
     const apiKeyInput = document.getElementById("ai-api-key");
     const baseUrlInput = document.getElementById("ai-base-url");
     const modelInput = document.getElementById("ai-model");
-
-    // 添加按钮点击事件
-    if (apiKeyHistoryToggle && apiKeyHistoryDropdown) {
-      apiKeyHistoryToggle.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        // 关闭其他所有下拉菜单
-        baseUrlHistoryDropdown?.classList.remove("active");
-        modelHistoryDropdown?.classList.remove("active");
-        document.getElementById("model-dropdown")?.classList.remove("active");
-
-        // 切换当前下拉菜单
-        apiKeyHistoryDropdown.classList.toggle("active");
-
-        // 如果打开了下拉菜单，加载历史记录
-        if (apiKeyHistoryDropdown.classList.contains("active")) {
-          this.loadApiKeyHistory(apiKeyHistoryDropdown);
-        }
-      });
-    }
-
-    if (baseUrlHistoryToggle && baseUrlHistoryDropdown) {
-      baseUrlHistoryToggle.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        // 关闭其他所有下拉菜单
-        apiKeyHistoryDropdown?.classList.remove("active");
-        modelHistoryDropdown?.classList.remove("active");
-        document.getElementById("model-dropdown")?.classList.remove("active");
-
-        // 切换当前下拉菜单
-        baseUrlHistoryDropdown.classList.toggle("active");
-
-        // 如果打开了下拉菜单，加载历史记录
-        if (baseUrlHistoryDropdown.classList.contains("active")) {
-          this.loadBaseUrlHistory(baseUrlHistoryDropdown);
-        }
-      });
-    }
-
-    if (modelHistoryToggle && modelHistoryDropdown) {
-      modelHistoryToggle.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        // 关闭其他所有下拉菜单
-        apiKeyHistoryDropdown?.classList.remove("active");
-        baseUrlHistoryDropdown?.classList.remove("active");
-        document.getElementById("model-dropdown")?.classList.remove("active");
-
-        // 切换当前下拉菜单
-        modelHistoryDropdown.classList.toggle("active");
-
-        // 如果打开了下拉菜单，加载历史记录
-        if (modelHistoryDropdown.classList.contains("active")) {
-          this.loadModelHistory(modelHistoryDropdown);
-        }
-      });
-    }
 
     // 添加输入框焦点事件，当输入框获得焦点时显示对应的历史记录
     if (apiKeyInput && apiKeyHistoryDropdown) {
@@ -1739,6 +1692,14 @@ export class App {
 
         // 加载历史记录
         this.loadBaseUrlHistory(baseUrlHistoryDropdown);
+      });
+
+      // 添加 URL 变化事件，当 URL 变化时自动更新其他历史记录
+      baseUrlInput.addEventListener("change", () => {
+        // 当 URL 变化时，清空 API 密钥和模型输入框
+        // 这样可以避免用户选择不匹配的组合
+        apiKeyInput.value = "";
+        modelInput.value = "";
       });
     }
 
@@ -1773,7 +1734,15 @@ export class App {
   // 加载 API 密钥历史记录
   async loadApiKeyHistory(dropdownElement) {
     try {
-      const response = await fetch("/api/api-history/key");
+      // 获取当前选中的基础URL
+      const baseUrl = document.getElementById("ai-base-url").value.trim();
+
+      // 构建查询参数
+      const queryParams = baseUrl
+        ? `?baseUrl=${encodeURIComponent(baseUrl)}`
+        : "";
+
+      const response = await fetch(`/api/api-history/key${queryParams}`);
       const data = await response.json();
 
       if (data.success) {
@@ -1826,7 +1795,15 @@ export class App {
   // 加载模型历史记录
   async loadModelHistory(dropdownElement) {
     try {
-      const response = await fetch("/api/api-history/model");
+      // 获取当前选中的基础URL
+      const baseUrl = document.getElementById("ai-base-url").value.trim();
+
+      // 构建查询参数
+      const queryParams = baseUrl
+        ? `?baseUrl=${encodeURIComponent(baseUrl)}`
+        : "";
+
+      const response = await fetch(`/api/api-history/model${queryParams}`);
       const data = await response.json();
 
       if (data.success) {
@@ -1859,9 +1836,22 @@ export class App {
     );
     contentElement.innerHTML = "";
 
+    // 获取当前选中的基础URL
+    const baseUrl = document.getElementById("ai-base-url").value.trim();
+
+    // 添加提示信息，说明当前筛选状态
+    if (baseUrl && (valueKey === "apiKey" || valueKey === "modelName")) {
+      contentElement.innerHTML = `<div class="history-filter-info">当前显示与 URL "${baseUrl}" 匹配的记录</div>`;
+    }
+
     if (!historyItems || historyItems.length === 0) {
-      contentElement.innerHTML =
-        '<div class="history-empty">暂无历史记录</div>';
+      if (baseUrl && (valueKey === "apiKey" || valueKey === "modelName")) {
+        contentElement.innerHTML +=
+          '<div class="history-empty">没有找到与当前 URL 匹配的记录</div>';
+      } else {
+        contentElement.innerHTML +=
+          '<div class="history-empty">暂无历史记录</div>';
+      }
       return;
     }
 
@@ -1869,9 +1859,9 @@ export class App {
       const historyItem = document.createElement("div");
       historyItem.className = "history-item";
 
-      // 格式化使用时间
+      // 格式化使用时间，添加时分秒
       const lastUsedDate = new Date(item.lastUsed);
-      const formattedDate = lastUsedDate.toLocaleDateString();
+      const formattedDate = lastUsedDate.toLocaleString(); // 使用toLocaleString包含日期和时间
 
       // 格式化显示的值 (对API密钥进行部分隐藏处理)
       const displayValue = valueFormatter

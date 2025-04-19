@@ -129,13 +129,15 @@
 /* 设置内容整体高度调整 */
 @media (min-height: 700px) {
   .settings-container {
-    height: 680px; /* 对于较大的屏幕，固定弹窗高度 */
+    height: 80vh;
+    max-height: 80vh;
   }
 }
 
 @media (max-height: 699px) {
   .settings-container {
-    height: 90vh; /* 对于较小的屏幕，使用视口百分比 */
+    height: 80vh;
+    max-height: 80vh;
   }
 }
 
