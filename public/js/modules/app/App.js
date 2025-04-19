@@ -1152,7 +1152,84 @@ export class App {
 
   // 修改密码
   async changePassword() {
-    // ...省略方法实现，保持与原方法相同
+    try {
+      // 获取输入值
+      const currentPassword = document.getElementById("current-password").value;
+      const newPassword = document.getElementById("new-password").value;
+      const confirmPassword = document.getElementById("confirm-password").value;
+
+      // 基本验证
+      if (!currentPassword) {
+        this.showMessage("请输入当前密码", "error");
+        return;
+      }
+
+      if (!newPassword) {
+        this.showMessage("请输入新密码", "error");
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        this.showMessage("新密码长度不能少于6个字符", "error");
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        this.showMessage("两次输入的新密码不一致", "error");
+        return;
+      }
+
+      // 显示加载状态
+      const changePasswordButton = document.getElementById(
+        "change-password-button"
+      );
+      const originalText = changePasswordButton.textContent;
+      changePasswordButton.textContent = "更新中...";
+      changePasswordButton.disabled = true;
+
+      // 发送请求到服务器
+      const response = await fetch("/api/change-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      // 恢复按钮状态
+      changePasswordButton.textContent = originalText;
+      changePasswordButton.disabled = false;
+
+      if (data.success) {
+        // 密码修改成功
+        this.showMessage("密码已成功更新", "success");
+
+        // 清空输入框
+        document.getElementById("current-password").value = "";
+        document.getElementById("new-password").value = "";
+        document.getElementById("confirm-password").value = "";
+      } else {
+        // 密码修改失败
+        this.showMessage(data.message || "密码更新失败", "error");
+      }
+    } catch (error) {
+      console.error("修改密码出错:", error);
+      this.showMessage("修改密码时发生错误", "error");
+
+      // 确保按钮状态恢复
+      const changePasswordButton = document.getElementById(
+        "change-password-button"
+      );
+      if (changePasswordButton) {
+        changePasswordButton.textContent = "更新密码";
+        changePasswordButton.disabled = false;
+      }
+    }
   }
 
   // 清除AI设置
