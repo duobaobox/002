@@ -21,6 +21,7 @@ import {
   deleteApiKeyHistory,
   deleteBaseUrlHistory,
   deleteModelHistory,
+  clearAllApiHistory,
   // User functions
   validateUserLogin,
   updateUserPassword,
@@ -162,6 +163,7 @@ router.use("/ai-settings", requireAuth);
 router.use("/settings", requireAuth);
 router.use("/database", requireAuth);
 router.use("/test-ai-connection", requireAuth);
+router.use("/api-history", requireAuth);
 
 // --- Note Routes ---
 
@@ -1130,13 +1132,36 @@ router.use("/api-history", requireAuth);
 // 获取 API 密钥历史记录
 router.get("/api-history/key", async (req, res) => {
   try {
-    const apiKeys = await getApiKeyHistory();
+    // 获取查询参数
+    const baseUrl = req.query.baseUrl || null;
+    const apiKeys = await getApiKeyHistory(10, baseUrl);
     res.json({ success: true, history: apiKeys });
   } catch (error) {
     console.error("获取API密钥历史记录失败:", error);
     res
       .status(500)
       .json({ success: false, message: "获取API密钥历史记录失败" });
+  }
+});
+
+// 添加或更新 API 密钥历史记录
+router.post("/api-history/key", async (req, res) => {
+  try {
+    const { apiKey } = req.body;
+
+    if (!apiKey) {
+      return res
+        .status(400)
+        .json({ success: false, message: "API密钥不能为空" });
+    }
+
+    await addOrUpdateApiKeyHistory(apiKey);
+    res.json({ success: true, message: "API密钥历史记录已更新" });
+  } catch (error) {
+    console.error("添加或更新API密钥历史记录失败:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "添加或更新API密钥历史记录失败" });
   }
 });
 
@@ -1153,14 +1178,58 @@ router.get("/api-history/url", async (req, res) => {
   }
 });
 
+// 添加或更新基础 URL 历史记录
+router.post("/api-history/url", async (req, res) => {
+  try {
+    const { baseUrl } = req.body;
+
+    if (!baseUrl) {
+      return res
+        .status(400)
+        .json({ success: false, message: "基础URL不能为空" });
+    }
+
+    await addOrUpdateBaseUrlHistory(baseUrl);
+    res.json({ success: true, message: "基础URL历史记录已更新" });
+  } catch (error) {
+    console.error("添加或更新基础URL历史记录失败:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "添加或更新基础URL历史记录失败" });
+  }
+});
+
 // 获取模型名称历史记录
 router.get("/api-history/model", async (req, res) => {
   try {
-    const models = await getModelHistory();
+    // 获取查询参数
+    const baseUrl = req.query.baseUrl || null;
+    const models = await getModelHistory(10, baseUrl);
     res.json({ success: true, history: models });
   } catch (error) {
     console.error("获取模型历史记录失败:", error);
     res.status(500).json({ success: false, message: "获取模型历史记录失败" });
+  }
+});
+
+// 添加或更新模型历史记录
+router.post("/api-history/model", async (req, res) => {
+  try {
+    const { modelName } = req.body;
+
+    if (!modelName) {
+      return res
+        .status(400)
+        .json({ success: false, message: "模型名称不能为空" });
+    }
+
+    await addOrUpdateModelHistory(modelName);
+    res.json({ success: true, message: "模型历史记录已更新" });
+  } catch (error) {
+    console.error("添加或更新模型历史记录失败:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "添加或更新模型历史记录失败" });
   }
 });
 
@@ -1231,6 +1300,21 @@ router.delete("/api-history/model/:id", async (req, res) => {
   } catch (error) {
     console.error("删除模型历史记录失败:", error);
     res.status(500).json({ success: false, message: "删除模型历史记录失败" });
+  }
+});
+
+// 清除所有 API 历史记录
+router.delete("/api-history/all", async (req, res) => {
+  try {
+    const success = await clearAllApiHistory();
+    if (success) {
+      res.json({ success: true, message: "所有API历史记录已清除" });
+    } else {
+      res.status(500).json({ success: false, message: "清除API历史记录失败" });
+    }
+  } catch (error) {
+    console.error("清除所有API历史记录失败:", error);
+    res.status(500).json({ success: false, message: "清除API历史记录失败" });
   }
 });
 

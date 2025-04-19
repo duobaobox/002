@@ -613,10 +613,10 @@ async function getAvailableInviteCodes() {
 
   try {
     return await dbAll(
-      `SELECT code, created_at as createdAt, created_by as createdBy, 
-      is_used as isUsed, used_by as usedBy, used_at as usedAt 
-      FROM invitation_codes 
-      WHERE is_used = 0 
+      `SELECT code, created_at as createdAt, created_by as createdBy,
+      is_used as isUsed, used_by as usedBy, used_at as usedAt
+      FROM invitation_codes
+      WHERE is_used = 0
       ORDER BY created_at DESC`
     );
   } catch (error) {
@@ -801,17 +801,34 @@ async function addOrUpdateModelHistory(modelName) {
 /**
  * 获取 API 密钥历史记录列表
  * @param {number} limit - 限制返回数量，默认为10
+ * @param {string} baseUrl - 可选的基础URL过滤条件
  * @returns {Promise<Array>} API 密钥历史记录数组
  */
-async function getApiKeyHistory(limit = 10) {
+async function getApiKeyHistory(limit = 10, baseUrl = null) {
   if (!db) throw new Error("数据库未初始化");
-  return await dbAll(
-    `SELECT id, api_key as apiKey, created_at as createdAt, last_used as lastUsed, use_count as useCount 
-     FROM api_key_history 
-     ORDER BY last_used DESC, use_count DESC 
-     LIMIT ?`,
-    [limit]
-  );
+
+  // 如果提供了baseUrl，根据baseUrl过滤
+  if (baseUrl) {
+    // 查询与该baseUrl一起使用过的API密钥
+    return await dbAll(
+      `SELECT DISTINCT a.id, a.api_key as apiKey, a.created_at as createdAt, a.last_used as lastUsed, a.use_count as useCount
+       FROM api_key_history a
+       JOIN settings s1 ON s1.key = 'apiKey' AND s1.value = a.api_key
+       JOIN settings s2 ON s2.key = 'baseURL' AND s2.value = ?
+       ORDER BY a.last_used DESC, a.use_count DESC
+       LIMIT ?`,
+      [baseUrl, limit]
+    );
+  } else {
+    // 如果没有提供 baseUrl，返回所有历史记录
+    return await dbAll(
+      `SELECT id, api_key as apiKey, created_at as createdAt, last_used as lastUsed, use_count as useCount
+       FROM api_key_history
+       ORDER BY last_used DESC, use_count DESC
+       LIMIT ?`,
+      [limit]
+    );
+  }
 }
 
 /**
@@ -822,9 +839,9 @@ async function getApiKeyHistory(limit = 10) {
 async function getBaseUrlHistory(limit = 10) {
   if (!db) throw new Error("数据库未初始化");
   return await dbAll(
-    `SELECT id, base_url as baseUrl, created_at as createdAt, last_used as lastUsed, use_count as useCount 
-     FROM base_url_history 
-     ORDER BY last_used DESC, use_count DESC 
+    `SELECT id, base_url as baseUrl, created_at as createdAt, last_used as lastUsed, use_count as useCount
+     FROM base_url_history
+     ORDER BY last_used DESC, use_count DESC
      LIMIT ?`,
     [limit]
   );
@@ -833,17 +850,34 @@ async function getBaseUrlHistory(limit = 10) {
 /**
  * 获取模型名称历史记录列表
  * @param {number} limit - 限制返回数量，默认为10
+ * @param {string} baseUrl - 可选的基础URL过滤条件
  * @returns {Promise<Array>} 模型名称历史记录数组
  */
-async function getModelHistory(limit = 10) {
+async function getModelHistory(limit = 10, baseUrl = null) {
   if (!db) throw new Error("数据库未初始化");
-  return await dbAll(
-    `SELECT id, model_name as modelName, created_at as createdAt, last_used as lastUsed, use_count as useCount 
-     FROM model_history 
-     ORDER BY last_used DESC, use_count DESC 
-     LIMIT ?`,
-    [limit]
-  );
+
+  // 如果提供了baseUrl，根据baseUrl过滤
+  if (baseUrl) {
+    // 查询与该baseUrl一起使用过的模型
+    return await dbAll(
+      `SELECT DISTINCT m.id, m.model_name as modelName, m.created_at as createdAt, m.last_used as lastUsed, m.use_count as useCount
+       FROM model_history m
+       JOIN settings s1 ON s1.key = 'model' AND s1.value = m.model_name
+       JOIN settings s2 ON s2.key = 'baseURL' AND s2.value = ?
+       ORDER BY m.last_used DESC, m.use_count DESC
+       LIMIT ?`,
+      [baseUrl, limit]
+    );
+  } else {
+    // 如果没有提供 baseUrl，返回所有历史记录
+    return await dbAll(
+      `SELECT id, model_name as modelName, created_at as createdAt, last_used as lastUsed, use_count as useCount
+       FROM model_history
+       ORDER BY last_used DESC, use_count DESC
+       LIMIT ?`,
+      [limit]
+    );
+  }
 }
 
 /**
@@ -879,6 +913,33 @@ async function deleteModelHistory(id) {
   return result.changes > 0;
 }
 
+/**
+ * 清除所有 API 配置历史记录
+ * @returns {Promise<boolean>} 是否成功清除
+ */
+async function clearAllApiHistory() {
+  if (!db) throw new Error("数据库未初始化");
+
+  try {
+    // 开始事务
+    await dbRun("BEGIN TRANSACTION");
+
+    // 清除所有历史记录表
+    await dbRun("DELETE FROM api_key_history");
+    await dbRun("DELETE FROM base_url_history");
+    await dbRun("DELETE FROM model_history");
+
+    // 提交事务
+    await dbRun("COMMIT");
+    return true;
+  } catch (error) {
+    // 出错时回滚
+    await dbRun("ROLLBACK");
+    console.error("清除API历史记录失败:", error);
+    return false;
+  }
+}
+
 export {
   initializeDatabase,
   // Settings functions
@@ -911,4 +972,5 @@ export {
   deleteApiKeyHistory,
   deleteBaseUrlHistory,
   deleteModelHistory,
+  clearAllApiHistory,
 };
