@@ -35,6 +35,7 @@ export class App {
     this.configValid = false; // 配置有效性标志
     this.inputActivityTimeout = null; // 输入活动超时定时器
     this.minInputLength = 3; // 最小输入长度才触发预连接
+    this.currentAbortController = null; // 当前的中止控制器
 
     // 连接管理相关属性
     this.activeSession = null; // 当前活跃的会话信息
@@ -2090,32 +2091,38 @@ export class App {
     // ...省略方法实现，保持与原方法相同
   }
 
-  // 预连接到 AI 服务
+  // 预连接到 AI 服务 - 优化版本
   preconnectAIService() {
     // 获取当前输入
     const promptInput = document.getElementById("ai-prompt");
     const prompt = promptInput.value.trim();
 
     // 如果内容为空或太短，不预连接
-    if (!prompt || prompt.length < this.minInputLength) {
+    if (!prompt || prompt.length < this.sessionManager.minInputLength) {
       // 清除可能存在的计时器
-      if (this.preconnectTimer) {
-        clearTimeout(this.preconnectTimer);
-        this.preconnectTimer = null;
+      if (this.sessionManager.preconnectTimer) {
+        clearTimeout(this.sessionManager.preconnectTimer);
+        this.sessionManager.preconnectTimer = null;
       }
 
       // 设置一个延迟的关闭，避免用户短暂删除内容时立即关闭连接
-      if (this.inputActivityTimeout) {
-        clearTimeout(this.inputActivityTimeout);
+      if (this.sessionManager.activityTimer) {
+        clearTimeout(this.sessionManager.activityTimer);
       }
 
-      this.inputActivityTimeout = setTimeout(() => {
+      this.sessionManager.activityTimer = setTimeout(() => {
         // 确认内容仍然为空后再关闭
         if (
           !promptInput.value.trim() ||
-          promptInput.value.trim().length < this.minInputLength
+          promptInput.value.trim().length < this.sessionManager.minInputLength
         ) {
-          this.closeActiveSession();
+          // 如果有活跃连接，关闭它
+          if (this.sessionManager.activeSessionId) {
+            this.closeConnection(
+              this.sessionManager.activeSessionId,
+              "用户输入内容不足"
+            );
+          }
         }
       }, 5000); // 5秒后再检查是否需要关闭连接
 
@@ -2123,26 +2130,31 @@ export class App {
     }
 
     // 如果已经存在预连接计时器，先清除它
-    if (this.preconnectTimer) {
-      clearTimeout(this.preconnectTimer);
-      this.preconnectTimer = null;
+    if (this.sessionManager.preconnectTimer) {
+      clearTimeout(this.sessionManager.preconnectTimer);
+      this.sessionManager.preconnectTimer = null;
     }
 
     // 设置新的预连接计时器，短暂延迟后建立连接
-    this.preconnectTimer = setTimeout(async () => {
-      // 检查是否已有活跃会话，如果有且未超时，则复用
+    this.sessionManager.preconnectTimer = setTimeout(async () => {
+      // 检查是否已有活跃连接，如果有且未超时，则复用
       if (
-        this.activeSession &&
-        this.activeSession.startTime &&
-        Date.now() - this.activeSession.startTime < this.connectionTimeout
+        this.sessionManager.activeSessionId &&
+        this.sessionManager.isConnected &&
+        !this.sessionManager.isInUse &&
+        Date.now() - this.sessionManager.lastActivity <
+          this.sessionManager.connectionTimeout
       ) {
-        console.log("已有活跃的AI会话，无需重新连接");
+        console.log("已有活跃的AI连接，无需重新连接");
         return;
       }
 
       // 避免频繁检查配置，使用缓存的配置有效性
       const now = Date.now();
-      if (now - this.lastConfigCheck > this.configCheckInterval) {
+      if (
+        now - this.sessionManager.lastConfigCheck >
+        this.sessionManager.configCheckInterval
+      ) {
         try {
           // 使用低优先级的配置检查请求
           const controller = new AbortController();
@@ -2156,150 +2168,45 @@ export class App {
           clearTimeout(timeoutId);
 
           const configData = await configCheckResponse.json();
-          this.configValid = configData.success;
-          this.lastConfigCheck = now;
-          console.log("AI配置检查结果:", this.configValid ? "有效" : "无效");
+          this.sessionManager.configValid = configData.success;
+          this.sessionManager.lastConfigCheck = now;
+          console.log(
+            "AI配置检查结果:",
+            this.sessionManager.configValid ? "有效" : "无效"
+          );
         } catch (error) {
           console.log("AI配置检查请求取消或超时:", error.name);
           // 如果是超时或取消，不应立即将配置标记为无效
           // 仅在确认无效时才设置configValid为false
           if (error.name !== "AbortError") {
-            this.configValid = false;
+            this.sessionManager.configValid = false;
           }
           // 更新最后检查时间，避免频繁重试
-          this.lastConfigCheck = now;
+          this.sessionManager.lastConfigCheck = now;
         }
       }
 
       // 如果配置无效，不建立连接
-      if (!this.configValid) {
+      if (!this.sessionManager.configValid) {
         console.log("AI服务配置无效，跳过预连接");
         return;
       }
 
-      // 关闭之前的会话
-      this.closeActiveSession();
-
-      // 建立新的会话
-      this.establishAIConnection();
-    }, this.preconnectDelay);
-  }
-
-  // 建立 AI 连接
-  async establishAIConnection() {
-    try {
-      // 生成新的会话ID
-      const sessionId = `session_${Date.now()}_${Math.random()
-        .toString(36)
-        .substring(2, 9)}`;
-
-      // 创建EventSource连接
-      const eventSource = new EventSource(
-        `/api/stream-connection/${sessionId}`
-      );
-
-      // 添加连接建立计数器和超时保护
-      let connectionAttempts = 0;
-      const connectionTimeout = setTimeout(() => {
-        if (!this.activeSession?.isConnected) {
-          console.log("预连接超时未能建立，取消连接");
-          eventSource.close();
-          if (this.activeSession?.sessionId === sessionId) {
-            this.activeSession = null;
-          }
-        }
-      }, 5000); // 5秒连接超时
-
-      // 创建活跃会话记录
-      this.activeSession = {
-        sessionId,
-        eventSource,
-        startTime: Date.now(),
-        isConnected: false,
-        connectionTimeout,
-      };
-
-      // 一旦连接建立
-      eventSource.addEventListener("open", () => {
-        console.log("AI预连接成功建立");
-        if (this.activeSession) {
-          this.activeSession.isConnected = true;
-          // 清除连接超时
-          if (this.activeSession.connectionTimeout) {
-            clearTimeout(this.activeSession.connectionTimeout);
-            this.activeSession.connectionTimeout = null;
-          }
-        }
-      });
-
-      // 处理来自服务器的消息
-      eventSource.addEventListener("message", (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.event === "connected") {
-            console.log("AI会话已连接，ID:", data.sessionId);
-            if (this.activeSession) {
-              this.activeSession.isConnected = true;
-            }
-          }
-        } catch (error) {
-          // 只记录错误，不做其他处理
-          console.debug("处理AI预连接消息出错:", error);
-        }
-      });
-
-      // 处理连接错误
-      eventSource.addEventListener("error", (error) => {
-        // 减少错误日志输出，仅在调试模式下显示
-        console.debug("AI预连接出错:", error);
-
-        // 增加重试逻辑
-        connectionAttempts++;
-        if (connectionAttempts > 2) {
-          // 重试三次后放弃
-          this.closeActiveSession();
-        }
-      });
-
-      // 设置自动关闭定时器，确保未使用的连接会被释放
-      const timeoutId = setTimeout(() => {
-        console.log("AI预连接超时未使用，自动关闭");
-        if (this.activeSession && this.activeSession.sessionId === sessionId) {
-          this.closeActiveSession();
-        }
-      }, this.connectionTimeout); // 2分钟后自动关闭
-
-      if (this.activeSession) {
-        this.activeSession.timeoutId = timeoutId;
+      try {
+        // 尝试创建新连接
+        const sessionId = await this.createNewConnection();
+        console.log(`预连接成功创建，会话ID: ${sessionId}`);
+      } catch (error) {
+        console.log(`预连接失败: ${error.message}`);
       }
-    } catch (error) {
-      console.error("建立AI预连接出错:", error);
-      this.closeActiveSession();
-    }
+    }, this.sessionManager.preconnectDelay);
   }
 
-  // 关闭活跃的AI会话
+  // 关闭活跃的AI会话 - 使用统一的连接管理
   closeActiveSession() {
-    if (this.activeSession) {
-      // 只在调试模式输出日志
-      console.debug("关闭AI会话:", this.activeSession.sessionId);
-
-      // 清除所有计时器
-      if (this.activeSession.timeoutId) {
-        clearTimeout(this.activeSession.timeoutId);
-      }
-
-      if (this.activeSession.connectionTimeout) {
-        clearTimeout(this.activeSession.connectionTimeout);
-      }
-
-      // 关闭EventSource连接
-      if (this.activeSession.eventSource) {
-        this.activeSession.eventSource.close();
-      }
-
-      // 重置活跃会话
-      this.activeSession = null;
+    // 如果有活跃的会话，关闭它
+    if (this.sessionManager.activeSessionId) {
+      this.closeConnection(this.sessionManager.activeSessionId, "用户请求关闭");
     }
   }
 
@@ -2403,7 +2310,7 @@ export class App {
         });
 
         // 连接错误处理
-        eventSource.addEventListener("error", (event) => {
+        eventSource.addEventListener("error", () => {
           clearTimeout(connectionTimeout);
           reject(new Error("连接建立失败"));
         });
@@ -2535,12 +2442,25 @@ export class App {
     }
   }
 
-  // 使用SSE连接发送AI请求并处理流式回复
+  // 使用SSE连接发送AI请求并处理流式回复 - 优化版本
   async generateWithSSE(prompt, noteElement) {
+    // 导入节流版本的更新函数
+    const { updateNoteContentThrottled } = await import(
+      "../utils/MarkdownUtils.js"
+    );
+
     // 获取或创建连接
     let sessionId;
     try {
+      // 直接使用 getConnection 获取连接
+      // 这个函数会先检查现有连接，如果可用就复用，否则创建新连接
       sessionId = await this.getConnection();
+      console.log(`获取到连接 ID: ${sessionId}`);
+
+      // 检查连接状态
+      if (!this.sessionManager.eventSource) {
+        throw new Error("无法创建事件源连接");
+      }
     } catch (error) {
       console.error("获取SSE连接失败:", error);
       throw new Error("无法建立与AI服务的连接");
@@ -2548,6 +2468,10 @@ export class App {
 
     // 标记连接为使用中
     this.sessionManager.isInUse = true;
+
+    // 创建 AbortController 用于取消请求
+    const abortController = new AbortController();
+    this.currentAbortController = abortController;
 
     try {
       // 初始化光标和内容元素
@@ -2575,8 +2499,9 @@ export class App {
               case "chunk":
                 // 更新内容
                 fullText = data.fullText || fullText + (data.chunk || "");
-                // 更新便签内容，保持光标可见
-                updateNoteContent(noteElement, fullText);
+
+                // 使用节流版本的更新函数，减少DOM更新频率
+                updateNoteContentThrottled(noteElement, fullText);
                 previewElement.appendChild(cursorElement);
                 break;
 
@@ -2594,6 +2519,8 @@ export class App {
                 // 标记连接可复用
                 this.sessionManager.isInUse = false;
                 this.sessionManager.lastActivity = Date.now();
+                // 清除当前的 AbortController
+                this.currentAbortController = null;
                 // 完成Promise
                 resolve(fullText);
                 break;
@@ -2610,6 +2537,8 @@ export class App {
                 // 标记连接可复用(除非错误表明连接已失效)
                 this.sessionManager.isInUse = false;
                 this.sessionManager.lastActivity = Date.now();
+                // 清除当前的 AbortController
+                this.currentAbortController = null;
                 // 拒绝Promise
                 reject(new Error(data.message || "生成过程中发生错误"));
                 break;
@@ -2639,13 +2568,14 @@ export class App {
           return;
         }
 
-        // 发送生成请求
+        // 发送生成请求，使用 AbortController
         fetch(`/api/process-stream/${sessionId}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ prompt }),
+          signal: abortController.signal,
         })
           .then((response) => {
             if (!response.ok) {
@@ -2656,6 +2586,12 @@ export class App {
             // 处理已发送，结果将通过SSE返回
           })
           .catch((error) => {
+            // 忽略中止错误
+            if (error.name === "AbortError") {
+              console.log("请求已中止");
+              return;
+            }
+
             console.error("发送AI请求失败:", error);
             // 移除事件监听器
             if (this.sessionManager.eventSource) {
@@ -2666,6 +2602,8 @@ export class App {
             }
             // 标记连接可复用(除非错误表明连接已失效)
             this.sessionManager.isInUse = false;
+            // 清除当前的 AbortController
+            this.currentAbortController = null;
             // 拒绝Promise
             reject(error);
           });
@@ -2677,6 +2615,9 @@ export class App {
             this.sessionManager.isInUse &&
             this.sessionManager.activeSessionId === sessionId
           ) {
+            // 中止请求
+            abortController.abort();
+
             // 移除事件监听器
             if (this.sessionManager.eventSource) {
               this.sessionManager.eventSource.removeEventListener(
@@ -2687,6 +2628,9 @@ export class App {
             // 标记连接需要重建
             this.sessionManager.isInUse = false;
             this.closeConnection(sessionId, "请求超时");
+            // 清除当前的 AbortController
+            this.currentAbortController = null;
+
             // 如果已有一些内容，使用它
             if (fullText.trim()) {
               cursorElement.remove();
@@ -2700,8 +2644,21 @@ export class App {
     } catch (error) {
       // 发生任何错误，标记连接为可用(避免锁死)
       this.sessionManager.isInUse = false;
+      // 清除当前的 AbortController
+      this.currentAbortController = null;
       throw error;
     }
+  }
+
+  // 取消当前的AI生成请求
+  cancelGeneration() {
+    if (this.currentAbortController) {
+      console.log("取消AI生成请求");
+      this.currentAbortController.abort();
+      this.currentAbortController = null;
+      return true;
+    }
+    return false;
   }
 }
 
