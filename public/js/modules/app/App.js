@@ -25,6 +25,54 @@ export class App {
     // 设置防抖延迟时间(毫秒)
     this.updateDebounceDelay = 1000;
 
+    // AI 预连接相关属性
+    this.preconnectTimer = null; // 预连接定时器
+    this.activeSession = null; // 当前活跃的会话信息
+    this.preconnectDelay = 800; // 预连接延迟时间(毫秒)
+    this.connectionTimeout = 120000; // 连接超时时间(2分钟)
+    this.lastConfigCheck = 0; // 上次配置检查时间戳
+    this.configCheckInterval = 30000; // 配置检查间隔(30秒)
+    this.configValid = false; // 配置有效性标志
+    this.inputActivityTimeout = null; // 输入活动超时定时器
+    this.minInputLength = 3; // 最小输入长度才触发预连接
+
+    // 连接管理相关属性
+    this.activeSession = null; // 当前活跃的会话信息
+    this.sessionManager = {
+      // 会话管理配置
+      connectionTimeout: 3 * 60 * 1000, // 会话超时时间 (3分钟)
+      preconnectDelay: 800, // 预连接延迟时间(毫秒)
+      minInputLength: 3, // 最小输入长度才触发预连接
+      maxRetries: 2, // 最大重试次数
+
+      // 状态跟踪
+      activeSessionId: null, // 当前活跃的会话ID
+      eventSource: null, // 当前EventSource实例
+      lastActivity: 0, // 最后活动时间戳
+      isConnected: false, // 连接状态
+      isInUse: false, // 是否正在使用中
+
+      // 定时器
+      preconnectTimer: null, // 预连接定时器
+      activityTimer: null, // 活动检测定时器
+      pingTimer: null, // 保活定时器
+
+      // 配置缓存
+      lastConfigCheck: 0, // 上次配置检查时间戳
+      configCheckInterval: 30000, // 配置检查间隔(30秒)
+      configValid: false, // 配置有效性标志
+    };
+
+    // 在设置中添加连接管理高级选项
+    this.advancedSettings = {
+      keepConnectionOpen: true, // 默认保持连接打开以便复用
+      automaticPreconnect: true, // 默认启用自动预连接
+      showConnectionStatus: false, // 默认不显示连接状态
+    };
+
+    // 注册定期清理任务，确保不活跃的连接被释放
+    this.registerConnectionCleanupTask();
+
     // 从服务器加载便签数据
     this.loadNotes();
 
@@ -116,6 +164,7 @@ export class App {
     }
   }
 
+  // 修改现有的事件监听器方法，添加预连接功能
   initEventListeners() {
     // 添加普通便签按钮
     document.getElementById("add-note").addEventListener("click", () => {
@@ -156,17 +205,26 @@ export class App {
     const promptElement = document.getElementById("ai-prompt");
     promptElement.addEventListener("input", () => {
       this.updateButtonVisibility();
+
+      // 添加预连接功能：当用户开始输入时预热AI连接
+      this.preconnectAIService();
     });
 
-    // 监听Enter键提交
+    // 修改回车键行为，使用回车键为换行，Shift+Enter才触发生成
     promptElement.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        const hasText = promptElement.value.trim().length > 0;
-        if (hasText) {
-          this.generateAiNote();
+      if (e.key === "Enter") {
+        if (e.shiftKey) {
+          // Shift+Enter 触发生成
+          e.preventDefault();
+          const hasText = promptElement.value.trim().length > 0;
+          if (hasText) {
+            this.generateAiNote();
+          } else {
+            this.addEmptyNote();
+          }
         } else {
-          this.addEmptyNote();
+          // 普通回车实现换行
+          // 不阻止默认行为，让浏览器自然处理换行
         }
       }
     });
@@ -732,148 +790,26 @@ export class App {
         contentElement.style.display = "none"; // 隐藏文本区域
       }
 
-      // 移除加载指示器并设置初始状态
+      // 移除加载指示器
       const loader = noteElement.querySelector(".ai-typing-indicator");
       if (loader) loader.remove();
 
-      // 创建光标元素
-      const cursorElement = document.createElement("span");
-      cursorElement.className = "typing-cursor";
-      cursorElement.textContent = "|";
-      previewElement.appendChild(cursorElement);
+      // 使用新的连接管理和流式处理方法
+      const fullText = await this.generateWithSSE(prompt, noteElement);
 
-      // 生成会话ID - 使用时间戳确保唯一性
-      const sessionId = `session_${Date.now()}_${Math.random()
-        .toString(36)
-        .substring(2, 9)}`;
-
-      // 初始化内容变量
-      let fullText = "";
-
-      // 首先，建立 SSE 连接
-      const eventSource = new EventSource(
-        `/api/stream-connection/${sessionId}`
+      // 保存生成的内容到服务器
+      await this.saveStreamingNoteToServer(
+        noteElement,
+        fullText,
+        x,
+        y,
+        prompt,
+        colorClass
       );
 
-      // 一旦连接建立，发送提示内容
-      eventSource.addEventListener("open", async () => {
-        console.log("SSE 连接已建立，发送提示内容...");
-
-        try {
-          // 发送提示内容
-          const processResponse = await fetch(
-            `/api/process-stream/${sessionId}`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ prompt }),
-            }
-          );
-
-          if (!processResponse.ok) {
-            const errorData = await processResponse.json();
-            throw new Error(errorData.message || "处理请求失败");
-          }
-
-          // 注意：不需要等待响应完成，数据会通过 SSE 连接接收
-        } catch (error) {
-          console.error("发送提示内容失败:", error);
-          eventSource.close();
-          throw error;
-        }
-      });
-
-      // 处理 SSE 事件
-      eventSource.addEventListener("message", (event) => {
-        try {
-          const data = JSON.parse(event.data);
-
-          switch (data.event) {
-            case "connected":
-              console.log("已连接到SSE流，会话ID:", data.sessionId);
-              break;
-
-            case "start":
-              console.log("AI开始生成内容...");
-              break;
-
-            case "chunk":
-              // 收到一块新内容
-              fullText = data.fullText || fullText + (data.chunk || "");
-              // 更新便签内容，保持光标可见
-              updateNoteContent(noteElement, fullText);
-              previewElement.appendChild(cursorElement);
-              break;
-
-            case "end":
-              console.log("AI生成内容完成");
-              // 流结束，完成处理
-              eventSource.close();
-              // 最后一次更新，移除光标
-              cursorElement.remove();
-              this.saveStreamingNoteToServer(
-                noteElement,
-                fullText,
-                x,
-                y,
-                prompt,
-                colorClass
-              );
-              break;
-
-            case "error":
-              console.error("AI生成错误:", data.message);
-              // 处理错误
-              eventSource.close();
-              throw new Error(data.message || "生成过程中发生错误");
-          }
-        } catch (error) {
-          if (error.message !== "生成过程中发生错误") {
-            console.error("处理SSE事件失败:", error);
-          }
-          eventSource.close();
-
-          // 如果已有一些内容，尝试保存
-          if (fullText.trim()) {
-            cursorElement.remove();
-            this.saveStreamingNoteToServer(
-              noteElement,
-              fullText,
-              x,
-              y,
-              prompt,
-              colorClass
-            );
-          } else {
-            noteElement.remove();
-            throw error;
-          }
-        }
-      });
-
-      // 处理连接错误
-      eventSource.addEventListener("error", (error) => {
-        console.error("SSE连接错误:", error);
-        eventSource.close();
-
-        // 如果已有一些内容，尝试保存
-        if (fullText.trim()) {
-          cursorElement.remove();
-          this.saveStreamingNoteToServer(
-            noteElement,
-            fullText,
-            x,
-            y,
-            prompt,
-            colorClass
-          );
-        } else {
-          noteElement.remove();
-          throw new Error("生成过程中连接中断");
-        }
-      });
+      // 清空输入框
+      promptElement.value = "";
+      this.updateButtonVisibility();
     } catch (error) {
       console.error("生成AI便签出错:", error);
       // 确保在出错时也移除临时便签
@@ -916,7 +852,6 @@ export class App {
       const noteData = await noteResponse.json();
 
       // 移除临时便签
-      noteElement.remove();
 
       if (noteData.success && noteData.note) {
         console.log("AI便签已添加，ID:", noteData.note.id);
@@ -1361,33 +1296,74 @@ export class App {
     const testButton = document.getElementById("test-ai-connection");
     const originalText = testButton.textContent;
 
+    // 如果按钮已经禁用，说明正在测试中，不重复执行
+    if (testButton.disabled) {
+      console.log("测试已在进行中，忽略重复点击");
+      return;
+    }
+
     // 更改按钮状态以指示测试正在进行
     testButton.textContent = "正在测试...";
     testButton.disabled = true;
 
-    // 添加一个超时保护，确保按钮状态一定会恢复
+    // 获取API设置以用于日志
+    const apiKey = document.getElementById("ai-api-key").value.trim();
+    const baseURL = document.getElementById("ai-base-url").value.trim();
+    const model = document.getElementById("ai-model").value.trim();
+    const hasApiKey = !!apiKey;
+    const hasBaseURL = !!baseURL;
+    const hasModel = !!model;
+
+    console.log(
+      `测试连接参数检查: apiKey=${hasApiKey ? "已设置" : "未设置"}, baseURL=${
+        hasBaseURL ? baseURL : "未设置"
+      }, model=${hasModel ? model : "未设置"}`
+    );
+
+    // 添加一个超时保护，确保按钮状态一定会恢复（增加到15秒）
     const timeoutId = setTimeout(() => {
       if (testButton.disabled) {
         testButton.textContent = originalText;
         testButton.disabled = false;
         this.showMessage("连接测试超时，请检查网络或API地址", "error");
+        console.error("AI连接测试超时");
       }
-    }, 10000); // 10秒超时
+    }, 15000); // 15秒超时，增加超时时间
+
+    // 使用AbortController来控制请求
+    const controller = new AbortController();
+    const abortTimeout = setTimeout(() => {
+      controller.abort();
+      console.log("测试请求超时，已中断");
+    }, 12000); // 12秒后中断请求
 
     try {
       // 发送测试请求到服务器
       const response = await fetch("/api/test-ai-connection", {
-        // 设置较短的超时时间
-        signal: AbortSignal.timeout(8000), // 8秒内必须完成
+        signal: controller.signal,
+        // 添加缓存控制头，防止缓存影响测试结果
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+        },
       });
 
       // 请求完成，清除超时保护
       clearTimeout(timeoutId);
+      clearTimeout(abortTimeout);
 
-      // 如果按钮已被其他代码复原，则直接返回
-      if (!testButton.disabled) return;
-
-      const data = await response.json();
+      // 解析响应
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        // 如果JSON解析失败，确保恢复按钮状态
+        testButton.textContent = originalText;
+        testButton.disabled = false;
+        console.error("解析API测试响应出错:", jsonError);
+        this.showMessage("服务器返回了无效的响应格式", "error");
+        return;
+      }
 
       // 始终恢复按钮状态，无论成功与否
       testButton.textContent = originalText;
@@ -1396,6 +1372,14 @@ export class App {
       if (data.success) {
         // 测试成功
         this.showMessage(`连接测试成功！使用模型: ${data.model}`, "success");
+        // 更新设置表单中的模型值，以防服务器返回规范化的模型名称
+        if (
+          data.model &&
+          data.model !== model &&
+          document.getElementById("ai-model")
+        ) {
+          document.getElementById("ai-model").value = data.model;
+        }
       } else {
         // 测试失败，显示详细错误信息
         let errorMsg = data.message || "连接测试失败";
@@ -1415,6 +1399,7 @@ export class App {
     } catch (error) {
       // 请求出错，清除超时保护
       clearTimeout(timeoutId);
+      clearTimeout(abortTimeout);
 
       // 恢复按钮状态
       testButton.textContent = originalText;
@@ -1423,10 +1408,8 @@ export class App {
       console.error("测试AI连接时发生错误:", error);
       // 针对网络错误提供更明确的提示
       const errorMessage =
-        error.name === "TimeoutError"
-          ? "连接测试超时，请检查API地址是否正确"
-          : error.name === "AbortError"
-          ? "请求被中止，可能是网络不稳定"
+        error.name === "AbortError"
+          ? "连接测试超时，请检查API地址是否正确或网络是否稳定"
           : `连接测试出错: ${error.message}`;
 
       this.showMessage(errorMessage, "error");
@@ -2025,6 +2008,620 @@ export class App {
   // 复制邀请码到剪贴板
   copyInviteCode(code) {
     // ...省略方法实现，保持与原方法相同
+  }
+
+  // 预连接到 AI 服务
+  preconnectAIService() {
+    // 获取当前输入
+    const promptInput = document.getElementById("ai-prompt");
+    const prompt = promptInput.value.trim();
+
+    // 如果内容为空或太短，不预连接
+    if (!prompt || prompt.length < this.minInputLength) {
+      // 清除可能存在的计时器
+      if (this.preconnectTimer) {
+        clearTimeout(this.preconnectTimer);
+        this.preconnectTimer = null;
+      }
+
+      // 设置一个延迟的关闭，避免用户短暂删除内容时立即关闭连接
+      if (this.inputActivityTimeout) {
+        clearTimeout(this.inputActivityTimeout);
+      }
+
+      this.inputActivityTimeout = setTimeout(() => {
+        // 确认内容仍然为空后再关闭
+        if (
+          !promptInput.value.trim() ||
+          promptInput.value.trim().length < this.minInputLength
+        ) {
+          this.closeActiveSession();
+        }
+      }, 5000); // 5秒后再检查是否需要关闭连接
+
+      return;
+    }
+
+    // 如果已经存在预连接计时器，先清除它
+    if (this.preconnectTimer) {
+      clearTimeout(this.preconnectTimer);
+      this.preconnectTimer = null;
+    }
+
+    // 设置新的预连接计时器，短暂延迟后建立连接
+    this.preconnectTimer = setTimeout(async () => {
+      // 检查是否已有活跃会话，如果有且未超时，则复用
+      if (
+        this.activeSession &&
+        this.activeSession.startTime &&
+        Date.now() - this.activeSession.startTime < this.connectionTimeout
+      ) {
+        console.log("已有活跃的AI会话，无需重新连接");
+        return;
+      }
+
+      // 避免频繁检查配置，使用缓存的配置有效性
+      const now = Date.now();
+      if (now - this.lastConfigCheck > this.configCheckInterval) {
+        try {
+          // 使用低优先级的配置检查请求
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000); // 增加超时时间到5秒
+
+          const configCheckResponse = await fetch("/api/test-ai-connection", {
+            signal: controller.signal,
+            priority: "low", // 使用低优先级请求，不阻塞其他重要请求
+          });
+
+          clearTimeout(timeoutId);
+
+          const configData = await configCheckResponse.json();
+          this.configValid = configData.success;
+          this.lastConfigCheck = now;
+          console.log("AI配置检查结果:", this.configValid ? "有效" : "无效");
+        } catch (error) {
+          console.log("AI配置检查请求取消或超时:", error.name);
+          // 如果是超时或取消，不应立即将配置标记为无效
+          // 仅在确认无效时才设置configValid为false
+          if (error.name !== "AbortError") {
+            this.configValid = false;
+          }
+          // 更新最后检查时间，避免频繁重试
+          this.lastConfigCheck = now;
+        }
+      }
+
+      // 如果配置无效，不建立连接
+      if (!this.configValid) {
+        console.log("AI服务配置无效，跳过预连接");
+        return;
+      }
+
+      // 关闭之前的会话
+      this.closeActiveSession();
+
+      // 建立新的会话
+      this.establishAIConnection();
+    }, this.preconnectDelay);
+  }
+
+  // 建立 AI 连接
+  async establishAIConnection() {
+    try {
+      // 生成新的会话ID
+      const sessionId = `session_${Date.now()}_${Math.random()
+        .toString(36)
+        .substring(2, 9)}`;
+
+      // 创建EventSource连接
+      const eventSource = new EventSource(
+        `/api/stream-connection/${sessionId}`
+      );
+
+      // 添加连接建立计数器和超时保护
+      let connectionAttempts = 0;
+      const connectionTimeout = setTimeout(() => {
+        if (!this.activeSession?.isConnected) {
+          console.log("预连接超时未能建立，取消连接");
+          eventSource.close();
+          if (this.activeSession?.sessionId === sessionId) {
+            this.activeSession = null;
+          }
+        }
+      }, 5000); // 5秒连接超时
+
+      // 创建活跃会话记录
+      this.activeSession = {
+        sessionId,
+        eventSource,
+        startTime: Date.now(),
+        isConnected: false,
+        connectionTimeout,
+      };
+
+      // 一旦连接建立
+      eventSource.addEventListener("open", () => {
+        console.log("AI预连接成功建立");
+        if (this.activeSession) {
+          this.activeSession.isConnected = true;
+          // 清除连接超时
+          if (this.activeSession.connectionTimeout) {
+            clearTimeout(this.activeSession.connectionTimeout);
+            this.activeSession.connectionTimeout = null;
+          }
+        }
+      });
+
+      // 处理来自服务器的消息
+      eventSource.addEventListener("message", (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.event === "connected") {
+            console.log("AI会话已连接，ID:", data.sessionId);
+            if (this.activeSession) {
+              this.activeSession.isConnected = true;
+            }
+          }
+        } catch (error) {
+          // 只记录错误，不做其他处理
+          console.debug("处理AI预连接消息出错:", error);
+        }
+      });
+
+      // 处理连接错误
+      eventSource.addEventListener("error", (error) => {
+        // 减少错误日志输出，仅在调试模式下显示
+        console.debug("AI预连接出错:", error);
+
+        // 增加重试逻辑
+        connectionAttempts++;
+        if (connectionAttempts > 2) {
+          // 重试三次后放弃
+          this.closeActiveSession();
+        }
+      });
+
+      // 设置自动关闭定时器，确保未使用的连接会被释放
+      const timeoutId = setTimeout(() => {
+        console.log("AI预连接超时未使用，自动关闭");
+        if (this.activeSession && this.activeSession.sessionId === sessionId) {
+          this.closeActiveSession();
+        }
+      }, this.connectionTimeout); // 2分钟后自动关闭
+
+      if (this.activeSession) {
+        this.activeSession.timeoutId = timeoutId;
+      }
+    } catch (error) {
+      console.error("建立AI预连接出错:", error);
+      this.closeActiveSession();
+    }
+  }
+
+  // 关闭活跃的AI会话
+  closeActiveSession() {
+    if (this.activeSession) {
+      // 只在调试模式输出日志
+      console.debug("关闭AI会话:", this.activeSession.sessionId);
+
+      // 清除所有计时器
+      if (this.activeSession.timeoutId) {
+        clearTimeout(this.activeSession.timeoutId);
+      }
+
+      if (this.activeSession.connectionTimeout) {
+        clearTimeout(this.activeSession.connectionTimeout);
+      }
+
+      // 关闭EventSource连接
+      if (this.activeSession.eventSource) {
+        this.activeSession.eventSource.close();
+      }
+
+      // 重置活跃会话
+      this.activeSession = null;
+    }
+  }
+
+  // 注册连接清理任务
+  registerConnectionCleanupTask() {
+    // 每5分钟检查一次连接状态，清理过期连接
+    setInterval(() => {
+      this.checkAndCleanupConnections();
+    }, 5 * 60 * 1000);
+
+    // 页面卸载时确保关闭连接
+    window.addEventListener("beforeunload", () => {
+      this.closeAllConnections();
+    });
+  }
+
+  // 检查和清理过期的连接
+  checkAndCleanupConnections() {
+    const now = Date.now();
+
+    // 如果有活跃的会话，检查是否超时
+    if (this.sessionManager.activeSessionId) {
+      const idleTime = now - this.sessionManager.lastActivity;
+      if (idleTime > this.sessionManager.connectionTimeout) {
+        console.log(
+          `连接 ${this.sessionManager.activeSessionId} 已闲置 ${Math.round(
+            idleTime / 1000
+          )} 秒，超过阈值，主动关闭`
+        );
+        this.closeConnection(this.sessionManager.activeSessionId, "闲置超时");
+      }
+    }
+  }
+
+  // 获取SSE连接
+  async getConnection() {
+    // 如果已有活跃连接并且未超时，直接返回它
+    if (
+      this.sessionManager.activeSessionId &&
+      this.sessionManager.isConnected &&
+      !this.sessionManager.isInUse &&
+      Date.now() - this.sessionManager.lastActivity <
+        this.sessionManager.connectionTimeout
+    ) {
+      // 标记连接为活跃
+      this.sessionManager.lastActivity = Date.now();
+      return this.sessionManager.activeSessionId;
+    }
+
+    // 关闭可能存在的旧连接
+    if (this.sessionManager.activeSessionId) {
+      await this.closeConnection(
+        this.sessionManager.activeSessionId,
+        "替换为新连接"
+      );
+    }
+
+    // 创建新连接
+    return this.createNewConnection();
+  }
+
+  // 创建新的SSE连接
+  async createNewConnection() {
+    // 生成新的会话ID
+    const sessionId = `session_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(2, 9)}`;
+
+    // 如果已经有EventSource，先关闭它
+    if (this.sessionManager.eventSource) {
+      this.sessionManager.eventSource.close();
+    }
+
+    // 创建并记录新的连接
+    this.sessionManager.activeSessionId = sessionId;
+    this.sessionManager.isInUse = false;
+    this.sessionManager.isConnected = false;
+    this.sessionManager.lastActivity = Date.now();
+
+    try {
+      // 创建EventSource连接
+      const eventSource = new EventSource(
+        `/api/stream-connection/${sessionId}`
+      );
+      this.sessionManager.eventSource = eventSource;
+
+      // 等待连接建立
+      await new Promise((resolve, reject) => {
+        // 设置超时
+        const connectionTimeout = setTimeout(() => {
+          reject(new Error("连接建立超时"));
+        }, 10000); // 10秒超时
+
+        // 连接建立成功
+        eventSource.addEventListener("open", () => {
+          console.log(`SSE连接 ${sessionId} 已建立`);
+          this.sessionManager.isConnected = true;
+          this.sessionManager.lastActivity = Date.now();
+          clearTimeout(connectionTimeout);
+          resolve();
+        });
+
+        // 连接错误处理
+        eventSource.addEventListener("error", (event) => {
+          clearTimeout(connectionTimeout);
+          reject(new Error("连接建立失败"));
+        });
+
+        // 接收连接成功消息
+        eventSource.addEventListener("message", (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.event === "connected") {
+              this.sessionManager.isConnected = true;
+              this.sessionManager.lastActivity = Date.now();
+              clearTimeout(connectionTimeout);
+              resolve();
+            }
+          } catch (error) {
+            // 忽略解析错误
+          }
+        });
+      });
+
+      // 设置保活定时器
+      this.setupKeepAlive(sessionId);
+
+      // 返回会话ID
+      return sessionId;
+    } catch (error) {
+      console.error("建立SSE连接失败:", error);
+
+      // 清理失败的连接
+      if (this.sessionManager.eventSource) {
+        this.sessionManager.eventSource.close();
+      }
+
+      if (this.sessionManager.activeSessionId === sessionId) {
+        this.sessionManager.activeSessionId = null;
+        this.sessionManager.eventSource = null;
+        this.sessionManager.isConnected = false;
+      }
+
+      throw error;
+    }
+  }
+
+  // 设置保活定时器
+  setupKeepAlive(sessionId) {
+    // 清除可能存在的旧定时器
+    if (this.sessionManager.pingTimer) {
+      clearInterval(this.sessionManager.pingTimer);
+    }
+
+    // 创建新的保活定时器，每30秒刷新一次连接活跃时间
+    this.sessionManager.pingTimer = setInterval(() => {
+      // 如果连接ID已变更，停止当前的保活
+      if (this.sessionManager.activeSessionId !== sessionId) {
+        clearInterval(this.sessionManager.pingTimer);
+        this.sessionManager.pingTimer = null;
+        return;
+      }
+
+      // 客户端主动记录活跃时间，不需要向服务端发请求
+      this.sessionManager.lastActivity = Date.now();
+    }, 30000); // 30秒
+  }
+
+  // 关闭连接
+  async closeConnection(sessionId, reason = "手动关闭") {
+    if (!sessionId) return;
+
+    // 清除保活定时器
+    if (this.sessionManager.pingTimer) {
+      clearInterval(this.sessionManager.pingTimer);
+      this.sessionManager.pingTimer = null;
+    }
+
+    // 如果是当前活跃的连接
+    if (this.sessionManager.activeSessionId === sessionId) {
+      // 关闭EventSource
+      if (this.sessionManager.eventSource) {
+        this.sessionManager.eventSource.close();
+        this.sessionManager.eventSource = null;
+      }
+
+      // 尝试通知服务器关闭连接
+      try {
+        const response = await fetch(`/api/close-connection/${sessionId}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        // 如果成功，输出日志
+        if (response.ok) {
+          console.log(`成功关闭连接 ${sessionId}, 原因: ${reason}`);
+        }
+      } catch (error) {
+        // 忽略关闭错误，因为连接可能已经关闭
+        console.debug(`关闭连接 ${sessionId} 时出错:`, error);
+      }
+
+      // 重置会话状态
+      this.sessionManager.activeSessionId = null;
+      this.sessionManager.isConnected = false;
+      this.sessionManager.isInUse = false;
+    }
+  }
+
+  // 关闭所有连接
+  closeAllConnections() {
+    // 关闭当前活跃的连接
+    if (this.sessionManager.activeSessionId) {
+      this.closeConnection(this.sessionManager.activeSessionId, "应用关闭");
+    }
+
+    // 重置所有定时器
+    if (this.sessionManager.pingTimer) {
+      clearInterval(this.sessionManager.pingTimer);
+      this.sessionManager.pingTimer = null;
+    }
+
+    if (this.sessionManager.preconnectTimer) {
+      clearTimeout(this.sessionManager.preconnectTimer);
+      this.sessionManager.preconnectTimer = null;
+    }
+
+    if (this.sessionManager.activityTimer) {
+      clearTimeout(this.sessionManager.activityTimer);
+      this.sessionManager.activityTimer = null;
+    }
+  }
+
+  // 使用SSE连接发送AI请求并处理流式回复
+  async generateWithSSE(prompt, noteElement) {
+    // 获取或创建连接
+    let sessionId;
+    try {
+      sessionId = await this.getConnection();
+    } catch (error) {
+      console.error("获取SSE连接失败:", error);
+      throw new Error("无法建立与AI服务的连接");
+    }
+
+    // 标记连接为使用中
+    this.sessionManager.isInUse = true;
+
+    try {
+      // 初始化光标和内容元素
+      const previewElement = noteElement.querySelector(".markdown-preview");
+      const cursorElement = document.createElement("span");
+      cursorElement.className = "typing-cursor";
+      cursorElement.textContent = "|";
+      previewElement.appendChild(cursorElement);
+
+      // 初始化内容变量
+      let fullText = "";
+
+      // 创建Promise来追踪处理过程
+      return new Promise((resolve, reject) => {
+        // 设置消息处理器
+        const messageHandler = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+
+            switch (data.event) {
+              case "start":
+                console.log("AI开始生成内容...");
+                break;
+
+              case "chunk":
+                // 更新内容
+                fullText = data.fullText || fullText + (data.chunk || "");
+                // 更新便签内容，保持光标可见
+                updateNoteContent(noteElement, fullText);
+                previewElement.appendChild(cursorElement);
+                break;
+
+              case "end":
+                console.log("AI生成内容完成");
+                // 移除事件监听器
+                if (this.sessionManager.eventSource) {
+                  this.sessionManager.eventSource.removeEventListener(
+                    "message",
+                    messageHandler
+                  );
+                }
+                // 移除光标
+                cursorElement.remove();
+                // 标记连接可复用
+                this.sessionManager.isInUse = false;
+                this.sessionManager.lastActivity = Date.now();
+                // 完成Promise
+                resolve(fullText);
+                break;
+
+              case "error":
+                console.error("AI生成错误:", data.message);
+                // 移除事件监听器
+                if (this.sessionManager.eventSource) {
+                  this.sessionManager.eventSource.removeEventListener(
+                    "message",
+                    messageHandler
+                  );
+                }
+                // 标记连接可复用(除非错误表明连接已失效)
+                this.sessionManager.isInUse = false;
+                this.sessionManager.lastActivity = Date.now();
+                // 拒绝Promise
+                reject(new Error(data.message || "生成过程中发生错误"));
+                break;
+
+              case "connection-closed":
+                console.log("服务器关闭了连接:", data.reason);
+                // 如果是当前会话，标记为无效
+                if (this.sessionManager.activeSessionId === sessionId) {
+                  this.sessionManager.isConnected = false;
+                  this.sessionManager.activeSessionId = null;
+                }
+                break;
+            }
+          } catch (error) {
+            console.error("处理SSE消息出错:", error);
+          }
+        };
+
+        // 添加消息监听器
+        if (this.sessionManager.eventSource) {
+          this.sessionManager.eventSource.addEventListener(
+            "message",
+            messageHandler
+          );
+        } else {
+          reject(new Error("连接已关闭"));
+          return;
+        }
+
+        // 发送生成请求
+        fetch(`/api/process-stream/${sessionId}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ prompt }),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              return response.json().then((data) => {
+                throw new Error(data.message || "处理请求失败");
+              });
+            }
+            // 处理已发送，结果将通过SSE返回
+          })
+          .catch((error) => {
+            console.error("发送AI请求失败:", error);
+            // 移除事件监听器
+            if (this.sessionManager.eventSource) {
+              this.sessionManager.eventSource.removeEventListener(
+                "message",
+                messageHandler
+              );
+            }
+            // 标记连接可复用(除非错误表明连接已失效)
+            this.sessionManager.isInUse = false;
+            // 拒绝Promise
+            reject(error);
+          });
+
+        // 设置请求超时
+        setTimeout(() => {
+          // 检查是否已完成
+          if (
+            this.sessionManager.isInUse &&
+            this.sessionManager.activeSessionId === sessionId
+          ) {
+            // 移除事件监听器
+            if (this.sessionManager.eventSource) {
+              this.sessionManager.eventSource.removeEventListener(
+                "message",
+                messageHandler
+              );
+            }
+            // 标记连接需要重建
+            this.sessionManager.isInUse = false;
+            this.closeConnection(sessionId, "请求超时");
+            // 如果已有一些内容，使用它
+            if (fullText.trim()) {
+              cursorElement.remove();
+              resolve(fullText);
+            } else {
+              reject(new Error("AI生成内容超时"));
+            }
+          }
+        }, 2 * 60 * 1000); // 2分钟超时
+      });
+    } catch (error) {
+      // 发生任何错误，标记连接为可用(避免锁死)
+      this.sessionManager.isInUse = false;
+      throw error;
+    }
   }
 }
 

@@ -731,6 +731,256 @@ router.post("/process-stream/:sessionId", requireAuth, async (req, res) => {
   }
 });
 
+// --- 连接管理相关的变量和配置 ---
+// 会话管理配置
+const connectionConfig = {
+  // 会话最大空闲时间 (15分钟)
+  maxIdleTime: 15 * 60 * 1000,
+  // 保活信号间隔 (30秒)
+  keepAliveInterval: 30 * 1000,
+  // 垃圾回收间隔 (5分钟)
+  cleanupInterval: 5 * 60 * 1000,
+};
+
+// 定期清理过期连接
+const connectionCleanupTimer = setInterval(() => {
+  const now = Date.now();
+  let expiredCount = 0;
+
+  sseConnections.forEach((connection, sessionId) => {
+    if (now - connection.lastActivity > connectionConfig.maxIdleTime) {
+      console.log(
+        `清理过期连接: ${sessionId}, 空闲时间: ${Math.round(
+          (now - connection.lastActivity) / 1000
+        )}秒`
+      );
+      connection.cleanup("空闲超时");
+      expiredCount++;
+    }
+  });
+
+  if (expiredCount > 0) {
+    console.log(
+      `已清理 ${expiredCount} 个过期连接，当前活跃连接数: ${sseConnections.size}`
+    );
+  }
+}, connectionConfig.cleanupInterval);
+
+// 确保应用退出时清理定时器
+process.on("SIGTERM", () => {
+  clearInterval(connectionCleanupTimer);
+  // 关闭所有连接
+  sseConnections.forEach((connection) => connection.cleanup("服务器关闭"));
+  // 其他清理工作...
+});
+
+// 初始化 SSE 连接路由 - 使用 GET 请求
+router.get("/stream-connection/:sessionId", requireAuth, (req, res) => {
+  const sessionId = req.params.sessionId;
+  const clientIp = req.ip || req.socket.remoteAddress;
+
+  console.log(`建立 SSE 连接, 会话 ID: ${sessionId}, IP: ${clientIp}`);
+
+  // 设置 SSE 头部
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+
+  // 保持连接活跃的定时器
+  const keepAliveInterval = setInterval(() => {
+    res.write(": keepalive\n\n");
+  }, connectionConfig.keepAliveInterval);
+
+  // 发送初始连接事件
+  res.write(
+    `data: ${JSON.stringify({
+      event: "connected",
+      sessionId,
+      serverTime: new Date().toISOString(),
+    })}\n\n`
+  );
+
+  // 存储 SSE 连接及其状态信息
+  sseConnections.set(sessionId, {
+    res,
+    clientIp,
+    createdAt: Date.now(),
+    lastActivity: Date.now(),
+    inUse: false, // 标记连接是否正在被使用
+    prompt: null,
+    cleanup: (reason = "客户端断开") => {
+      clearInterval(keepAliveInterval);
+
+      // 如果连接仍然打开，发送关闭事件
+      if (!res.writableEnded) {
+        try {
+          res.write(
+            `data: ${JSON.stringify({
+              event: "connection-closed",
+              reason,
+            })}\n\n`
+          );
+          res.end();
+        } catch (error) {
+          console.log(`关闭连接出错: ${error.message}`);
+        }
+      }
+
+      sseConnections.delete(sessionId);
+      console.log(`SSE 连接已关闭, 会话 ID: ${sessionId}, 原因: ${reason}`);
+    },
+  });
+
+  // 客户端断开连接时清理
+  req.on("close", () => {
+    const connection = sseConnections.get(sessionId);
+    if (connection) {
+      connection.cleanup();
+    }
+  });
+
+  // 连接错误处理
+  req.on("error", (error) => {
+    console.error(`SSE 连接错误, 会话 ID: ${sessionId}:`, error);
+    const connection = sseConnections.get(sessionId);
+    if (connection) {
+      connection.cleanup(`连接错误: ${error.message}`);
+    }
+  });
+
+  // 记录当前活跃的连接数
+  console.log(`当前活跃 SSE 连接数: ${sseConnections.size}`);
+});
+
+// 发送提示到指定的 SSE 连接 - 使用 POST 请求
+router.post("/process-stream/:sessionId", requireAuth, async (req, res) => {
+  const sessionId = req.params.sessionId;
+  const { prompt } = req.body;
+
+  console.log(`收到流式生成请求, 会话 ID: ${sessionId}`);
+
+  // 验证参数
+  if (!sessionId || !prompt) {
+    return res.status(400).json({
+      success: false,
+      message: "缺少会话ID或提示内容",
+    });
+  }
+
+  // 检查 SSE 连接是否存在
+  const connection = sseConnections.get(sessionId);
+  if (!connection) {
+    return res.status(404).json({
+      success: false,
+      message: "找不到指定的 SSE 连接，请先建立连接",
+    });
+  }
+
+  // 检查连接是否已在使用中
+  if (connection.inUse) {
+    return res.status(409).json({
+      success: false,
+      message: "该连接正在处理其他请求，请等待完成或创建新连接",
+    });
+  }
+
+  // 标记连接为使用中
+  connection.inUse = true;
+  connection.prompt = prompt;
+  connection.lastActivity = Date.now();
+
+  // 立即返回成功响应，表示已接收请求
+  res.json({ success: true, message: "请求已接收，开始处理" });
+
+  try {
+    // 发送开始生成事件
+    connection.res.write(`data: ${JSON.stringify({ event: "start" })}\n\n`);
+
+    // 使用 AI 服务生成内容
+    await aiService.generateTextStream(prompt, (chunk, fullText) => {
+      // 更新最后活动时间
+      connection.lastActivity = Date.now();
+
+      // 发送内容块
+      connection.res.write(
+        `data: ${JSON.stringify({
+          event: "chunk",
+          chunk,
+          fullText,
+        })}\n\n`
+      );
+    });
+
+    // 发送完成事件
+    connection.res.write(`data: ${JSON.stringify({ event: "end" })}\n\n`);
+
+    // 标记连接为空闲，但保持连接打开以便复用
+    connection.inUse = false;
+    connection.lastActivity = Date.now();
+
+    console.log(`会话 ${sessionId} 内容生成完成，连接保持开放可复用`);
+  } catch (error) {
+    console.error("流式生成出错:", error);
+
+    // 发送错误事件
+    connection.res.write(
+      `data: ${JSON.stringify({
+        event: "error",
+        message: error.message || "生成过程中发生错误",
+      })}\n\n`
+    );
+
+    // 仍然标记连接为空闲，让它可以被复用
+    connection.inUse = false;
+    connection.lastActivity = Date.now();
+  }
+});
+
+// 客户端主动关闭连接的路由
+router.post("/close-connection/:sessionId", requireAuth, (req, res) => {
+  const sessionId = req.params.sessionId;
+  const connection = sseConnections.get(sessionId);
+
+  if (connection) {
+    connection.cleanup("客户端请求关闭");
+    res.json({ success: true, message: "连接已关闭" });
+  } else {
+    res.status(404).json({ success: false, message: "未找到指定的连接" });
+  }
+});
+
+// 获取当前连接状态的路由 (用于调试和监控)
+router.get("/connection-status", requireAuth, (req, res) => {
+  // 确保只有管理员可以查看
+  if (req.session.user.username !== "admin") {
+    return res.status(403).json({
+      success: false,
+      message: "只有管理员可以查看连接状态",
+    });
+  }
+
+  const statusList = [];
+
+  sseConnections.forEach((connection, sessionId) => {
+    statusList.push({
+      sessionId,
+      clientIp: connection.clientIp,
+      createdAt: new Date(connection.createdAt).toISOString(),
+      lastActivity: new Date(connection.lastActivity).toISOString(),
+      idleTime: Math.round((Date.now() - connection.lastActivity) / 1000),
+      inUse: connection.inUse,
+      hasPrompt: !!connection.prompt,
+    });
+  });
+
+  res.json({
+    success: true,
+    total: statusList.length,
+    connections: statusList,
+  });
+});
+
 // ... 其他 AI 设置、测试、健康检查路由保持不变 ...
 router.get("/test-ai-connection", async (req, res) => {
   console.log("[API /test-ai-connection] Received request."); // Add log
