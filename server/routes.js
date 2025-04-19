@@ -22,6 +22,10 @@ import {
   deleteBaseUrlHistory,
   deleteModelHistory,
   clearAllApiHistory,
+  // API 配置关联函数
+  addOrUpdateApiConfigRelation,
+  getApiKeysByBaseUrl,
+  getModelsByBaseUrl,
   // User functions
   validateUserLogin,
   updateUserPassword,
@@ -395,6 +399,21 @@ router.post("/settings/ai", async (req, res) => {
     if (settingsToSaveInDb.model) {
       await addOrUpdateModelHistory(settingsToSaveInDb.model);
     }
+
+    // 记录 URL、API 密钥和模型之间的关联关系
+    if (
+      settingsToSaveInDb.baseURL &&
+      settingsToSaveInDb.apiKey &&
+      settingsToSaveInDb.model
+    ) {
+      await addOrUpdateApiConfigRelation(
+        settingsToSaveInDb.baseURL,
+        settingsToSaveInDb.apiKey,
+        settingsToSaveInDb.model
+      );
+      console.log("已记录 URL、API 密钥和模型之间的关联关系");
+    }
+
     console.log("AI设置已添加到历史记录");
 
     // Prepare settings for aiService (correct types)

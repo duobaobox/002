@@ -169,6 +169,21 @@ async function initializeDatabase() {
         `);
         console.log('数据库表 "model_history" 已准备就绪。');
 
+        // 创建 API 配置关联表
+        await dbExec(`
+          CREATE TABLE IF NOT EXISTS api_config_relations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            base_url TEXT NOT NULL,
+            api_key TEXT NOT NULL,
+            model TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            last_used DATETIME DEFAULT CURRENT_TIMESTAMP,
+            use_count INTEGER DEFAULT 1,
+            UNIQUE(base_url, api_key, model)
+          );
+        `);
+        console.log('数据库表 "api_config_relations" 已准备就绪。');
+
         // 检查是否存在默认管理员账户，如果不存在则创建
         const adminUser = await dbGet(
           "SELECT * FROM users WHERE username = ?",
@@ -813,8 +828,8 @@ async function getApiKeyHistory(limit = 10, baseUrl = null) {
     return await dbAll(
       `SELECT DISTINCT a.id, a.api_key as apiKey, a.created_at as createdAt, a.last_used as lastUsed, a.use_count as useCount
        FROM api_key_history a
-       JOIN settings s1 ON s1.key = 'apiKey' AND s1.value = a.api_key
-       JOIN settings s2 ON s2.key = 'baseURL' AND s2.value = ?
+       JOIN api_config_relations r ON r.api_key = a.api_key
+       WHERE r.base_url = ?
        ORDER BY a.last_used DESC, a.use_count DESC
        LIMIT ?`,
       [baseUrl, limit]
@@ -862,8 +877,8 @@ async function getModelHistory(limit = 10, baseUrl = null) {
     return await dbAll(
       `SELECT DISTINCT m.id, m.model_name as modelName, m.created_at as createdAt, m.last_used as lastUsed, m.use_count as useCount
        FROM model_history m
-       JOIN settings s1 ON s1.key = 'model' AND s1.value = m.model_name
-       JOIN settings s2 ON s2.key = 'baseURL' AND s2.value = ?
+       JOIN api_config_relations r ON r.model = m.model_name
+       WHERE r.base_url = ?
        ORDER BY m.last_used DESC, m.use_count DESC
        LIMIT ?`,
       [baseUrl, limit]
@@ -914,6 +929,82 @@ async function deleteModelHistory(id) {
 }
 
 /**
+ * 添加或更新 API 配置关联
+ * @param {string} baseUrl - 基础 URL
+ * @param {string} apiKey - API 密钥
+ * @param {string} model - 模型名称
+ * @returns {Promise<void>}
+ */
+async function addOrUpdateApiConfigRelation(baseUrl, apiKey, model) {
+  if (!db) throw new Error("数据库未初始化");
+  if (!baseUrl || !apiKey || !model) return; // 不记录空值
+
+  const trimmedUrl = baseUrl.trim();
+  const trimmedKey = apiKey.trim();
+  const trimmedModel = model.trim();
+
+  // 检查是否已存在此关联
+  const existingRelation = await dbGet(
+    "SELECT id, use_count FROM api_config_relations WHERE base_url = ? AND api_key = ? AND model = ?",
+    [trimmedUrl, trimmedKey, trimmedModel]
+  );
+
+  if (existingRelation) {
+    // 已存在，更新使用次数和最后使用时间
+    await dbRun(
+      "UPDATE api_config_relations SET use_count = use_count + 1, last_used = CURRENT_TIMESTAMP WHERE id = ?",
+      [existingRelation.id]
+    );
+  } else {
+    // 新关联，添加到表中
+    await dbRun(
+      "INSERT INTO api_config_relations (base_url, api_key, model) VALUES (?, ?, ?)",
+      [trimmedUrl, trimmedKey, trimmedModel]
+    );
+  }
+}
+
+/**
+ * 获取与指定 URL 关联的 API 密钥列表
+ * @param {string} baseUrl - 基础 URL
+ * @param {number} limit - 限制返回数量，默认为10
+ * @returns {Promise<Array>} API 密钥数组
+ */
+async function getApiKeysByBaseUrl(baseUrl, limit = 10) {
+  if (!db) throw new Error("数据库未初始化");
+  if (!baseUrl) return [];
+
+  return await dbAll(
+    `SELECT DISTINCT api_key as apiKey
+     FROM api_config_relations
+     WHERE base_url = ?
+     ORDER BY last_used DESC, use_count DESC
+     LIMIT ?`,
+    [baseUrl, limit]
+  );
+}
+
+/**
+ * 获取与指定 URL 关联的模型列表
+ * @param {string} baseUrl - 基础 URL
+ * @param {number} limit - 限制返回数量，默认为10
+ * @returns {Promise<Array>} 模型数组
+ */
+async function getModelsByBaseUrl(baseUrl, limit = 10) {
+  if (!db) throw new Error("数据库未初始化");
+  if (!baseUrl) return [];
+
+  return await dbAll(
+    `SELECT DISTINCT model as modelName
+     FROM api_config_relations
+     WHERE base_url = ?
+     ORDER BY last_used DESC, use_count DESC
+     LIMIT ?`,
+    [baseUrl, limit]
+  );
+}
+
+/**
  * 清除所有 API 配置历史记录
  * @returns {Promise<boolean>} 是否成功清除
  */
@@ -928,6 +1019,7 @@ async function clearAllApiHistory() {
     await dbRun("DELETE FROM api_key_history");
     await dbRun("DELETE FROM base_url_history");
     await dbRun("DELETE FROM model_history");
+    await dbRun("DELETE FROM api_config_relations");
 
     // 提交事务
     await dbRun("COMMIT");
@@ -973,4 +1065,8 @@ export {
   deleteBaseUrlHistory,
   deleteModelHistory,
   clearAllApiHistory,
+  // API 配置关联函数
+  addOrUpdateApiConfigRelation,
+  getApiKeysByBaseUrl,
+  getModelsByBaseUrl,
 };
