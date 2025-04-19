@@ -1418,59 +1418,46 @@ export class App {
 
   // 显示消息提示
   showMessage(message, type = "info") {
-    // 获取设置消息容器
-    const settingsMessageContainer = document.getElementById(
-      "settings-message-container"
-    );
+    // 移除特定设置面板内的条件判断，统一使用顶部中央通知
+    let messageContainer = document.querySelector(".message-top-center");
 
-    if (settingsMessageContainer) {
-      // 清空现有消息
-      settingsMessageContainer.innerHTML = "";
+    // 如果不存在，创建一个
+    if (!messageContainer) {
+      messageContainer = document.createElement("div");
+      messageContainer.className = "message-top-center";
+      document.body.appendChild(messageContainer);
+    }
 
-      // 创建新的消息元素
-      const messageElement = document.createElement("div");
-      messageElement.className = `settings-message message-${type}`;
-      messageElement.textContent = message;
+    // 设置消息内容和类型
+    messageContainer.textContent = message;
+    messageContainer.className = `message-top-center message-${type}`;
 
-      // 添加消息到容器
-      settingsMessageContainer.appendChild(messageElement);
+    // 确保元素在DOM中
+    if (!messageContainer.parentNode) {
+      document.body.appendChild(messageContainer);
+    }
 
-      // 添加有消息的类
-      settingsMessageContainer.classList.add("has-message");
+    // 重置状态，确保先隐藏
+    messageContainer.classList.remove("show");
 
-      // 设置自动隐藏定时器
-      setTimeout(() => {
-        settingsMessageContainer.classList.remove("has-message");
-        // 稍后移除消息内容
-        setTimeout(() => {
-          settingsMessageContainer.innerHTML = "";
-        }, 300);
-      }, 3000);
-    } else {
-      // 如果设置消息容器不存在，使用顶部中央通知
-      let messageContainer = document.querySelector(".message-top-center");
-
-      // 如果不存在，创建一个
-      if (!messageContainer) {
-        messageContainer = document.createElement("div");
-        messageContainer.className = "message-top-center";
-        document.body.appendChild(messageContainer);
-      }
-
-      // 设置消息内容和类型
-      messageContainer.textContent = message;
-      messageContainer.className = `message-top-center message-${type}`;
-
-      // 显示消息
-      setTimeout(() => {
+    // 使用RAF确保DOM更新后再添加show类
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
         messageContainer.classList.add("show");
 
         // 自动隐藏
         setTimeout(() => {
           messageContainer.classList.remove("show");
+
+          // 移除元素，保持DOM干净
+          setTimeout(() => {
+            if (messageContainer.parentNode) {
+              messageContainer.parentNode.removeChild(messageContainer);
+            }
+          }, 400); // 等待过渡完成
         }, 3000);
-      }, 10);
-    }
+      });
+    });
   }
 
   // 导出便签数据
