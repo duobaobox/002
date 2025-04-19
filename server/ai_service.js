@@ -236,7 +236,7 @@ class AIService {
     }
   }
 
-  // 新增：流式生成方法
+  // 流式生成方法 - 高效版本
   async generateTextStream(prompt, onChunk) {
     if (!this.isReady()) {
       throw new Error("AI服务未配置或初始化失败");
@@ -250,63 +250,62 @@ class AIService {
         max_tokens: this.config.maxTokens,
         temperature: this.config.temperature,
         stream: true, // 启用流式输出
+        // 添加优化参数
+        presence_penalty: 0,
+        frequency_penalty: 0,
       };
 
-      console.log("[AI Service] Starting streaming generation...");
-
-      // 为OpenRouter添加特有的参数
-      if (this.isOpenRouter()) {
-        // 添加额外的头部信息，用于OpenRouter统计
-        const extraHeaders = {
-          "HTTP-Referer": this.config.appUrl,
-          "X-Title": this.config.appName,
-        };
-
-        const stream = await this.openai.chat.completions.create(
-          requestParams,
-          { headers: extraHeaders }
-        );
-
-        let fullText = "";
-        for await (const chunk of stream) {
-          const content = chunk.choices[0]?.delta?.content || "";
-          if (content) {
-            fullText += content;
-            // 调用回调，传递当前块和累积文本
-            onChunk && onChunk(content, fullText);
+      // 准备请求选项
+      const requestOptions = this.isOpenRouter()
+        ? {
+            headers: {
+              "HTTP-Referer": this.config.appUrl,
+              "X-Title": this.config.appName,
+            },
           }
-        }
-        return fullText.trim();
-      } else {
-        // 标准OpenAI兼容API调用（如DeepSeek等）
-        const stream = await this.openai.chat.completions.create(requestParams);
+        : {};
 
-        let fullText = "";
-        for await (const chunk of stream) {
-          const content = chunk.choices[0]?.delta?.content || "";
-          if (content) {
-            fullText += content;
-            // 调用回调，传递当前块和累积文本
-            onChunk && onChunk(content, fullText);
+      // 创建流式请求
+      const stream = await this.openai.chat.completions.create(
+        requestParams,
+        requestOptions
+      );
+
+      // 处理流式响应
+      let fullText = "";
+      let lastChunkTime = Date.now();
+
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content || "";
+        if (content) {
+          // 记录当前时间
+          const now = Date.now();
+
+          // 更新完整文本
+          fullText += content;
+
+          // 调用回调函数
+          if (onChunk) {
+            onChunk(content, fullText);
           }
+
+          // 更新最后块时间
+          lastChunkTime = now;
         }
-        return fullText.trim();
       }
+
+      return fullText.trim();
     } catch (error) {
-      console.error("AI流式生成文本时出错:", error);
-      // Provide more specific error messages if possible
-      if (error.response) {
-        console.error("OpenAI API错误详情:", error.response.data);
-        throw new Error(
-          `AI服务API错误: ${error.response.status} ${
-            error.response.data?.error?.message || error.message
-          }`
-        );
-      } else if (error.request) {
-        throw new Error("无法连接到AI服务，请检查网络或API地址");
-      } else {
-        throw new Error(`AI生成失败: ${error.message}`);
+      // 简化错误处理逻辑
+      let errorMessage = "AI生成失败";
+
+      if (error.response?.data?.error?.message) {
+        errorMessage = `API错误: ${error.response.data.error.message}`;
+      } else if (error.message) {
+        errorMessage = error.message;
       }
+
+      throw new Error(errorMessage);
     }
   }
 
