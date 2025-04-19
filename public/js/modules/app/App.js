@@ -175,6 +175,17 @@ export class App {
       "../utils/ConnectionUtils.js"
     );
     this.updateConnectionStatus = updateConnectionStatus;
+
+    // 在应用启动时就预连接
+    this.smartPreconnectAIService();
+
+    // 添加页面可见性变化事件，当用户切回页面时预连接
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) {
+        // 页面变为可见时预连接
+        this.smartPreconnectAIService();
+      }
+    });
     // 添加普通便签按钮
     document.getElementById("add-note").addEventListener("click", () => {
       this.addEmptyNote();
@@ -216,6 +227,12 @@ export class App {
       this.updateButtonVisibility();
 
       // 添加预连接功能：当用户开始输入时预热AI连接
+      this.smartPreconnectAIService();
+    });
+
+    // 监听输入框聚焦事件，当用户聚焦到输入框时预连接
+    promptElement.addEventListener("focus", () => {
+      // 当输入框获得焦点时预连接
       this.smartPreconnectAIService();
     });
 
@@ -848,10 +865,10 @@ export class App {
       generateButton.classList.remove("generating");
       promptElement.disabled = false;
 
-      // 如果没有错误，更新连接状态为已连接
+      // 更新连接状态为已连接（如果连接有效）
       if (
-        !error &&
         this.updateConnectionStatus &&
+        this.sessionManager &&
         this.sessionManager.isConnected
       ) {
         this.updateConnectionStatus("connected");
@@ -2499,8 +2516,8 @@ export class App {
 
   // 使用SSE连接发送AI请求并处理流式回复 - 优化版本
   async generateWithSSE(prompt, noteElement) {
-    // 导入节流版本的更新函数
-    const { updateNoteContentThrottled } = await import(
+    // 导入增量更新函数
+    const { updateNoteContentIncrementalThrottled } = await import(
       "../utils/MarkdownUtils.js"
     );
 
@@ -2509,7 +2526,6 @@ export class App {
     try {
       // 获取连接
       connection = await connectionManager.getConnection();
-      console.log(`获取到连接 ID: ${connection.sessionId}`);
     } catch (error) {
       console.error("获取AI连接失败:", error);
       throw new Error("无法建立与AI服务的连接");
@@ -2520,12 +2536,8 @@ export class App {
     this.currentAbortController = abortController;
 
     try {
-      // 初始化光标和内容元素
+      // 初始化内容元素
       const previewElement = noteElement.querySelector(".markdown-preview");
-      const cursorElement = document.createElement("span");
-      cursorElement.className = "typing-cursor";
-      cursorElement.textContent = "|";
-      previewElement.appendChild(cursorElement);
 
       // 初始化内容变量
       let fullText = "";
@@ -2539,20 +2551,23 @@ export class App {
 
             switch (data.event) {
               case "start":
-                console.log("AI开始生成内容...");
+                // 开始生成，不需要额外处理
                 break;
 
               case "chunk":
-                // 更新内容
-                fullText = data.fullText || fullText + (data.chunk || "");
+                // 提取新块和完整文本
+                const chunk = data.chunk || "";
+                fullText = data.fullText || fullText + chunk;
 
-                // 使用节流版本的更新函数，减少DOM更新频率
-                updateNoteContentThrottled(noteElement, fullText);
-                previewElement.appendChild(cursorElement);
+                // 使用增量更新函数
+                updateNoteContentIncrementalThrottled(
+                  noteElement,
+                  chunk,
+                  fullText
+                );
                 break;
 
               case "end":
-                console.log("AI生成内容完成");
                 // 移除事件监听器
                 if (connection.eventSource) {
                   connection.eventSource.removeEventListener(
@@ -2560,8 +2575,7 @@ export class App {
                     messageHandler
                   );
                 }
-                // 移除光标
-                cursorElement.remove();
+                // 生成完成，不需要额外处理
                 // 释放连接
                 connectionManager.releaseConnection(true);
                 // 清除当前的 AbortController
@@ -2571,7 +2585,6 @@ export class App {
                 break;
 
               case "error":
-                console.error("AI生成错误:", data.message);
                 // 移除事件监听器
                 if (connection.eventSource) {
                   connection.eventSource.removeEventListener(
@@ -2588,13 +2601,12 @@ export class App {
                 break;
 
               case "connection-closed":
-                console.log("服务器关闭了连接:", data.reason);
                 // 释放连接
                 connectionManager.releaseConnection(false);
                 break;
             }
           } catch (error) {
-            console.error("处理SSE消息出错:", error);
+            // 忽略解析错误，不中断生成过程
           }
         };
 
@@ -2606,15 +2618,25 @@ export class App {
           return;
         }
 
-        // 发送生成请求，使用 AbortController
-        fetch(`/api/process-stream/${connection.sessionId}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ prompt }),
-          signal: abortController.signal,
-        })
+        // 使用 Promise.race 实现请求竞争，加快响应速度
+        Promise.race([
+          // 主请求
+          fetch(`/api/process-stream/${connection.sessionId}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ prompt }),
+            signal: abortController.signal,
+            // 添加高优先级
+            priority: "high",
+          }),
+
+          // 超时处理
+          new Promise((_, timeoutReject) =>
+            setTimeout(() => timeoutReject(new Error("请求超时")), 10000)
+          ),
+        ])
           .then((response) => {
             if (!response.ok) {
               return response.json().then((data) => {
@@ -2626,11 +2648,9 @@ export class App {
           .catch((error) => {
             // 忽略中止错误
             if (error.name === "AbortError") {
-              console.log("请求已中止");
               return;
             }
 
-            console.error("发送AI请求失败:", error);
             // 移除事件监听器
             if (connection.eventSource) {
               connection.eventSource.removeEventListener(
@@ -2646,10 +2666,10 @@ export class App {
             reject(error);
           });
 
-        // 设置请求超时
+        // 设置总超时
         setTimeout(() => {
           // 检查是否已完成
-          if (connection && connection.inUse) {
+          if (this.currentAbortController === abortController) {
             // 中止请求
             abortController.abort();
 
@@ -2667,13 +2687,13 @@ export class App {
 
             // 如果已有一些内容，使用它
             if (fullText.trim()) {
-              cursorElement.remove();
+              // 超时处理，不需要额外处理
               resolve(fullText);
             } else {
               reject(new Error("AI生成内容超时"));
             }
           }
-        }, 2 * 60 * 1000); // 2分钟超时
+        }, 90 * 1000); // 减少超时时间到90秒
       });
     } catch (error) {
       // 发生任何错误，释放连接
