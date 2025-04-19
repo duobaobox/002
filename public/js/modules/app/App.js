@@ -833,6 +833,20 @@ export class App {
         prompt.length > 15 ? prompt.substring(0, 15) + "..." : prompt;
       const finalTitle = `AI: ${aiTitle}`;
 
+      // 获取临时便签的当前位置和大小
+      // 这些值可能在生成过程中被用户修改过
+      const currentX = parseInt(noteElement.style.left) || x;
+      const currentY = parseInt(noteElement.style.top) || y;
+      const currentWidth = noteElement.offsetWidth;
+      const currentHeight = noteElement.offsetHeight;
+
+      console.log("保存便签，使用当前位置和大小:", {
+        x: currentX,
+        y: currentY,
+        width: currentWidth,
+        height: currentHeight,
+      });
+
       // 创建便签到服务器
       const noteResponse = await fetch("/api/notes", {
         method: "POST",
@@ -841,8 +855,10 @@ export class App {
         },
         body: JSON.stringify({
           text: text,
-          x,
-          y,
+          x: currentX,
+          y: currentY,
+          width: currentWidth,
+          height: currentHeight,
           title: finalTitle,
           colorClass: colorClass,
           zIndex: parseInt(noteElement.style.zIndex || getHighestZIndex() + 1),
@@ -868,6 +884,16 @@ export class App {
           noteData.note.title || finalTitle,
           noteData.note.colorClass
         );
+
+        // 设置便签的宽度和高度
+        if (note.element) {
+          if (noteData.note.width) {
+            note.element.style.width = `${noteData.note.width}px`;
+          }
+          if (noteData.note.height) {
+            note.element.style.height = `${noteData.note.height}px`;
+          }
+        }
 
         // 确保新创建的便签在最上层
         if (note.element) {
