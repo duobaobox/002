@@ -111,15 +111,53 @@ function createTempNoteContent(note, noteId) {
   const resizeHandle = document.createElement("div");
   resizeHandle.className = "note-resize-handle";
 
+  // 添加生成控制容器
+  const loaderContainer = document.createElement("div");
+  loaderContainer.className = "ai-generation-controls";
+
+  // 添加左侧容器，包含指示器和进度
+  const leftControls = document.createElement("div");
+  leftControls.className = "generation-left-controls";
+
   // 添加等待指示器
   const loader = document.createElement("div");
   loader.className = "ai-typing-indicator";
   loader.innerHTML = "<span></span><span></span><span></span>";
 
+  // 添加生成进度指示器
+  const progressIndicator = document.createElement("div");
+  progressIndicator.className = "generation-progress";
+  progressIndicator.innerHTML = "<span class='chars-count'>0</span> 字符";
+
+  // 将指示器和进度添加到左侧容器
+  leftControls.appendChild(loader);
+  leftControls.appendChild(progressIndicator);
+
+  // 添加取消生成按钮
+  const cancelButton = document.createElement("button");
+  cancelButton.className = "cancel-generation-button";
+  cancelButton.innerHTML = "取消生成";
+  cancelButton.title = "取消AI内容生成";
+  cancelButton.setAttribute("data-note-id", noteId);
+
+  // 添加取消按钮的点击事件
+  cancelButton.addEventListener("click", (e) => {
+    e.stopPropagation();
+    // 触发自定义事件，让App.js处理取消逻辑
+    const cancelEvent = new CustomEvent("cancel-ai-generation", {
+      detail: { noteId },
+    });
+    document.dispatchEvent(cancelEvent);
+  });
+
+  // 将左侧控制容器和取消按钮添加到主容器
+  loaderContainer.appendChild(leftControls);
+  loaderContainer.appendChild(cancelButton);
+
   // 组装便签
   note.appendChild(body);
   note.appendChild(resizeHandle);
-  note.appendChild(loader);
+  note.appendChild(loaderContainer);
 
   // 添加到DOM
   document.getElementById("note-container").appendChild(note);

@@ -226,10 +226,35 @@ export function updateNoteContentIncremental(noteElement, chunk, fullText) {
     contentElement.style.display = "none";
   }
 
+  // 检查是否需要自动滚动到底部
+  // 判断条件：如果用户没有手动滚动，或者滚动条已经在接近底部的位置
+  const shouldAutoScroll = (() => {
+    // 获取当前滚动位置信息
+    const scrollHeight = previewElement.scrollHeight;
+    const clientHeight = previewElement.clientHeight;
+    const scrollTop = previewElement.scrollTop;
+
+    // 如果滚动条已经在接近底部的位置（距离底部不超过100px），则自动滚动
+    return scrollTop + clientHeight >= scrollHeight - 100;
+  })();
+
   // 更新滚动条
   const scrollbarThumb = noteElement.querySelector(".scrollbar-thumb");
   if (scrollbarThumb) {
     updateScrollbar(previewElement, scrollbarThumb);
+  }
+
+  // 如果需要自动滚动，则滚动到底部
+  if (shouldAutoScroll) {
+    // 使用requestAnimationFrame确保在下一帧渲染时滚动
+    requestAnimationFrame(() => {
+      previewElement.scrollTop = previewElement.scrollHeight;
+
+      // 更新自定义滚动条位置
+      if (scrollbarThumb) {
+        updateScrollbar(previewElement, scrollbarThumb);
+      }
+    });
   }
 }
 
@@ -237,10 +262,11 @@ export function updateNoteContentIncremental(noteElement, chunk, fullText) {
 export const updateNoteContentThrottled = throttle(updateNoteContent, 30, true);
 
 // 创建增量更新的节流版本，使用更短的节流时间
+// 设置为trailing=true，确保最后一次更新一定会被执行
 export const updateNoteContentIncrementalThrottled = throttle(
   updateNoteContentIncremental,
   20,
-  false
+  true
 );
 
 /**

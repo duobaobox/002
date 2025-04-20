@@ -221,6 +221,39 @@ export class App {
       this.updateNoteOnServer(e.detail.id);
     });
 
+    // 监听取消AI生成事件
+    document.addEventListener("cancel-ai-generation", async (e) => {
+      // 取消当前的生成请求 - 使用异步方法
+      const canceled = await this.cancelGeneration();
+
+      // 如果成功取消，显示消息并恢复按钮状态
+      if (canceled) {
+        this.showMessage("已取消AI生成", "info");
+
+        // 恢复按钮和输入框状态
+        const generateButton = document.getElementById("ai-generate");
+        const promptElement = document.getElementById("ai-prompt");
+
+        if (generateButton) {
+          generateButton.disabled = false;
+          generateButton.classList.remove("generating");
+        }
+
+        if (promptElement) {
+          promptElement.disabled = false;
+        }
+
+        // 移除临时便签
+        const noteId = e.detail.noteId;
+        if (noteId && noteId.startsWith("temp-ai-note-")) {
+          const noteElement = document.getElementById(noteId);
+          if (noteElement) {
+            noteElement.remove();
+          }
+        }
+      }
+    });
+
     // 监听输入框内容变化
     const promptElement = document.getElementById("ai-prompt");
     promptElement.addEventListener("input", () => {
@@ -762,6 +795,11 @@ export class App {
         promptElement.placeholder = "请输入文本";
       }, 2000);
       return;
+    }
+
+    // 清除已取消的便签列表，开始新的生成
+    if (this.canceledNoteIds) {
+      this.canceledNoteIds.clear();
     }
 
     // 更新连接状态为生成中
@@ -2535,6 +2573,14 @@ export class App {
     const abortController = new AbortController();
     this.currentAbortController = abortController;
 
+    // 保存当前会话信息，以便取消时使用
+    this.currentSessionId = connection.sessionId;
+    this.currentNoteElement = noteElement;
+
+    // 保存便签 ID，以便取消时使用
+    const noteId = noteElement.id;
+    this.currentNoteId = noteId;
+
     try {
       // 初始化内容元素
       const previewElement = noteElement.querySelector(".markdown-preview");
@@ -2547,6 +2593,12 @@ export class App {
         // 设置消息处理器
         const messageHandler = (event) => {
           try {
+            // 检查便签是否已被取消
+            if (this.canceledNoteIds && this.canceledNoteIds.has(noteId)) {
+              console.log(`已跳过已取消便签 ${noteId} 的消息处理`);
+              return; // 已取消，不处理消息
+            }
+
             const data = JSON.parse(event.data);
 
             switch (data.event) {
@@ -2555,6 +2607,12 @@ export class App {
                 break;
 
               case "chunk":
+                // 再次检查便签是否已被取消
+                if (this.canceledNoteIds && this.canceledNoteIds.has(noteId)) {
+                  console.log(`已跳过已取消便签 ${noteId} 的内容块处理`);
+                  return; // 已取消，不处理消息
+                }
+
                 // 提取新块和完整文本
                 const chunk = data.chunk || "";
                 fullText = data.fullText || fullText + chunk;
@@ -2565,9 +2623,29 @@ export class App {
                   chunk,
                   fullText
                 );
+
+                // 更新生成进度指示器
+                this.updateGenerationProgress(noteElement, fullText);
                 break;
 
               case "end":
+                // 检查便签是否已被取消
+                if (this.canceledNoteIds && this.canceledNoteIds.has(noteId)) {
+                  console.log(`已跳过已取消便签 ${noteId} 的完成处理`);
+                  // 移除事件监听器
+                  if (connection.eventSource) {
+                    connection.eventSource.removeEventListener(
+                      "message",
+                      messageHandler
+                    );
+                  }
+                  // 释放连接
+                  connectionManager.releaseConnection(true);
+                  // 拒绝Promise，因为已取消
+                  reject(new Error("生成已取消"));
+                  return;
+                }
+
                 // 移除事件监听器
                 if (connection.eventSource) {
                   connection.eventSource.removeEventListener(
@@ -2575,16 +2653,47 @@ export class App {
                     messageHandler
                   );
                 }
-                // 生成完成，不需要额外处理
+                // 生成完成
+
+                // 更新进度指示器显示最终字符数
+                const progressElement = noteElement.querySelector(
+                  ".generation-progress"
+                );
+                if (progressElement) {
+                  const charCount = fullText.length;
+                  progressElement.innerHTML = `<span class='chars-count'>${charCount}</span> 字符 (完成)`;
+                }
+
                 // 释放连接
                 connectionManager.releaseConnection(true);
                 // 清除当前的 AbortController
                 this.currentAbortController = null;
+                // 清除当前会话信息
+                this.currentSessionId = null;
+                this.currentNoteElement = null;
+                this.currentNoteId = null;
                 // 完成Promise
                 resolve(fullText);
                 break;
 
               case "error":
+                // 检查便签是否已被取消
+                if (this.canceledNoteIds && this.canceledNoteIds.has(noteId)) {
+                  console.log(`已跳过已取消便签 ${noteId} 的错误处理`);
+                  // 移除事件监听器
+                  if (connection.eventSource) {
+                    connection.eventSource.removeEventListener(
+                      "message",
+                      messageHandler
+                    );
+                  }
+                  // 释放连接
+                  connectionManager.releaseConnection(false);
+                  // 拒绝Promise，因为已取消
+                  reject(new Error("生成已取消"));
+                  return;
+                }
+
                 // 移除事件监听器
                 if (connection.eventSource) {
                   connection.eventSource.removeEventListener(
@@ -2596,6 +2705,10 @@ export class App {
                 connectionManager.releaseConnection(false);
                 // 清除当前的 AbortController
                 this.currentAbortController = null;
+                // 清除当前会话信息
+                this.currentSessionId = null;
+                this.currentNoteElement = null;
+                this.currentNoteId = null;
                 // 拒绝Promise
                 reject(new Error(data.message || "生成过程中发生错误"));
                 break;
@@ -2706,12 +2819,59 @@ export class App {
     }
   }
 
+  // 更新生成进度指示器 - 只显示字符数，不显示估计百分比
+  updateGenerationProgress(noteElement, fullText) {
+    // 获取字符计数元素
+    const charsCountElement = noteElement.querySelector(".chars-count");
+    if (!charsCountElement) return;
+
+    // 更新字符数
+    const charCount = fullText.length;
+    charsCountElement.textContent = charCount;
+
+    // 更新进度元素，只显示字符数
+    const progressElement = noteElement.querySelector(".generation-progress");
+    if (progressElement) {
+      progressElement.innerHTML = `<span class='chars-count'>${charCount}</span> 字符`;
+    }
+  }
+
   // 取消当前的AI生成请求
-  cancelGeneration() {
-    if (this.currentAbortController) {
+  async cancelGeneration() {
+    if (this.currentAbortController && this.currentSessionId) {
       console.log("取消AI生成请求");
-      this.currentAbortController.abort();
-      this.currentAbortController = null;
+
+      try {
+        // 首先中止当前请求
+        this.currentAbortController.abort();
+
+        // 尝试通知服务器关闭连接
+        await fetch(`/api/close-connection/${this.currentSessionId}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        // 标记当前便签为已取消，防止后续消息处理
+        if (this.currentNoteId) {
+          // 将便签 ID 添加到已取消列表中
+          if (!this.canceledNoteIds) {
+            this.canceledNoteIds = new Set();
+          }
+          this.canceledNoteIds.add(this.currentNoteId);
+        }
+      } catch (error) {
+        console.error("取消生成时出错:", error);
+        // 即使出错也继续处理
+      } finally {
+        // 清除当前状态
+        this.currentAbortController = null;
+        this.currentSessionId = null;
+        this.currentNoteElement = null;
+        this.currentNoteId = null;
+      }
+
       return true;
     }
     return false;
