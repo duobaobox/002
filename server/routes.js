@@ -29,6 +29,13 @@ import {
   // User functions
   validateUserLogin,
   updateUserPassword,
+  createUser,
+  // Invite code functions
+  createInviteCode,
+  getAvailableInviteCodes,
+  deleteInviteCode,
+  validateInviteCode,
+  markInviteCodeAsUsed,
   // Import dbFilePath
   dbFilePath,
 } from "./database.js";
@@ -39,6 +46,61 @@ import path from "path";
 const router = express.Router();
 
 // --- 认证路由 ---
+
+// 注册
+router.post("/register", async (req, res) => {
+  try {
+    const { username, password, inviteCode } = req.body;
+
+    // 基础验证
+    if (!username || !password || !inviteCode) {
+      return res.status(400).json({
+        success: false,
+        message: "用户名、密码和邀请码都必须提供",
+      });
+    }
+
+    // 验证邀请码
+    const isValidInviteCode = await validateInviteCode(inviteCode);
+    if (!isValidInviteCode) {
+      return res.status(400).json({
+        success: false,
+        message: "邀请码无效或已被使用",
+      });
+    }
+
+    // 创建用户
+    try {
+      const newUser = await createUser(username, password);
+
+      // 标记邀请码为已使用
+      await markInviteCodeAsUsed(inviteCode, newUser.id);
+
+      res.status(201).json({
+        success: true,
+        message: "注册成功",
+        user: {
+          id: newUser.id,
+          username: newUser.username,
+        },
+      });
+    } catch (error) {
+      if (error.message === "用户名已存在") {
+        return res.status(400).json({
+          success: false,
+          message: "用户名已被使用",
+        });
+      }
+      throw error; // 其他错误继续抛出
+    }
+  } catch (error) {
+    console.error("注册失败:", error);
+    res.status(500).json({
+      success: false,
+      message: "注册过程中发生错误",
+    });
+  }
+});
 
 // 登录
 router.post("/login", async (req, res) => {
@@ -168,6 +230,61 @@ router.use("/settings", requireAuth);
 router.use("/database", requireAuth);
 router.use("/test-ai-connection", requireAuth);
 router.use("/api-history", requireAuth);
+router.use("/invite-codes", requireAuth);
+
+// --- 邀请码管理路由 ---
+
+// 获取所有可用邀请码
+router.get("/invite-codes", async (req, res) => {
+  try {
+    const inviteCodes = await getAvailableInviteCodes();
+    res.json({ success: true, inviteCodes });
+  } catch (error) {
+    console.error("获取邀请码失败:", error);
+    res.status(500).json({
+      success: false,
+      message: "无法获取邀请码",
+    });
+  }
+});
+
+// 创建新邀请码
+router.post("/invite-codes", async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const inviteCode = await createInviteCode(userId);
+    res.status(201).json({ success: true, inviteCode });
+  } catch (error) {
+    console.error("创建邀请码失败:", error);
+    res.status(500).json({
+      success: false,
+      message: "无法创建邀请码",
+    });
+  }
+});
+
+// 删除邀请码
+router.delete("/invite-codes/:code", async (req, res) => {
+  try {
+    const code = req.params.code;
+    const success = await deleteInviteCode(code);
+
+    if (success) {
+      res.json({ success: true, message: "邀请码已删除" });
+    } else {
+      res.status(404).json({
+        success: false,
+        message: "邀请码不存在或无法删除",
+      });
+    }
+  } catch (error) {
+    console.error("删除邀请码失败:", error);
+    res.status(500).json({
+      success: false,
+      message: "无法删除邀请码",
+    });
+  }
+});
 
 // --- Note Routes ---
 

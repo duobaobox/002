@@ -14,6 +14,10 @@
     <link rel="stylesheet" href="css/main.css">
     <!-- 引入自定义样式，用于优化界面 -->
     <link rel="stylesheet" href="css/custom-styles.css">
+    <!-- 引入个人中心样式 -->
+    <link rel="stylesheet" href="css/profile.css">
+    <!-- 引入邀请码管理样式 -->
+    <link rel="stylesheet" href="css/invite-code.css">
     <!-- 添加 marked.js 库 -->
     <script src="https://cdn.jsdelivr.net/npm/marked@3.0.8/marked.min.js"></script>
     <!-- 添加 highlight.js 用于代码高亮（可选） -->
@@ -384,6 +388,49 @@
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 阅读模式弹窗 -->
+        <div class="reading-modal" id="reading-modal">
+            <div class="reading-container">
+                <div class="reading-header">
+                    <h2>阅读模式</h2>
+                    <button class="close-reading zoom-btn" id="close-reading">&times;</button>
+                </div>
+
+                <div class="reading-content">
+                    <!-- 左侧便签列表 -->
+                    <div class="reading-nav">
+                        <!-- 便签列表会通过 JavaScript 动态添加 -->
+                        <!-- 结构示例: -->
+                        <!-- <button class="nav-item active" data-note-id="123">便签标题 1</button> -->
+                        <!-- <button class="nav-item" data-note-id="456">便签标题 2</button> -->
+                    </div>
+
+                    <!-- 右侧便签内容 -->
+                    <div class="reading-panels">
+                        <!-- 内容面板会通过 JavaScript 动态添加 -->
+                        <!-- 结构示例: -->
+                        <!-- <div class="reading-panel active" id="note-123-panel">
+                            <div class="note-content markdown-content">便签内容...</div>
+                        </div> -->
+
+                        <!-- 无便签时显示的信息 -->
+                        <div class="no-notes-message" id="no-notes-message">
+                            <p>暂无便签可阅读</p>
+                            <p>请先添加便签，或通过 AI 生成便签</p>
+                        </div>
+
+                        <!-- 功能区域 - 仅在右侧文本区域下方 -->
+                        <div class="reading-panel-footer">
+                            <div class="reading-panel-actions">
+                                <!-- 这里将来可以放置各种功能按钮 -->
+                                <div class="reading-actions-placeholder">功能区域（待开发）</div>
                             </div>
                         </div>
                     </div>

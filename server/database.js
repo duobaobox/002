@@ -705,6 +705,48 @@ async function markInviteCodeAsUsed(code, userId) {
 }
 
 /**
+ * 创建新用户
+ * @param {string} username 用户名
+ * @param {string} password 密码
+ * @returns {Promise<object>} 创建的用户对象
+ */
+async function createUser(username, password) {
+  if (!db) throw new Error("数据库未初始化");
+
+  try {
+    // 检查用户名是否已存在
+    const existingUser = await dbGet(
+      "SELECT id FROM users WHERE username = ?",
+      [username]
+    );
+
+    if (existingUser) {
+      throw new Error("用户名已存在");
+    }
+
+    // 对密码进行哈希处理
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // 创建新用户
+    const result = await dbRun(
+      "INSERT INTO users (username, password) VALUES (?, ?)",
+      [username, hashedPassword]
+    );
+
+    // 返回创建的用户对象（不包含密码）
+    return {
+      id: result.lastID,
+      username,
+      createdAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error("创建用户失败:", error);
+    throw error;
+  }
+}
+
+/**
  * 生成随机邀请码
  * @param {number} length 长度
  * @returns {string} 随机码
@@ -1049,6 +1091,7 @@ export {
   dbFilePath,
   validateUserLogin,
   updateUserPassword,
+  createUser,
   createInviteCode,
   getAvailableInviteCodes,
   deleteInviteCode,

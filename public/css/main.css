@@ -612,3 +612,346 @@ input[list]:focus::-webkit-calendar-picker-indicator {
 .custom-select-dropdown::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* 阅读模式弹窗样式 - 修改为抽屉模式 */
+.reading-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 10001;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.reading-modal.visible {
+  display: flex;
+  opacity: 1;
+  justify-content: center;
+  align-items: flex-end; /* 改为底部对齐，从下往上弹出 */
+}
+
+.reading-container {
+  background-color: #fff;
+  width: 98%; /* 调整为屏幕宽度的98% */
+  height: 95%; /* 调整为屏幕高度的95% */
+  border-radius: 12px 12px 0 0; /* 只保留顶部圆角 */
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateY(100%); /* 初始位置在屏幕底部外 */
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* 添加平滑过渡效果 */
+  /* 确保容器内容正确布局 */
+  max-height: 95vh;
+}
+
+.reading-modal.visible .reading-container {
+  transform: translateY(0); /* 显示时滑入屏幕 */
+}
+
+/* 其他阅读模式样式保持不变 */
+.reading-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.reading-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.close-reading {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+}
+
+.reading-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 左侧便签列表导航 */
+.reading-nav {
+  width: 250px;
+  border-right: 1px solid #e0e0e0;
+  overflow-y: auto;
+  padding: 15px 0;
+  background-color: #f7f9fc;
+}
+
+.reading-nav .nav-item {
+  display: block;
+  width: 100%;
+  padding: 12px 20px;
+  text-align: left;
+  background: none;
+  border: none;
+  border-left: 3px solid transparent;
+  font-size: 0.95rem;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reading-nav .nav-item:hover {
+  background-color: #edf1f7;
+  color: #333;
+}
+
+.reading-nav .nav-item.active {
+  background-color: #e6eef7;
+  border-left-color: #4285f4;
+  color: #4285f4;
+  font-weight: 500;
+}
+
+/* 右侧便签内容面板 */
+.reading-panels {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 20px 70px 20px; /* 增加底部内边距，为功能区域留出空间 */
+  position: relative;
+}
+
+.reading-panel {
+  display: none;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.reading-panel.active {
+  display: block;
+}
+
+.reading-panel .note-content {
+  line-height: 1.6;
+  color: #333;
+}
+
+/* 无便签时的提示 */
+.no-notes-message {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: #888;
+  text-align: center;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.no-notes-message p:first-child {
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+/* 阅读模式面板内容样式 */
+.reading-panel-content {
+  line-height: 1.6;
+  color: #333;
+  font-size: 14px;
+  padding: 15px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.reading-panel-content p {
+  margin-bottom: 1em;
+}
+
+.reading-panel-content h1,
+.reading-panel-content h2,
+.reading-panel-content h3,
+.reading-panel-content h4,
+.reading-panel-content h5,
+.reading-panel-content h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.reading-panel-content h1 {
+  font-size: 2em;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.3em;
+}
+
+.reading-panel-content h2 {
+  font-size: 1.5em;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.3em;
+}
+
+.reading-panel-content h3 {
+  font-size: 1.25em;
+}
+
+.reading-panel-content h4 {
+  font-size: 1em;
+}
+
+.reading-panel-content ul,
+.reading-panel-content ol {
+  padding-left: 2em;
+  margin-bottom: 1em;
+}
+
+.reading-panel-content ul li,
+.reading-panel-content ol li {
+  margin-bottom: 0.25em;
+}
+
+.reading-panel-content pre {
+  background-color: #f6f8fa;
+  border-radius: 3px;
+  padding: 16px;
+  overflow: auto;
+  margin-bottom: 1em;
+}
+
+.reading-panel-content code {
+  font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+  background-color: rgba(27, 31, 35, 0.05);
+  border-radius: 3px;
+  padding: 0.2em 0.4em;
+}
+
+.reading-panel-content pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+.reading-panel-content blockquote {
+  margin: 0 0 1em;
+  padding: 0 1em;
+  color: #6a737d;
+  border-left: 0.25em solid #dfe2e5;
+}
+
+.reading-panel-content img {
+  max-width: 100%;
+  margin: 1em 0;
+}
+
+.reading-panel-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 1em;
+  overflow-x: auto;
+  display: block;
+}
+
+.reading-panel-content table th,
+.reading-panel-content table td {
+  padding: 6px 13px;
+  border: 1px solid #dfe2e5;
+}
+
+.reading-panel-content table tr {
+  background-color: #fff;
+  border-top: 1px solid #c6cbd1;
+}
+
+.reading-panel-content table tr:nth-child(2n) {
+  background-color: #f6f8fa;
+}
+
+/* 优化阅读面板的滚动条 */
+.reading-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.reading-panel::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.reading-panel::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+.reading-panel::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+/* 阅读模式加载指示器样式 */
+.reading-loading {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 20px;
+}
+
+.reading-loading p {
+  margin-top: 15px;
+  color: #666;
+  font-size: 14px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(0, 113, 227, 0.1);
+  border-radius: 50%;
+  border-top-color: #0071e3;
+  animation: spinner 0.8s linear infinite;
+}
+
+@keyframes spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 阅读模式右侧文本区域底部功能区域样式 */
+.reading-panel-footer {
+  border-top: 1px solid #e0e0e0;
+  padding: 12px 20px;
+  background-color: #f9f9f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 50px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+}
+
+.reading-panel-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  justify-content: center;
+}
+
+.reading-actions-placeholder {
+  color: #888;
+  font-size: 14px;
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

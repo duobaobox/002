@@ -3,6 +3,8 @@
  * 负责管理画布和便签容器的缩放、平移等操作
  */
 
+import ReadingMode from "../ui/ReadingMode.js";
+
 export class Canvas {
   constructor() {
     this.canvas = document.getElementById("note-canvas");
@@ -27,6 +29,9 @@ export class Canvas {
 
     // 初始化性能优化的事件处理
     this.setupEvents();
+
+    // 初始化阅读模式
+    this.readingMode = new ReadingMode();
 
     // 将Canvas实例存储为全局变量，便于其他模块访问
     window.canvasInstance = this;
@@ -115,12 +120,20 @@ export class Canvas {
     zoomResetBtn.title = "重置缩放";
     zoomResetBtn.addEventListener("click", () => this.resetZoom());
 
+    // 创建阅读模式按钮 - 放在重置按钮下方
+    const readModeBtn = document.createElement("button");
+    readModeBtn.className = "zoom-btn read-mode-btn"; // 添加特定类名
+    readModeBtn.innerHTML = "📖"; // 书本图标
+    readModeBtn.title = "切换阅读模式";
+    readModeBtn.addEventListener("click", () => this.openReadingMode());
+
     // 组装控制器 - 调整顺序为从上到下
     zoomControls.appendChild(settingsBtn);
     zoomControls.appendChild(zoomInBtn);
     zoomControls.appendChild(zoomDisplay);
     zoomControls.appendChild(zoomOutBtn);
     zoomControls.appendChild(zoomResetBtn);
+    zoomControls.appendChild(readModeBtn); // 添加新按钮
 
     // 添加到DOM
     document.querySelector(".canvas-container").appendChild(zoomControls);
@@ -334,6 +347,17 @@ export class Canvas {
    */
   getOffset() {
     return { x: this.offset.x, y: this.offset.y };
+  }
+
+  /**
+   * 打开阅读模式弹窗
+   */
+  openReadingMode() {
+    // 获取所有便签
+    const notes = document.querySelectorAll(".note");
+
+    // 使用阅读模式组件打开弹窗
+    this.readingMode.open(notes);
   }
 }
 

@@ -1058,7 +1058,7 @@ export class App {
   }
 
   // 初始化设置弹窗
-  initSettingsModal() {
+  async initSettingsModal() {
     // 不需要获取设置按钮，因为我们在canvas.js中处理了
     const settingsModal = document.getElementById("settings-modal");
     const closeSettings = document.getElementById("close-settings");
@@ -1069,8 +1069,9 @@ export class App {
     const themeOptions = document.querySelectorAll(".theme-option");
     const rangeInputs = document.querySelectorAll('input[type="range"]');
 
-    // 移除对不存在方法的调用
-    // this.initCustomModelSelect();
+    // 导入设置面板模块
+    const { initSettingsPanel } = await import("../settings/SettingsPanel.js");
+    initSettingsPanel();
 
     // 如果需要，可以在这里直接添加自定义模型选择器的初始化代码
     this.setupModelSelector();
