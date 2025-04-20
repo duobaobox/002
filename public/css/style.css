@@ -667,9 +667,10 @@ button {
   border: 1px solid rgba(0, 0, 0, 0.05) !important;
 }
 
-.note:hover .edit-hint {
+/* 移除悬停时显示编辑提示的规则，由JavaScript控制 */
+/* .note:hover .edit-hint {
   opacity: 0.9 !important;
-}
+} */
 
 .markdown-preview h1,
 .markdown-preview h2,

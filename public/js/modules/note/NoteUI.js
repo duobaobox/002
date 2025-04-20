@@ -44,12 +44,15 @@ export function updateEditHintVisibility(element, editMode) {
   const editHint = element.querySelector(".edit-hint");
   if (!editHint) return;
 
+  // 始终隐藏编辑提示，只在鼠标悬停时显示
   if (editMode) {
     editHint.style.opacity = "0";
     editHint.style.pointerEvents = "none";
   } else {
-    editHint.style.opacity = "1"; // 在预览模式下显示提示
-    editHint.style.pointerEvents = "auto"; // 预览模式下可点击
+    // 默认也隐藏，只在mouseenter事件中显示
+    editHint.style.opacity = "0";
+    editHint.style.pointerEvents = "none";
+    // 注意：不在这里设置为可见，而是由mouseenter事件控制
   }
 }
 
