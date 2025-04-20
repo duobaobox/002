@@ -955,11 +955,11 @@ export class App {
         // 添加到notes数组
         this.notes.push(note);
 
-        // 添加高亮效果
+        // 添加苹果风格的AI高亮效果
         note.element.classList.add("new-note-highlight");
         setTimeout(() => {
           note.element.classList.remove("new-note-highlight");
-        }, 1500);
+        }, 2000);
 
         // 清空输入框
         document.getElementById("ai-prompt").value = "";
