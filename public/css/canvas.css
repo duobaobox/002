@@ -57,6 +57,7 @@
   background-size: 30px 30px;
   z-index: 0;
   will-change: transform; /* 性能优化 */
+  transition: none; /* 移除过渡效果 */
 }
 
 /* 装饰性背景容器 - 用于放置视觉元素 */
@@ -97,8 +98,11 @@
   left: 0;
   width: 100%;
   height: 100%;
-  transition: transform 0.2s ease; /* 平滑过渡效果 */
+  transition: none; /* 移除过渡效果，确保即时响应 */
   pointer-events: none; /* 默认不接收鼠标事件，传递给画布 */
+  will-change: transform; /* 性能优化，提前告知浏览器此元素会变换 */
+  transform-style: flat; /* 性能优化，不创建新的渲染上下文 */
+  backface-visibility: hidden; /* 性能优化 */
 }
 
 /* 便签容器 */
@@ -108,6 +112,7 @@
   height: 100%;
   z-index: 1;
   will-change: transform; /* 性能优化 */
+  transition: none; /* 移除过渡效果 */
 }
 
 /* 单个便签样式 */

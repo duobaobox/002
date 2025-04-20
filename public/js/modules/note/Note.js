@@ -32,8 +32,11 @@ export class Note {
   constructor(id, text = "", x = 50, y = 50, title = "", colorClass = null) {
     this.id = id;
     this.text = text;
+
+    // 将传入的坐标视为画布坐标系中的位置
     this.x = x;
     this.y = y;
+
     this.title = title || `便签 ${id}`; // 默认标题为"便签+id"
     this.element = null;
     this.isDragging = false;
@@ -78,6 +81,8 @@ export class Note {
     this.colorClass = colorClass;
 
     note.className = "note " + colorClass;
+
+    // 设置便签位置 - 直接使用保存的画布坐标
     note.style.left = `${this.x}px`;
     note.style.top = `${this.y}px`;
 
@@ -120,7 +125,7 @@ export class Note {
         noteContainer.style.height = "100%";
         noteContainer.style.top = "0";
         noteContainer.style.left = "0";
-        noteContainer.style.transformOrigin = "center center";
+        noteContainer.style.transformOrigin = "0 0";
 
         // 添加到画布
         canvas.appendChild(noteContainer);
