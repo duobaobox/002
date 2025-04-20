@@ -51,28 +51,46 @@ app.use(
   })
 );
 
-// 添加速率限制
+// 添加速率限制 - 使用更宽松的设置
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15分钟
-  max: 100, // 每个IP在windowMs时间内最多请求100次
+  max: 500, // 每个IP在windowMs时间内最多请求500次
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: "请求过于频繁，请稍后再试" },
+  // 添加跳过限流的函数，对于本地请求不进行限制
+  skip: (req, res) => {
+    const clientIp = req.ip || req.socket.remoteAddress;
+    return (
+      clientIp === "127.0.0.1" ||
+      clientIp === "::1" ||
+      clientIp.includes("::ffff:127.0.0.1")
+    );
+  },
 });
 
 // 给API路由添加速率限制保护
 app.use("/api/", apiLimiter);
 
-// AI生成特殊限制
+// AI生成特殊限制 - 使用更宽松的设置
 const aiGenerateLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10分钟
-  max: 10, // 每个IP在windowMs时间内最多请求10次
+  max: 50, // 每个IP在windowMs时间内最多请求50次
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: "AI生成请求过于频繁，请稍后再试" },
+  // 添加跳过限流的函数，对于本地请求不进行限制
+  skip: (req, res) => {
+    const clientIp = req.ip || req.socket.remoteAddress;
+    return (
+      clientIp === "127.0.0.1" ||
+      clientIp === "::1" ||
+      clientIp.includes("::ffff:127.0.0.1")
+    );
+  },
 });
 
-// 给AI生成接口添加更严格的速率限制
+// 给AI生成接口添加速率限制
 app.use("/api/generate", aiGenerateLimiter);
 
 // 会话配置

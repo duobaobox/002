@@ -521,23 +521,27 @@
 /* .message-success { ... } */
 /* etc. */
 
-/* 可以在这里添加新的高亮效果样式 */
+/* AI生成便签的高亮效果 - 苹果风格阴影 */
 .new-note-highlight {
-  animation: highlight-fade 1.5s ease-out;
+  animation: apple-style-glow 2s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-@keyframes highlight-fade {
+/* 苹果风格的柔和阴影效果 */
+@keyframes apple-style-glow {
   0% {
-    box-shadow: 0 0 0 8px rgba(76, 175, 80, 0.5); /* 初始绿色高亮 */
-    transform: scale(1.02);
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2), 0 0 8px rgba(0, 122, 255, 0.3),
+      0 0 16px rgba(0, 122, 255, 0.1);
   }
-  70% {
-    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); /* 阴影消失 */
-    transform: scale(1);
+  30% {
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.15),
+      0 0 8px rgba(0, 122, 255, 0.25), 0 0 16px rgba(0, 122, 255, 0.08);
+  }
+  60% {
+    box-shadow: 0 0 0 1px rgba(0, 122, 255, 0.1),
+      0 0 6px rgba(0, 122, 255, 0.15), 0 0 12px rgba(0, 122, 255, 0.05);
   }
   100% {
     box-shadow: none;
-    transform: scale(1);
   }
 }
 
