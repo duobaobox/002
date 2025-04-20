@@ -1,0 +1,192 @@
+/* 邀请码管理样式 */
+
+.invite-code-manager {
+  padding: 15px 0;
+}
+
+.invite-code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.invite-code-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+.invite-code-list-container {
+  min-height: 100px;
+}
+
+.invite-code-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.invite-code-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background-color: #f5f5f7;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.invite-code-item:hover {
+  background-color: #eaeaeb;
+}
+
+.invite-code-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.invite-code-value {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 16px;
+  font-weight: 500;
+  color: #0071e3;
+  letter-spacing: 1px;
+}
+
+.invite-code-date {
+  font-size: 12px;
+  color: #86868b;
+}
+
+.invite-code-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background-color: transparent;
+  color: #86868b;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.btn-icon:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #1d1d1f;
+}
+
+.btn-icon:active {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.copy-invite-code:hover {
+  color: #0071e3;
+}
+
+.delete-invite-code:hover {
+  color: #ff3b30;
+}
+
+.no-invite-codes {
+  text-align: center;
+  padding: 20px;
+  color: #86868b;
+}
+
+.loading-indicator {
+  text-align: center;
+  padding: 20px;
+  color: #86868b;
+}
+
+.error-message {
+  text-align: center;
+  padding: 15px;
+  color: #ff3b30;
+  background-color: rgba(255, 59, 48, 0.1);
+  border-radius: 6px;
+}
+
+/* Toast 通知样式 */
+.toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 9999;
+}
+
+.toast {
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  color: #fff;
+  font-size: 14px;
+  max-width: 300px;
+  animation: toast-in 0.3s ease-out;
+}
+
+.toast.success {
+  background-color: #34c759;
+}
+
+.toast.error {
+  background-color: #ff3b30;
+}
+
+.toast.fade-out {
+  animation: toast-out 0.3s ease-in forwards;
+}
+
+@keyframes toast-in {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-out {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .invite-code-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .invite-code-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .invite-code-actions {
+    align-self: flex-end;
+  }
+}

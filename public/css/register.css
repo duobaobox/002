@@ -1,0 +1,91 @@
+/* 注册页面特定样式 */
+
+/* 调整表单间距 */
+.login-form .form-group {
+  margin-bottom: 16px;
+}
+
+/* 邀请码输入框样式 */
+#invite-code {
+  letter-spacing: 1px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+/* 密码强度指示器 */
+.password-strength {
+  margin-top: 5px;
+  height: 4px;
+  border-radius: 2px;
+  background-color: #e0e0e0;
+  overflow: hidden;
+}
+
+.password-strength-bar {
+  height: 100%;
+  width: 0;
+  transition: width 0.3s, background-color 0.3s;
+}
+
+.password-strength-bar.weak {
+  width: 33%;
+  background-color: #ff3b30;
+}
+
+.password-strength-bar.medium {
+  width: 66%;
+  background-color: #ff9500;
+}
+
+.password-strength-bar.strong {
+  width: 100%;
+  background-color: #34c759;
+}
+
+.password-strength-text {
+  font-size: 12px;
+  margin-top: 5px;
+  color: #86868b;
+}
+
+/* 密码匹配指示器 */
+.password-match {
+  font-size: 12px;
+  margin-top: 5px;
+  color: #86868b;
+}
+
+.password-match.match {
+  color: #34c759;
+}
+
+.password-match.mismatch {
+  color: #ff3b30;
+}
+
+/* 登录提示样式 */
+.login-prompt {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.login-prompt p {
+  font-size: 14px;
+  color: #1d1d1f;
+}
+
+.login-prompt a {
+  color: #0071e3;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.login-prompt a:hover {
+  text-decoration: underline;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .login-form-wrapper {
+    padding: 20px;
+  }
+}
