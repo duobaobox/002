@@ -906,13 +906,6 @@ input[type="range"]::-webkit-slider-thumb {
   margin-top: 0;
 }
 
-/* OpenRouter模型选项高亮显示 */
-.select-option[data-value*="/"] {
-  color: #1a73e8;
-  border-left: 2px solid #1a73e8;
-  padding-left: 12px;
-}
-
 /* 免费模型特殊标记 */
 .select-option[data-value*=":free"] {
   background-color: #e8f5e9;
@@ -958,8 +951,6 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 /* 模型分组标签已定义 */
-
-/* OpenRouter模型选项高亮显示已定义 */
 
 /* 免费模型特殊标记已定义 */
 
