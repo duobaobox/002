@@ -11,41 +11,48 @@ import { updateScrollbar } from "../utils/MarkdownUtils.js";
  * @returns {{noteElement: HTMLElement, noteId: string}} 创建的便签元素和 ID
  */
 export function createEmptyAiNote() {
-  // 获取画布缩放比例
-  const getCanvasScale = () => {
-    if (
-      window.canvasInstance &&
-      typeof window.canvasInstance.getScale === "function"
-    ) {
-      return window.canvasInstance.getScale();
-    }
+  // 计算屏幕可见区域内的位置 - 确保便签生成在屏幕内
+  // 获取画布实例以便进行坐标转换
+  const canvas = window.canvasInstance;
 
-    // 如果无法获取，尝试从 DOM 元素计算
-    const noteContainer = document.getElementById("note-container");
-    if (!noteContainer) return 1.0;
+  // 默认位置（如果无法获取画布实例）
+  let x = 100 + Math.random() * 200;
+  let y = 100 + Math.random() * 200;
 
-    const transform = getComputedStyle(noteContainer).transform;
-    if (transform === "none") return 1.0;
+  if (canvas) {
+    // 获取视口尺寸
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
 
-    try {
-      const matrixValues = transform.match(/matrix.*\((.+)\)/)[1].split(", ");
-      if (matrixValues.length >= 4) {
-        return parseFloat(matrixValues[0]);
-      }
-    } catch (e) {
-      console.warn("无法解析画布缩放比例", e);
-    }
+    // 获取当前已存在的便签数量，用于计算错开位置
+    const existingNotes = document.querySelectorAll(".note").length;
 
-    return 1.0;
-  };
+    // 计算屏幕居中偏左上的基准位置
+    const baseScreenX = Math.max(viewportWidth * 0.25, 80);
+    const baseScreenY = Math.max(viewportHeight * 0.15, 60);
 
-  // 获取当前画布缩放比例
-  const scale = getCanvasScale();
+    // 根据已存在的便签数量计算错开位置
+    // 使用错开模式，每个新便签都会在基准位置的基础上错开一定距离
+    const offsetX = (existingNotes % 5) * 60; // 每个便签水平错开60像素
+    const offsetY = Math.floor(existingNotes / 5) * 80; // 每行5个便签，每行垂直错开80像素
 
-  // 随机位置 - 使用画布坐标系
-  // 位置在画布中心区域，不受缩放影响
-  const x = 100 + Math.random() * 200;
-  const y = 100 + Math.random() * 200;
+    // 计算最终的屏幕坐标，并添加少量随机性
+    const screenX = baseScreenX + offsetX + (Math.random() * 20 - 10);
+    const screenY = baseScreenY + offsetY + (Math.random() * 20 - 10);
+
+    // 将屏幕坐标转换为画布坐标
+    const canvasPos = canvas.screenToCanvasPosition(screenX, screenY);
+    x = canvasPos.x;
+    y = canvasPos.y;
+
+    console.log("便签生成位置(画布坐标):", {
+      x,
+      y,
+      existingNotes,
+      offsetX,
+      offsetY,
+    });
+  }
 
   // 随机颜色
   const colorClasses = [
@@ -198,7 +205,7 @@ function createTempNoteContent(note, noteId) {
 
   // 设置事件处理
   setupDragEventsForTemp(note, header);
-  setupResizeObserverForTemp(note, noteId);
+  setupResizeObserverForTemp(note);
 
   // 添加点击事件，确保便签点击时提升到最上层
   note.addEventListener("mousedown", () => {
@@ -293,9 +300,8 @@ function setupDragEventsForTemp(note, header) {
 /**
  * 为临时便签添加大小调整观察器
  * @param {HTMLElement} note - 便签元素
- * @param {string} noteId - 便签 ID
  */
-function setupResizeObserverForTemp(note, noteId) {
+function setupResizeObserverForTemp(note) {
   if (typeof ResizeObserver === "undefined") return;
 
   let lastWidth = note.offsetWidth;
