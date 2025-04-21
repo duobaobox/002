@@ -1,0 +1,966 @@
+/**
+ * 统一设置页面样式表 - settings-unified-new.css
+ *
+ * 本文件定义了设置页面的统一样式结构，实现更加一致、模块化和组件化的设计：
+ * 1. 设置弹窗基础结构：弹窗容器、头部、内容区域
+ * 2. 设置导航：左侧标签页导航
+ * 3. 设置面板：标题、内容区域、滚动区域
+ * 4. 设置卡片组件：统一的卡片样式，适用于所有设置面板
+ * 5. 表单元素：输入框、按钮等表单元素的统一样式
+ * 6. 特殊组件：Coming Soon、关于页面等特殊内容
+ * 7. 响应式布局：确保在不同设备上的一致体验
+ *
+ * 这些样式确保了所有设置页面具有一致的外观和交互体验。
+ */
+
+/* ===== 1. 设置弹窗基础结构 ===== */
+.settings-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.settings-modal.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.settings-container {
+  width: 80vw; /* 80% 的视口宽度 */
+  max-width: 80%; /* 最大宽度限制为80% */
+  height: 80vh; /* 80% 的视口高度 */
+  max-height: 80vh; /* 最大高度保持为视口高度的80% */
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateY(20px);
+  transition: transform 0.3s ease;
+  position: relative; /* 添加相对定位，便于子元素绝对定位 */
+  box-sizing: border-box; /* 确保边框和内边距不会增加总高度 */
+}
+
+.settings-modal.visible .settings-container {
+  transform: translateY(0);
+}
+
+/* 设置头部样式 */
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid #eaeaea;
+  height: 66px; /* 精确设置头部高度 */
+  box-sizing: border-box; /* 确保padding不会增加总高度 */
+  flex-shrink: 0; /* 防止头部被压缩 */
+}
+
+.settings-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.close-settings {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #f5f5f7;
+  border: none;
+  color: #333;
+  font-size: 24px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.close-settings:hover {
+  background-color: #e8e8ed;
+}
+
+.close-settings:active {
+  background: linear-gradient(to top, #e9ecef, #dee2e6);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.15);
+  transform: translateY(1px);
+}
+
+/* 设置内容区域样式 */
+.settings-content {
+  display: flex;
+  flex: 1; /* 让内容区域自动填充剩余空间 */
+  height: calc(100% - 66px); /* 精确使用头部的高度 */
+  overflow: hidden;
+  box-sizing: border-box; /* 确保padding不会增加总高度 */
+}
+
+/* ===== 2. 设置导航 ===== */
+.settings-nav {
+  width: 200px; /* 导航宽度 */
+  background-color: #f8f9fa;
+  padding: 20px 0; /* 内边距 */
+  border-right: 1px solid #eaeaea;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  height: 100%; /* 确保导航栏高度占满父容器 */
+  box-sizing: border-box; /* 确保padding不会增加总高度 */
+  flex-shrink: 0; /* 防止导航栏被压缩 */
+}
+
+.nav-item {
+  padding: 14px 24px; /* 内边距 */
+  text-align: left;
+  background: none;
+  border: none;
+  font-size: 16px; /* 字体大小 */
+  color: #333;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+  border-left: 3px solid transparent;
+}
+
+.nav-item:hover {
+  background-color: #f1f3f4;
+}
+
+.nav-item.active {
+  color: #1a73e8;
+  background-color: #e8f0fe;
+  border-left-color: #1a73e8;
+  font-weight: 500;
+}
+
+/* ===== 3. 设置面板 ===== */
+.settings-panels {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 30px; /* 内边距 */
+  height: 100%; /* 确保内容面板高度占满父容器 */
+  box-sizing: border-box; /* 确保padding不会增加总高度 */
+}
+
+.settings-panel {
+  display: none;
+  height: 100%;
+}
+
+.settings-panel.active {
+  display: flex !important; /* 使用flex布局 */
+  flex-direction: column;
+  width: 100%;
+  overflow: hidden; /* 防止内容溢出 */
+}
+
+/* 设置面板标题 */
+.settings-panel h3 {
+  font-size: 20px;
+  font-weight: 500;
+  color: #333;
+  margin: 0 0 16px 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eaeaea;
+  flex-shrink: 0; /* 防止标题被压缩 */
+}
+
+/* 设置面板内容容器 - 所有面板统一使用 */
+.settings-panel-content {
+  flex: 1;
+  overflow-y: auto; /* 内容过多时可滚动 */
+  padding-right: 10px; /* 为滚动条留出空间 */
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* 卡片之间的间距 */
+}
+
+/* ===== 4. 设置卡片组件 ===== */
+.settings-card {
+  background-color: rgba(250, 250, 250, 0.5);
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.2s ease;
+}
+
+.settings-card:hover {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* 卡片标题 */
+.settings-card-header {
+  margin-bottom: 16px;
+}
+
+.settings-card-header h4 {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  margin: 0;
+}
+
+/* ===== 5. 设置项和表单元素 ===== */
+/* 设置项样式 */
+.settings-item {
+  margin-bottom: 20px;
+}
+
+.settings-item:last-child {
+  margin-bottom: 0;
+}
+
+.settings-label {
+  margin-bottom: 8px;
+}
+
+.settings-label label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: #333;
+  font-size: 14px;
+}
+
+.settings-description {
+  display: block;
+  font-size: 13px;
+  color: #666;
+}
+
+.settings-control {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+/* 表单元素统一样式 */
+.settings-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #333;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.settings-input:focus {
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
+  outline: none;
+}
+
+/* 输入框历史记录容器 */
+.history-input-container {
+  position: relative;
+  width: 100%;
+}
+
+.history-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  max-height: 200px;
+  overflow-y: auto;
+  display: none;
+}
+
+.history-dropdown.show {
+  display: block;
+}
+
+.history-dropdown-content {
+  padding: 5px 0;
+}
+
+.history-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 14px;
+}
+
+.history-item:hover {
+  background-color: #f5f5f7;
+}
+
+.history-item-loading {
+  padding: 8px 12px;
+  color: #888;
+  font-style: italic;
+  font-size: 14px;
+}
+
+/* 密码输入框特殊样式 */
+.api-key-container {
+  position: relative;
+}
+
+.toggle-visibility {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #888;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.eye-icon {
+  width: 16px;
+  height: 16px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23888'%3E%3Cpath d='M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.toggle-visibility[data-state="visible"] .eye-icon {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23888'%3E%3Cpath d='M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z'/%3E%3C/svg%3E");
+}
+
+/* 设置操作按钮区域 */
+.settings-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+/* 主要按钮和次要按钮区域 */
+.primary-actions {
+  margin-bottom: 8px;
+  width: 100%;
+}
+
+.primary-actions .settings-button {
+  width: 100%;
+  display: block;
+}
+
+.secondary-actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.secondary-actions .settings-button {
+  flex: 1;
+  width: 50%;
+}
+
+/* 按钮样式 */
+.settings-button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.primary-button {
+  background-color: #1a73e8;
+  color: white;
+  border: none;
+}
+
+.primary-button:hover {
+  background-color: #1765cc;
+}
+
+.secondary-button {
+  background-color: #f5f5f7;
+  color: #333;
+  border: 1px solid #d2d2d7;
+}
+
+.secondary-button:hover {
+  background-color: #e8e8ed;
+}
+
+.danger-button {
+  background-color: #f5f5f7;
+  color: #d32f2f;
+  border: 1px solid #ffcdd2;
+}
+
+.danger-button:hover {
+  background-color: #ffebee;
+}
+
+/* 状态提示区域 */
+.settings-status {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  display: none;
+}
+
+.settings-status.show {
+  display: block;
+}
+
+.settings-status.success {
+  background-color: #e8f5e9;
+  color: #1b5e20;
+}
+
+.settings-status.error {
+  background-color: #ffebee;
+  color: #b71c1c;
+}
+
+.settings-status.info {
+  background-color: #e3f2fd;
+  color: #0d47a1;
+}
+
+/* ===== 6. 特殊组件样式 ===== */
+/* Coming Soon 组件 */
+.coming-soon-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 20px;
+  height: 100%;
+  background-color: #f9f9f9;
+  border-radius: 10px;
+}
+
+.coming-soon-icon {
+  width: 60px;
+  height: 60px;
+  background-color: #e8f0fe;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  color: #1a73e8;
+  font-size: 24px;
+}
+
+.coming-soon-title {
+  font-size: 20px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.coming-soon-description {
+  font-size: 16px;
+  color: #666;
+  line-height: 1.5;
+  max-width: 500px;
+  margin-bottom: 20px;
+}
+
+.coming-soon-decoration {
+  display: flex;
+  gap: 8px;
+}
+
+.decoration-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #1a73e8;
+  opacity: 0.7;
+}
+
+/* 关于页面样式 */
+.about-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 20px;
+}
+
+.app-logo {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 16px;
+}
+
+.about-content h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.version {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 16px;
+}
+
+.description {
+  font-size: 16px;
+  color: #333;
+  line-height: 1.5;
+  max-width: 500px;
+  margin-bottom: 20px;
+}
+
+.links {
+  display: flex;
+  gap: 16px;
+}
+
+.links a {
+  color: #1a73e8;
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.2s;
+}
+
+.links a:hover {
+  color: #1765cc;
+  text-decoration: underline;
+}
+
+/* 个人中心样式 */
+.profile-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.profile-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: #1a73e8;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  margin-right: 16px;
+}
+
+.profile-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-name {
+  font-size: 18px;
+  font-weight: 500;
+  color: #333;
+  margin: 0 0 4px 0;
+}
+
+.profile-badge {
+  font-size: 12px;
+  color: white;
+  background-color: #34a853;
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: inline-block;
+}
+
+.profile-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.logout-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-logout {
+  font-size: 16px;
+}
+
+/* 密码表单样式 */
+.password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 邀请码管理样式 */
+.invite-code-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.invite-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.invite-codes-list {
+  margin-top: 16px;
+}
+
+.invite-codes-list h5 {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.empty-state {
+  padding: 16px;
+  text-align: center;
+  color: #666;
+  background-color: #f5f5f7;
+  border-radius: 6px;
+}
+
+#invite-codes-container {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.invite-code-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  background-color: #f5f5f7;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.invite-code-text {
+  font-family: monospace;
+  font-size: 14px;
+  color: #333;
+}
+
+.invite-code-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.copy-code-btn {
+  background: none;
+  border: none;
+  color: #1a73e8;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 12px;
+  transition: color 0.2s;
+}
+
+.copy-code-btn:hover {
+  color: #1765cc;
+}
+
+.delete-code-btn {
+  background: none;
+  border: none;
+  color: #d32f2f;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 12px;
+  transition: color 0.2s;
+}
+
+.delete-code-btn:hover {
+  color: #b71c1c;
+}
+
+/* 文件输入样式 */
+.file-input {
+  display: none;
+}
+
+.file-input-label {
+  display: inline-block;
+  padding: 8px 16px;
+  background-color: #f5f5f7;
+  color: #333;
+  border: 1px solid #d2d2d7;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 14px;
+}
+
+.file-input-label:hover {
+  background-color: #e8e8ed;
+}
+
+/* ===== 7. 响应式布局 ===== */
+@media (max-width: 768px) {
+  .settings-container {
+    width: 95vw;
+    max-width: 95%;
+    height: 95vh;
+    max-height: 95vh;
+  }
+
+  .settings-content {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .settings-nav {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #eaeaea;
+    overflow-x: auto;
+    flex-direction: row;
+    padding: 10px 0;
+  }
+
+  .nav-item {
+    border-left: none;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+  }
+
+  .nav-item.active {
+    border-left-color: transparent;
+    border-bottom-color: #1a73e8;
+  }
+
+  .settings-panels {
+    padding: 15px;
+  }
+
+  .settings-panel-content {
+    padding-right: 0;
+  }
+
+  .settings-card {
+    padding: 12px;
+  }
+
+  .profile-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .profile-avatar {
+    margin-right: 0;
+    margin-bottom: 16px;
+  }
+
+  .profile-info {
+    align-items: center;
+  }
+
+  .secondary-actions {
+    flex-direction: row; /* 保持水平排列 */
+  }
+
+  .secondary-actions .settings-button {
+    flex: 1; /* 确保在移动设备上也是平分宽度 */
+  }
+}
+
+/* 深色模式适配 */
+@media (prefers-color-scheme: dark) {
+  .settings-container {
+    background-color: #1f1f1f;
+  }
+
+  .settings-header {
+    border-bottom-color: #333;
+  }
+
+  .settings-header h2 {
+    color: #e0e0e0;
+  }
+
+  .close-settings {
+    background-color: #333;
+    color: #e0e0e0;
+  }
+
+  .close-settings:hover {
+    background-color: #444;
+  }
+
+  .settings-nav {
+    background-color: #252525;
+    border-right-color: #333;
+  }
+
+  .nav-item {
+    color: #e0e0e0;
+  }
+
+  .nav-item:hover {
+    background-color: #333;
+  }
+
+  .nav-item.active {
+    color: #8ab4f8;
+    background-color: #2c384e;
+    border-left-color: #8ab4f8;
+  }
+
+  .settings-panel h3 {
+    color: #e0e0e0;
+    border-bottom-color: #333;
+  }
+
+  .settings-card {
+    background-color: rgba(40, 40, 40, 0.5);
+    border-color: rgba(255, 255, 255, 0.04);
+  }
+
+  .settings-card-header h4 {
+    color: #e0e0e0;
+  }
+
+  .settings-label label {
+    color: #e0e0e0;
+  }
+
+  .settings-description {
+    color: #aaa;
+  }
+
+  .settings-input {
+    background-color: #333;
+    border-color: #444;
+    color: #e0e0e0;
+  }
+
+  .settings-input:focus {
+    border-color: #8ab4f8;
+    box-shadow: 0 0 0 2px rgba(138, 180, 248, 0.1);
+  }
+
+  .history-dropdown {
+    background-color: #333;
+    border-color: #444;
+  }
+
+  .history-item:hover {
+    background-color: #444;
+  }
+
+  .secondary-button {
+    background-color: #333;
+    color: #e0e0e0;
+    border-color: #444;
+  }
+
+  .secondary-button:hover {
+    background-color: #444;
+  }
+
+  .danger-button {
+    background-color: #333;
+    color: #f44336;
+    border-color: #5c2b29;
+  }
+
+  .danger-button:hover {
+    background-color: #3c2a2a;
+  }
+
+  .coming-soon-container {
+    background-color: #2a2a2a;
+  }
+
+  .coming-soon-icon {
+    background-color: #2c384e;
+    color: #8ab4f8;
+  }
+
+  .coming-soon-title {
+    color: #e0e0e0;
+  }
+
+  .coming-soon-description {
+    color: #aaa;
+  }
+
+  .decoration-dot {
+    background-color: #8ab4f8;
+  }
+
+  .about-content h2 {
+    color: #e0e0e0;
+  }
+
+  .version {
+    color: #aaa;
+  }
+
+  .description {
+    color: #e0e0e0;
+  }
+
+  .links a {
+    color: #8ab4f8;
+  }
+
+  .links a:hover {
+    color: #adc8ff;
+  }
+
+  .profile-name {
+    color: #e0e0e0;
+  }
+
+  .empty-state {
+    background-color: #333;
+    color: #aaa;
+  }
+
+  .invite-code-item {
+    background-color: #333;
+  }
+
+  .invite-code-text {
+    color: #e0e0e0;
+  }
+
+  .file-input-label {
+    background-color: #333;
+    color: #e0e0e0;
+    border-color: #444;
+  }
+
+  .file-input-label:hover {
+    background-color: #444;
+  }
+}

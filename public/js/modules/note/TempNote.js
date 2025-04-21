@@ -11,7 +11,39 @@ import { updateScrollbar } from "../utils/MarkdownUtils.js";
  * @returns {{noteElement: HTMLElement, noteId: string}} 创建的便签元素和 ID
  */
 export function createEmptyAiNote() {
-  // 随机位置
+  // 获取画布缩放比例
+  const getCanvasScale = () => {
+    if (
+      window.canvasInstance &&
+      typeof window.canvasInstance.getScale === "function"
+    ) {
+      return window.canvasInstance.getScale();
+    }
+
+    // 如果无法获取，尝试从 DOM 元素计算
+    const noteContainer = document.getElementById("note-container");
+    if (!noteContainer) return 1.0;
+
+    const transform = getComputedStyle(noteContainer).transform;
+    if (transform === "none") return 1.0;
+
+    try {
+      const matrixValues = transform.match(/matrix.*\((.+)\)/)[1].split(", ");
+      if (matrixValues.length >= 4) {
+        return parseFloat(matrixValues[0]);
+      }
+    } catch (e) {
+      console.warn("无法解析画布缩放比例", e);
+    }
+
+    return 1.0;
+  };
+
+  // 获取当前画布缩放比例
+  const scale = getCanvasScale();
+
+  // 随机位置 - 使用画布坐标系
+  // 位置在画布中心区域，不受缩放影响
   const x = 100 + Math.random() * 200;
   const y = 100 + Math.random() * 200;
 
@@ -31,6 +63,8 @@ export function createEmptyAiNote() {
   const noteId = "temp-ai-note-" + Date.now();
   note.id = noteId;
   note.className = `note ${colorClass}`;
+
+  // 设置便签位置 - 使用画布坐标系
   note.style.left = `${x}px`;
   note.style.top = `${y}px`;
 
@@ -182,12 +216,50 @@ function setupDragEventsForTemp(note, header) {
   let dragOffsetX = 0;
   let dragOffsetY = 0;
 
+  // 获取画布缩放比例的函数
+  const getCanvasScale = () => {
+    // 尝试从全局实例获取
+    if (
+      window.canvasInstance &&
+      typeof window.canvasInstance.getScale === "function"
+    ) {
+      return window.canvasInstance.getScale();
+    }
+
+    // 如果无法获取，尝试从 DOM 元素计算
+    const noteContainer = document.getElementById("note-container");
+    if (!noteContainer) return 1.0;
+
+    // 从 transform 属性中提取缩放比例
+    const transform = getComputedStyle(noteContainer).transform;
+    if (transform === "none") return 1.0;
+
+    // 解析 matrix 变换，获取缩放值
+    try {
+      const matrixValues = transform.match(/matrix.*\((.+)\)/)[1].split(", ");
+      if (matrixValues.length >= 4) {
+        // scale 值在 matrix 中的 a 和 d 位置
+        return parseFloat(matrixValues[0]);
+      }
+    } catch (e) {
+      console.warn("无法解析画布缩放比例", e);
+    }
+
+    return 1.0;
+  };
+
   header.addEventListener("mousedown", (e) => {
     // 仅当点击头部本身而非内部按钮时拖动
     if (e.target === header) {
       isDragging = true;
-      dragOffsetX = e.clientX - note.offsetLeft;
-      dragOffsetY = e.clientY - note.offsetTop;
+
+      // 获取当前画布缩放比例
+      const scale = getCanvasScale();
+
+      // 考虑画布缩放比例计算偏移量
+      dragOffsetX = e.clientX - note.offsetLeft * scale;
+      dragOffsetY = e.clientY - note.offsetTop * scale;
+
       note.style.zIndex = getHighestZIndex() + 1;
     }
   });
@@ -196,8 +268,12 @@ function setupDragEventsForTemp(note, header) {
   const handleMouseMove = (e) => {
     if (!isDragging) return;
 
-    const x = e.clientX - dragOffsetX;
-    const y = e.clientY - dragOffsetY;
+    // 获取当前画布缩放比例
+    const scale = getCanvasScale();
+
+    // 考虑画布缩放比例计算便签位置
+    const x = (e.clientX - dragOffsetX) / scale;
+    const y = (e.clientY - dragOffsetY) / scale;
 
     note.style.left = `${x}px`;
     note.style.top = `${y}px`;

@@ -33,6 +33,9 @@ export class Canvas {
     // 初始化阅读模式
     this.readingMode = new ReadingMode();
 
+    // 从本地存储恢复画布状态
+    this.restoreCanvasState();
+
     // 将Canvas实例存储为全局变量，便于其他模块访问
     window.canvasInstance = this;
   }
@@ -180,6 +183,9 @@ export class Canvas {
       note.style.zIndex = parseInt(note.style.zIndex || 1);
     });
 
+    // 保存当前画布状态到本地存储
+    this.saveCanvasState();
+
     // 触发自定义事件，通知应用画布变换已更新
     const event = new CustomEvent("canvas-transform-updated", {
       detail: {
@@ -296,6 +302,9 @@ export class Canvas {
     // 更新起始点为当前点
     this.startPoint = { x: this.currentPoint.x, y: this.currentPoint.y };
 
+    // 保存当前画布状态到本地存储（使用节流函数，避免频繁保存）
+    this.throttledSaveCanvasState();
+
     // 触发变换更新事件，但不调用完整的applyTransform以提高性能
     const event = new CustomEvent("canvas-transform-updated", {
       detail: {
@@ -358,6 +367,64 @@ export class Canvas {
 
     // 使用阅读模式组件打开弹窗
     this.readingMode.open(notes);
+  }
+
+  /**
+   * 保存画布状态到本地存储
+   */
+  saveCanvasState() {
+    const canvasState = {
+      scale: this.scale,
+      offsetX: this.offset.x,
+      offsetY: this.offset.y,
+      timestamp: Date.now(),
+    };
+    localStorage.setItem("canvas_state", JSON.stringify(canvasState));
+  }
+
+  /**
+   * 节流函数 - 限制保存画布状态的频率
+   */
+  throttledSaveCanvasState() {
+    if (!this.saveTimeout) {
+      this.saveTimeout = setTimeout(() => {
+        this.saveCanvasState();
+        this.saveTimeout = null;
+      }, 500); // 500毫秒节流
+    }
+  }
+
+  /**
+   * 从本地存储恢复画布状态
+   */
+  restoreCanvasState() {
+    try {
+      const savedState = localStorage.getItem("canvas_state");
+      if (savedState) {
+        const state = JSON.parse(savedState);
+
+        // 确保值在有效范围内
+        if (state.scale >= this.minScale && state.scale <= this.maxScale) {
+          this.scale = state.scale;
+        }
+
+        // 恢复偏移量
+        if (
+          typeof state.offsetX === "number" &&
+          typeof state.offsetY === "number"
+        ) {
+          this.offset.x = state.offsetX;
+          this.offset.y = state.offsetY;
+        }
+
+        // 应用恢复的状态
+        this.applyTransform();
+
+        console.log("已恢复画布状态:", state);
+      }
+    } catch (error) {
+      console.error("恢复画布状态失败:", error);
+    }
   }
 }
 

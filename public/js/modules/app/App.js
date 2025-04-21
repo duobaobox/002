@@ -638,6 +638,8 @@ export class App {
 
         // 添加服务器返回的便签
         data.notes.forEach((noteData) => {
+          // 直接使用数据库中保存的坐标，Note类会正确处理坐标系转换
+          // Note类的构造函数会将这些坐标视为画布坐标系中的位置
           const note = new Note(
             noteData.id,
             noteData.text,
@@ -648,6 +650,7 @@ export class App {
           );
 
           // 如果有宽度和高度数据，应用它们
+          // 数据库中保存的是画布坐标系中的实际尺寸，直接应用
           if (noteData.width) {
             note.element.style.width = `${noteData.width}px`;
           }
@@ -705,15 +708,28 @@ export class App {
 
         // 获取便签的当前位置和尺寸
         const rect = element.getBoundingClientRect();
+
+        // 获取便签在画布坐标系中的位置
         const x = parseInt(element.style.left);
         const y = parseInt(element.style.top);
-        const width = Math.round(rect.width);
-        const height = Math.round(rect.height);
+
+        // 获取画布缩放比例
+        const canvasScale = window.canvasInstance
+          ? window.canvasInstance.getScale()
+          : 1.0;
+
+        // 获取便签的尺寸，考虑画布缩放比例
+        // 将屏幕上的尺寸除以缩放比例，得到画布坐标系中的实际尺寸
+        const width = Math.round(rect.width / canvasScale);
+        const height = Math.round(rect.height / canvasScale);
+
+        // 获取z-index
         const zIndex = parseInt(
           element.style.zIndex || window.getComputedStyle(element).zIndex
         );
 
         // 发送更新请求到服务器
+        // 使用画布坐标系中的位置，不需要进行缩放转换
         const response = await fetch(`/api/notes/${id}`, {
           method: "PUT",
           headers: {
@@ -922,12 +938,21 @@ export class App {
         prompt.length > 15 ? prompt.substring(0, 15) + "..." : prompt;
       const finalTitle = `AI: ${aiTitle}`;
 
+      // 获取画布缩放比例
+      const canvasScale = window.canvasInstance
+        ? window.canvasInstance.getScale()
+        : 1.0;
+
       // 获取临时便签的当前位置和大小
       // 这些值可能在生成过程中被用户修改过
+      // 使用画布坐标系中的位置，不需要进行缩放转换
       const currentX = parseInt(noteElement.style.left) || x;
       const currentY = parseInt(noteElement.style.top) || y;
-      const currentWidth = noteElement.offsetWidth;
-      const currentHeight = noteElement.offsetHeight;
+
+      // 获取便签的尺寸，考虑画布缩放比例
+      // 将屏幕上的尺寸除以缩放比例，得到画布坐标系中的实际尺寸
+      const currentWidth = Math.round(noteElement.offsetWidth / canvasScale);
+      const currentHeight = Math.round(noteElement.offsetHeight / canvasScale);
 
       console.log("保存便签，使用当前位置和大小:", {
         x: currentX,
@@ -2152,32 +2177,251 @@ export class App {
 
   // 生成新的邀请码
   async generateInviteCode() {
-    // ...省略方法实现，保持与原方法相同
+    try {
+      // 获取生成按钮并更新状态
+      const generateButton = document.getElementById("generate-invite-code");
+      if (generateButton) {
+        generateButton.disabled = true;
+        generateButton.textContent = "生成中...";
+      }
+
+      // 发送请求创建新邀请码
+      const response = await fetch("/api/invite-codes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // 重新加载邀请码列表
+        this.loadInviteCodes();
+        this.showMessage("邀请码创建成功", "success");
+      } else {
+        this.showMessage(`创建邀请码失败: ${data.message}`, "error");
+      }
+    } catch (error) {
+      console.error("创建邀请码失败:", error);
+      this.showMessage("创建邀请码失败，请稍后重试", "error");
+    } finally {
+      // 恢复按钮状态
+      const generateButton = document.getElementById("generate-invite-code");
+      if (generateButton) {
+        generateButton.disabled = false;
+        generateButton.textContent = "生成新邀请码";
+      }
+    }
   }
 
   // 加载邀请码列表
   async loadInviteCodes() {
-    // ...省略方法实现，保持与原方法相同
+    try {
+      // 获取邀请码列表容器
+      const inviteCodesContainer = document.getElementById(
+        "invite-codes-container"
+      );
+      const noInviteCodes = document.getElementById("no-invite-codes");
+
+      if (!inviteCodesContainer || !noInviteCodes) {
+        console.warn("邀请码容器元素未找到");
+        return;
+      }
+
+      // 显示加载状态
+      inviteCodesContainer.innerHTML = '<li class="loading">加载中...</li>';
+
+      // 发送请求获取邀请码列表
+      const response = await fetch("/api/invite-codes");
+      const data = await response.json();
+
+      if (data.success) {
+        // 清空列表
+        inviteCodesContainer.innerHTML = "";
+
+        if (data.inviteCodes && data.inviteCodes.length > 0) {
+          // 渲染邀请码列表
+          this.renderInviteCodes(data.inviteCodes);
+          inviteCodesContainer.style.display = "block";
+          noInviteCodes.style.display = "none";
+        } else {
+          // 显示无邀请码提示
+          inviteCodesContainer.style.display = "none";
+          noInviteCodes.style.display = "block";
+        }
+      } else {
+        inviteCodesContainer.innerHTML = `<li class="error-message">加载邀请码失败: ${data.message}</li>`;
+      }
+    } catch (error) {
+      console.error("加载邀请码失败:", error);
+      const inviteCodesContainer = document.getElementById(
+        "invite-codes-container"
+      );
+      if (inviteCodesContainer) {
+        inviteCodesContainer.innerHTML = `<li class="error-message">加载邀请码失败，请稍后重试</li>`;
+      }
+    }
   }
 
   // 更新UI以显示API不可用状态
   updateInviteUIForUnavailableAPI() {
-    // ...省略方法实现，保持与原方法相同
+    // 获取邀请码相关元素
+    const generateButton = document.getElementById("generate-invite-code");
+    const inviteCodesContainer = document.getElementById(
+      "invite-codes-container"
+    );
+    const noInviteCodes = document.getElementById("no-invite-codes");
+
+    // 禁用生成按钮
+    if (generateButton) {
+      generateButton.disabled = true;
+      generateButton.title = "邀请码功能暂不可用";
+    }
+
+    // 更新容器显示状态
+    if (inviteCodesContainer) {
+      inviteCodesContainer.style.display = "none";
+    }
+
+    // 显示不可用提示
+    if (noInviteCodes) {
+      noInviteCodes.style.display = "block";
+      noInviteCodes.innerHTML = "<p>邀请码功能暂不可用</p>";
+    }
   }
 
   // 删除邀请码
   async deleteInviteCode(code) {
-    // ...省略方法实现，保持与原方法相同
+    if (!code) return;
+
+    // 确认删除
+    if (!confirm("确定要删除这个邀请码吗？")) {
+      return;
+    }
+
+    try {
+      // 发送删除请求
+      const response = await fetch(`/api/invite-codes/${code}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // 从DOM中移除邀请码元素
+        const inviteCodeElement = document.querySelector(
+          `.invite-code-item[data-code="${code}"]`
+        );
+        if (inviteCodeElement) {
+          inviteCodeElement.remove();
+        }
+
+        // 检查是否还有邀请码
+        const inviteCodesContainer = document.getElementById(
+          "invite-codes-container"
+        );
+        const noInviteCodes = document.getElementById("no-invite-codes");
+
+        if (
+          inviteCodesContainer &&
+          noInviteCodes &&
+          inviteCodesContainer.children.length === 0
+        ) {
+          inviteCodesContainer.style.display = "none";
+          noInviteCodes.style.display = "block";
+        }
+
+        this.showMessage("邀请码已删除", "success");
+      } else {
+        this.showMessage(`删除邀请码失败: ${data.message}`, "error");
+      }
+    } catch (error) {
+      console.error("删除邀请码失败:", error);
+      this.showMessage("删除邀请码失败，请稍后重试", "error");
+    }
   }
 
   // 渲染邀请码列表
-  renderInviteCodes() {
-    // ...省略方法实现，保持与原方法相同
+  renderInviteCodes(inviteCodes) {
+    if (!inviteCodes || !Array.isArray(inviteCodes)) return;
+
+    const inviteCodesContainer = document.getElementById(
+      "invite-codes-container"
+    );
+    if (!inviteCodesContainer) return;
+
+    // 清空容器
+    inviteCodesContainer.innerHTML = "";
+
+    // 遍历邀请码并创建元素
+    inviteCodes.forEach((inviteCode) => {
+      // 创建邀请码项元素
+      const inviteCodeItem = document.createElement("li");
+      inviteCodeItem.className = "invite-code-item";
+      inviteCodeItem.dataset.code = inviteCode.code;
+
+      // 格式化创建时间
+      const createdAt = new Date(inviteCode.createdAt);
+      const formattedDate = createdAt.toLocaleString("zh-CN", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+
+      // 设置邀请码项内容
+      inviteCodeItem.innerHTML = `
+        <div class="invite-code-info">
+          <div class="invite-code-value">${inviteCode.code}</div>
+          <div class="invite-code-date">创建于: ${formattedDate}</div>
+        </div>
+        <div class="invite-code-actions">
+          <button class="btn btn-icon copy-invite-code" title="复制邀请码">
+            <i class="icon-copy">📋</i>
+          </button>
+          <button class="btn btn-icon delete-invite-code" title="删除邀请码">
+            <i class="icon-delete">🗑️</i>
+          </button>
+        </div>
+      `;
+
+      // 添加复制按钮事件
+      const copyButton = inviteCodeItem.querySelector(".copy-invite-code");
+      if (copyButton) {
+        copyButton.addEventListener("click", () => {
+          this.copyInviteCode(inviteCode.code);
+        });
+      }
+
+      // 添加删除按钮事件
+      const deleteButton = inviteCodeItem.querySelector(".delete-invite-code");
+      if (deleteButton) {
+        deleteButton.addEventListener("click", () => {
+          this.deleteInviteCode(inviteCode.code);
+        });
+      }
+
+      // 将邀请码项添加到容器
+      inviteCodesContainer.appendChild(inviteCodeItem);
+    });
   }
 
   // 复制邀请码到剪贴板
   copyInviteCode(code) {
-    // ...省略方法实现，保持与原方法相同
+    if (!code) return;
+
+    navigator.clipboard
+      .writeText(code)
+      .then(() => {
+        this.showMessage("邀请码已复制到剪贴板", "success");
+      })
+      .catch((err) => {
+        console.error("复制邀请码失败:", err);
+        this.showMessage("复制邀请码失败", "error");
+      });
   }
 
   // 预连接到 AI 服务 - 优化版本

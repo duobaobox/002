@@ -25,7 +25,7 @@ export function initInviteCodeManager(container) {
       <div class="invite-code-manager">
         <div class="invite-code-header">
           <h3>邀请码管理</h3>
-          <button id="create-invite-code" class="btn btn-primary">生成新邀请码</button>
+          <button id="generate-invite-code" class="btn btn-primary">生成新邀请码</button>
         </div>
         <div class="invite-code-list-container">
           <div id="invite-code-list" class="invite-code-list">
@@ -38,8 +38,10 @@ export function initInviteCodeManager(container) {
       </div>
     `;
 
-    // 添加事件监听器
-    document.getElementById("create-invite-code").addEventListener("click", createInviteCode);
+    // 添加事件监听器 - 修改这里，将create-invite-code改为generate-invite-code
+    document
+      .getElementById("generate-invite-code")
+      .addEventListener("click", createInviteCode);
   }
 
   /**
@@ -57,7 +59,7 @@ export function initInviteCodeManager(container) {
         inviteCodeList.innerHTML = "";
 
         if (data.inviteCodes && data.inviteCodes.length > 0) {
-          data.inviteCodes.forEach(inviteCode => {
+          data.inviteCodes.forEach((inviteCode) => {
             const inviteCodeElement = createInviteCodeElement(inviteCode);
             inviteCodeList.appendChild(inviteCodeElement);
           });
@@ -121,14 +123,18 @@ export function initInviteCodeManager(container) {
     `;
 
     // 添加复制按钮事件
-    inviteCodeElement.querySelector(".copy-invite-code").addEventListener("click", () => {
-      copyInviteCode(inviteCode.code);
-    });
+    inviteCodeElement
+      .querySelector(".copy-invite-code")
+      .addEventListener("click", () => {
+        copyInviteCode(inviteCode.code);
+      });
 
     // 添加删除按钮事件
-    inviteCodeElement.querySelector(".delete-invite-code").addEventListener("click", () => {
-      deleteInviteCode(inviteCode.code);
-    });
+    inviteCodeElement
+      .querySelector(".delete-invite-code")
+      .addEventListener("click", () => {
+        deleteInviteCode(inviteCode.code);
+      });
 
     return inviteCodeElement;
   }
@@ -137,7 +143,7 @@ export function initInviteCodeManager(container) {
    * 创建新邀请码
    */
   async function createInviteCode() {
-    const createButton = document.getElementById("create-invite-code");
+    const createButton = document.getElementById("generate-invite-code");
     createButton.disabled = true;
     createButton.textContent = "生成中...";
 
@@ -172,11 +178,12 @@ export function initInviteCodeManager(container) {
    * @param {string} code - 邀请码
    */
   function copyInviteCode(code) {
-    navigator.clipboard.writeText(code)
+    navigator.clipboard
+      .writeText(code)
       .then(() => {
         showToast("邀请码已复制到剪贴板", "success");
       })
-      .catch(err => {
+      .catch((err) => {
         console.error("复制邀请码失败:", err);
         showToast("复制邀请码失败", "error");
       });
@@ -200,7 +207,9 @@ export function initInviteCodeManager(container) {
 
       if (data.success) {
         // 从DOM中移除邀请码元素
-        const inviteCodeElement = document.querySelector(`.invite-code-item[data-code="${code}"]`);
+        const inviteCodeElement = document.querySelector(
+          `.invite-code-item[data-code="${code}"]`
+        );
         if (inviteCodeElement) {
           inviteCodeElement.remove();
         }
@@ -208,7 +217,7 @@ export function initInviteCodeManager(container) {
         // 检查是否还有邀请码
         const inviteCodeList = document.getElementById("invite-code-list");
         const noInviteCodes = document.getElementById("no-invite-codes");
-        
+
         if (inviteCodeList.children.length === 0) {
           inviteCodeList.style.display = "none";
           noInviteCodes.style.display = "block";
@@ -232,7 +241,7 @@ export function initInviteCodeManager(container) {
   function showToast(message, type) {
     // 检查是否已存在toast容器
     let toastContainer = document.querySelector(".toast-container");
-    
+
     if (!toastContainer) {
       toastContainer = document.createElement("div");
       toastContainer.className = "toast-container";
@@ -243,10 +252,10 @@ export function initInviteCodeManager(container) {
     const toast = document.createElement("div");
     toast.className = `toast ${type}`;
     toast.textContent = message;
-    
+
     // 添加到容器
     toastContainer.appendChild(toast);
-    
+
     // 自动移除
     setTimeout(() => {
       toast.classList.add("fade-out");
