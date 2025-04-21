@@ -130,13 +130,21 @@ export class Canvas {
     readModeBtn.title = "切换阅读模式";
     readModeBtn.addEventListener("click", () => this.openReadingMode());
 
+    // 创建分享按钮 - 放在阅读模式按钮下方
+    const shareBtn = document.createElement("button");
+    shareBtn.className = "zoom-btn share-btn"; // 添加特定类名
+    shareBtn.innerHTML = "🔗"; // 链接图标
+    shareBtn.title = "分享画布";
+    shareBtn.addEventListener("click", () => this.shareCanvas());
+
     // 组装控制器 - 调整顺序为从上到下
     zoomControls.appendChild(settingsBtn);
     zoomControls.appendChild(zoomInBtn);
     zoomControls.appendChild(zoomDisplay);
     zoomControls.appendChild(zoomOutBtn);
     zoomControls.appendChild(zoomResetBtn);
-    zoomControls.appendChild(readModeBtn); // 添加新按钮
+    zoomControls.appendChild(readModeBtn); // 添加阅读模式按钮
+    zoomControls.appendChild(shareBtn); // 添加分享按钮
 
     // 添加到DOM
     document.querySelector(".canvas-container").appendChild(zoomControls);
@@ -367,6 +375,296 @@ export class Canvas {
 
     // 使用阅读模式组件打开弹窗
     this.readingMode.open(notes);
+  }
+
+  /**
+   * 分享画布
+   * 创建一个可分享的画布链接
+   */
+  async shareCanvas() {
+    try {
+      // 显示加载中提示
+      this.showMessage("正在创建分享链接...", "info");
+
+      console.log("开始创建分享...");
+
+      // 发送请求创建分享
+      const response = await fetch("/api/share", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "same-origin", // 确保发送认证信息
+        body: JSON.stringify({
+          // 不需要发送便签数据，服务器会从数据库获取
+          canvasState: {
+            scale: this.scale,
+            offsetX: this.offset.x,
+            offsetY: this.offset.y,
+          },
+        }),
+      });
+
+      console.log("分享请求响应状态:", response.status);
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.message || "创建分享失败");
+      }
+
+      // 创建分享链接
+      const shareUrl = `${window.location.origin}/share.html?id=${data.shareId}`;
+
+      // 显示分享对话框
+      this.showShareDialog(shareUrl, data.shareId);
+    } catch (error) {
+      console.error("分享画布出错:", error);
+      this.showMessage(`分享失败: ${error.message}`, "error");
+    }
+  }
+
+  /**
+   * 显示分享对话框
+   * @param {string} shareUrl - 分享链接
+   * @param {string} shareId - 分享 ID
+   */
+  showShareDialog(shareUrl, shareId) {
+    // 移除现有的对话框
+    const existingDialog = document.querySelector(".share-dialog");
+    if (existingDialog) {
+      existingDialog.remove();
+    }
+
+    // 创建对话框
+    const dialog = document.createElement("div");
+    dialog.className = "share-dialog";
+    dialog.innerHTML = `
+      <div class="share-dialog-content">
+        <h3>画布分享链接</h3>
+        <p>使用以下链接分享您的画布：</p>
+        <div class="share-url-container">
+          <input type="text" class="share-url" value="${shareUrl}" readonly />
+          <button class="copy-btn">复制</button>
+        </div>
+        <p class="share-info">分享 ID: <span class="share-id">${shareId}</span></p>
+        <div class="share-actions">
+          <button class="open-btn">在新标签页打开</button>
+          <button class="close-btn">关闭</button>
+        </div>
+      </div>
+    `;
+
+    // 添加到文档
+    document.body.appendChild(dialog);
+
+    // 添加事件处理
+    const copyBtn = dialog.querySelector(".copy-btn");
+    const openBtn = dialog.querySelector(".open-btn");
+    const closeBtn = dialog.querySelector(".close-btn");
+    const urlInput = dialog.querySelector(".share-url");
+
+    copyBtn.addEventListener("click", () => {
+      urlInput.select();
+      document.execCommand("copy");
+      copyBtn.textContent = "已复制";
+      setTimeout(() => {
+        copyBtn.textContent = "复制";
+      }, 2000);
+    });
+
+    openBtn.addEventListener("click", () => {
+      window.open(shareUrl, "_blank");
+    });
+
+    closeBtn.addEventListener("click", () => {
+      dialog.remove();
+    });
+
+    // 点击对话框外部关闭
+    dialog.addEventListener("click", (e) => {
+      if (e.target === dialog) {
+        dialog.remove();
+      }
+    });
+  }
+
+  /**
+   * 显示消息提示
+   * @param {string} message - 消息内容
+   * @param {string} type - 消息类型（info, success, warning, error）
+   */
+  showMessage(message, type = "info") {
+    // 移除现有的消息
+    const existingMessages = document.querySelectorAll(".canvas-message");
+    existingMessages.forEach((msg) => {
+      msg.remove();
+    });
+
+    // 创建消息元素
+    const messageEl = document.createElement("div");
+    messageEl.className = `canvas-message ${type}`;
+    messageEl.textContent = message;
+
+    // 添加到文档
+    document.body.appendChild(messageEl);
+
+    // 添加动画效果
+    setTimeout(() => {
+      messageEl.classList.add("show");
+    }, 10);
+
+    // 自动移除
+    setTimeout(() => {
+      messageEl.classList.remove("show");
+      setTimeout(() => {
+        messageEl.remove();
+      }, 300);
+    }, 3000);
+  }
+
+  /**
+   * 分享画布
+   * 创建一个可分享的画布链接
+   */
+  async shareCanvas() {
+    try {
+      // 显示加载中提示
+      this.showMessage("正在创建分享链接...", "info");
+
+      console.log("开始创建分享...");
+
+      // 发送请求创建分享
+      const response = await fetch("/api/share", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "same-origin", // 确保发送认证信息
+        body: JSON.stringify({
+          // 不需要发送便签数据，服务器会从数据库获取
+          canvasState: {
+            scale: this.scale,
+            offsetX: this.offset.x,
+            offsetY: this.offset.y,
+          },
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.message || "创建分享失败");
+      }
+
+      // 创建分享链接
+      const shareUrl = `${window.location.origin}/share.html?id=${data.shareId}`;
+
+      // 显示分享对话框
+      this.showShareDialog(shareUrl, data.shareId);
+    } catch (error) {
+      console.error("分享画布出错:", error);
+      this.showMessage(`分享失败: ${error.message}`, "error");
+    }
+  }
+
+  /**
+   * 显示分享对话框
+   * @param {string} shareUrl - 分享链接
+   * @param {string} shareId - 分享 ID
+   */
+  showShareDialog(shareUrl, shareId) {
+    // 移除现有的对话框
+    const existingDialog = document.querySelector(".share-dialog");
+    if (existingDialog) {
+      existingDialog.remove();
+    }
+
+    // 创建对话框
+    const dialog = document.createElement("div");
+    dialog.className = "share-dialog";
+    dialog.innerHTML = `
+      <div class="share-dialog-content">
+        <h3>画布分享链接</h3>
+        <p>使用以下链接分享您的画布：</p>
+        <div class="share-url-container">
+          <input type="text" class="share-url" value="${shareUrl}" readonly />
+          <button class="copy-btn">复制</button>
+        </div>
+        <p class="share-info">分享 ID: <span class="share-id">${shareId}</span></p>
+        <div class="share-actions">
+          <button class="open-btn">在新标签页打开</button>
+          <button class="close-btn">关闭</button>
+        </div>
+      </div>
+    `;
+
+    // 添加到文档
+    document.body.appendChild(dialog);
+
+    // 添加事件处理
+    const copyBtn = dialog.querySelector(".copy-btn");
+    const openBtn = dialog.querySelector(".open-btn");
+    const closeBtn = dialog.querySelector(".close-btn");
+    const urlInput = dialog.querySelector(".share-url");
+
+    copyBtn.addEventListener("click", () => {
+      urlInput.select();
+      document.execCommand("copy");
+      copyBtn.textContent = "已复制";
+      setTimeout(() => {
+        copyBtn.textContent = "复制";
+      }, 2000);
+    });
+
+    openBtn.addEventListener("click", () => {
+      window.open(shareUrl, "_blank");
+    });
+
+    closeBtn.addEventListener("click", () => {
+      dialog.remove();
+    });
+
+    // 点击对话框外部关闭
+    dialog.addEventListener("click", (e) => {
+      if (e.target === dialog) {
+        dialog.remove();
+      }
+    });
+  }
+
+  /**
+   * 显示消息提示
+   * @param {string} message - 消息内容
+   * @param {string} type - 消息类型（info, success, warning, error）
+   */
+  showMessage(message, type = "info") {
+    // 移除现有的消息
+    const existingMessages = document.querySelectorAll(".canvas-message");
+    existingMessages.forEach((msg) => {
+      msg.remove();
+    });
+
+    // 创建消息元素
+    const messageEl = document.createElement("div");
+    messageEl.className = `canvas-message ${type}`;
+    messageEl.textContent = message;
+
+    // 添加到文档
+    document.body.appendChild(messageEl);
+
+    // 添加动画效果
+    setTimeout(() => {
+      messageEl.classList.add("show");
+    }, 10);
+
+    // 自动移除
+    setTimeout(() => {
+      messageEl.classList.remove("show");
+      setTimeout(() => {
+        messageEl.remove();
+      }, 300);
+    }, 3000);
   }
 
   /**
