@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>便签画布分享</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/share.css">
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+</head>
+<body>
+  <div class="share-container">
+    <div class="share-header">
+      <h1 class="share-title">便签画布分享</h1>
+      <div class="share-info">
+        <span class="share-id">分享ID: <span id="share-id-display"></span></span>
+        <span class="share-time">最后更新: <span id="last-updated"></span></span>
+      </div>
+    </div>
+    
+    <div class="canvas-container">
+      <div id="note-canvas" class="note-canvas share-mode">
+        <!-- 便签将在这里动态加载 -->
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/js/share.js"></script>
+</body>
+</html>

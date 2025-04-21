@@ -42,6 +42,8 @@ import {
 import { validateNoteData, requireAuth } from "./middleware.js";
 // Need path for basename
 import path from "path";
+// 导入分享路由
+import shareRouter from "./share.js";
 
 const router = express.Router();
 
@@ -231,6 +233,10 @@ router.use("/database", requireAuth);
 router.use("/test-ai-connection", requireAuth);
 router.use("/api-history", requireAuth);
 router.use("/invite-codes", requireAuth);
+
+// 注册分享路由 - 分享路由内部已处理认证
+console.log("注册分享路由: /share");
+router.use("/share", shareRouter);
 
 // --- 邀请码管理路由 ---
 

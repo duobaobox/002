@@ -148,9 +148,14 @@ app.use(express.static(path.join(__dirname, "../public")));
 // 设置路由
 app.use("/api", routes);
 
-// 确保登录页面可访问
+// 确保登录页面和分享页面可访问
 app.get("/login.html", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/login.html"));
+});
+
+// 分享页面不需要登录即可访问
+app.get("/share.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/share.html"));
 });
 
 // 主页重定向到登录页（如果未登录）
@@ -164,6 +169,13 @@ app.get("/", (req, res, next) => {
 
 // 捕获所有其他路由，提供前端应用
 app.get("*", (req, res) => {
+  // 允许分享相关的路由和页面无需登录即可访问
+  if (req.path.startsWith("/share") || req.path === "/share.html") {
+    res.sendFile(path.join(__dirname, "../public/share.html"));
+    return;
+  }
+
+  // 其他路由需要登录
   if (req.path !== "/login.html" && !(req.session && req.session.user)) {
     res.redirect("/login.html"); // 未登录时重定向到登录页
   } else {
