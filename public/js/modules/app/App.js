@@ -577,9 +577,48 @@ export class App {
   // 添加空白便签
   async addEmptyNote() {
     try {
-      // 随机位置
-      const x = 100 + Math.random() * 200;
-      const y = 100 + Math.random() * 200;
+      // 计算屏幕可见区域内的位置 - 确保便签生成在屏幕内
+      // 获取画布实例以便进行坐标转换
+      const canvas = window.canvasInstance;
+
+      // 默认位置（如果无法获取画布实例）
+      let x = 100 + Math.random() * 200;
+      let y = 100 + Math.random() * 200;
+
+      if (canvas) {
+        // 获取视口尺寸
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        // 获取当前已存在的便签数量，用于计算错开位置
+        const existingNotes = document.querySelectorAll(".note").length;
+
+        // 计算屏幕居中偏左上的基准位置
+        const baseScreenX = Math.max(viewportWidth * 0.25, 80);
+        const baseScreenY = Math.max(viewportHeight * 0.15, 60);
+
+        // 根据已存在的便签数量计算错开位置
+        // 使用错开模式，每个新便签都会在基准位置的基础上错开一定距离
+        const offsetX = (existingNotes % 5) * 60; // 每个便签水平错开60像素
+        const offsetY = Math.floor(existingNotes / 5) * 80; // 每行5个便签，每行垂直错开80像素
+
+        // 计算最终的屏幕坐标，并添加少量随机性
+        const screenX = baseScreenX + offsetX + (Math.random() * 20 - 10);
+        const screenY = baseScreenY + offsetY + (Math.random() * 20 - 10);
+
+        // 将屏幕坐标转换为画布坐标
+        const canvasPos = canvas.screenToCanvasPosition(screenX, screenY);
+        x = canvasPos.x;
+        y = canvasPos.y;
+
+        console.log("空白便签生成位置(画布坐标):", {
+          x,
+          y,
+          existingNotes,
+          offsetX,
+          offsetY,
+        });
+      }
 
       // 获取随机颜色类 (与Note类中定义保持一致)
       const colorClasses = [
