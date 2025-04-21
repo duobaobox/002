@@ -27,52 +27,20 @@ export function initProfilePanel(container) {
    * @param {HTMLElement} container - 个人中心面板容器元素
    */
   function createProfilePanelUI(container) {
-    container.innerHTML = `
-      <div class="settings-panel-content">
-        <h3>个人中心</h3>
-        <div class="profile-container">
-        <!-- 个人信息卡片 -->
-        <div class="profile-card">
-          <div id="user-info-container" class="user-info-container">
-            <div class="loading-indicator">加载中...</div>
-          </div>
+    // 不需要重新创建整个面板，因为已经在index.html中定义了统一结构
+    // 只需要替换用户信息容器的内容
+    const userInfoContainer = container.querySelector(".profile-header");
+    if (userInfoContainer) {
+      userInfoContainer.innerHTML = `
+        <div class="profile-avatar">
+          <i class="icon-user">👤</i>
         </div>
-
-        <!-- 安全设置卡片 -->
-        <div class="profile-card">
-          <div class="profile-card-header">
-            <h4>安全设置</h4>
-          </div>
-          <div class="password-form">
-            <div class="form-group">
-              <label for="current-password">当前密码</label>
-              <input type="password" id="current-password" placeholder="请输入当前密码">
-            </div>
-            <div class="form-group">
-              <label for="new-password">新密码</label>
-              <input type="password" id="new-password" placeholder="请输入新密码">
-            </div>
-            <div class="form-group">
-              <label for="confirm-password">确认新密码</label>
-              <input type="password" id="confirm-password" placeholder="请再次输入新密码">
-            </div>
-            <div class="form-actions">
-              <button id="change-password-button" class="btn btn-primary">更新密码</button>
-            </div>
-            <div id="password-message" class="message-container"></div>
-          </div>
+        <div class="profile-info">
+          <h2 class="profile-name">加载中...</h2>
+          <span class="profile-badge">加载中...</span>
         </div>
-
-        <!-- 邀请码管理卡片 -->
-        <div class="profile-card">
-          <div class="profile-card-header">
-            <h4>邀请码管理</h4>
-          </div>
-          <div id="invite-code-manager-container"></div>
-        </div>
-      </div>
-    </div>
-    `;
+      `;
+    }
 
     // 添加修改密码事件监听器
     document
@@ -84,40 +52,38 @@ export function initProfilePanel(container) {
    * 加载用户信息
    */
   async function loadUserInfo() {
-    const userInfoContainer = document.getElementById("user-info-container");
+    const profileHeader = document.querySelector(".profile-header");
+    const profileAvatar = document.querySelector(".profile-avatar i");
+    const profileName = document.querySelector(".profile-name");
+    const profileBadge = document.querySelector(".profile-badge");
+
+    if (!profileHeader || !profileAvatar || !profileName || !profileBadge) {
+      console.error("找不到用户信息元素");
+      return;
+    }
 
     try {
       const response = await fetch("/api/session");
       const data = await response.json();
 
       if (data.success && data.isLoggedIn) {
-        userInfoContainer.innerHTML = `
-          <div class="profile-header">
-            <div class="profile-avatar">
-              <i class="icon-user">${data.user.username
-                .charAt(0)
-                .toUpperCase()}</i>
-            </div>
-            <div class="profile-info">
-              <h2 class="profile-name">${data.user.username}</h2>
-              <span class="profile-badge">${
-                data.user.username === "admin" ? "管理员" : "用户"
-              }</span>
-            </div>
-          </div>
-          <div class="profile-actions">
-            <button id="settings-logout-button" class="profile-action-button logout-button">
-              <i class="icon-logout">⏎</i>
-              <span>退出登录</span>
-            </button>
-          </div>
-        `;
+        // 更新用户信息
+        profileAvatar.textContent = data.user.username.charAt(0).toUpperCase();
+        profileName.textContent = data.user.username;
+        profileBadge.textContent =
+          data.user.username === "admin" ? "管理员" : "用户";
       } else {
-        userInfoContainer.innerHTML = `<div class="error-message">未登录或会话已过期</div>`;
+        profileName.textContent = "未登录";
+        profileBadge.textContent = "未知";
+        profileBadge.style.backgroundColor = "#f8d7da";
+        profileBadge.style.color = "#721c24";
       }
     } catch (error) {
       console.error("加载用户信息失败:", error);
-      userInfoContainer.innerHTML = `<div class="error-message">加载用户信息失败，请稍后重试</div>`;
+      profileName.textContent = "加载失败";
+      profileBadge.textContent = "错误";
+      profileBadge.style.backgroundColor = "#f8d7da";
+      profileBadge.style.color = "#721c24";
     }
   }
 
@@ -128,14 +94,25 @@ export function initProfilePanel(container) {
     const currentPassword = document.getElementById("current-password").value;
     const newPassword = document.getElementById("new-password").value;
     const confirmPassword = document.getElementById("confirm-password").value;
-    const messageContainer = document.getElementById("password-message");
     const changePasswordButton = document.getElementById(
       "change-password-button"
     );
 
+    // 创建或获取状态消息区域
+    let messageContainer = document.querySelector(
+      ".password-form .settings-status"
+    );
+    if (!messageContainer) {
+      messageContainer = document.createElement("div");
+      messageContainer.className = "settings-status";
+      document
+        .querySelector(".password-form .settings-actions")
+        .after(messageContainer);
+    }
+
     // 清除之前的消息
     messageContainer.textContent = "";
-    messageContainer.className = "message-container";
+    messageContainer.className = "settings-status";
 
     // 基础验证
     if (!currentPassword) {
@@ -183,7 +160,7 @@ export function initProfilePanel(container) {
     } finally {
       // 恢复按钮状态
       changePasswordButton.disabled = false;
-      changePasswordButton.textContent = "修改密码";
+      changePasswordButton.textContent = "更新密码";
     }
   }
 
@@ -195,13 +172,13 @@ export function initProfilePanel(container) {
    */
   function showMessage(container, message, type) {
     container.textContent = message;
-    container.className = `message-container ${type}`;
-    container.style.display = "block";
+    container.className = `settings-status ${type}`;
+    container.classList.add("show");
 
     // 自动隐藏成功消息
     if (type === "success") {
       setTimeout(() => {
-        container.style.display = "none";
+        container.classList.remove("show");
       }, 5000);
     }
   }

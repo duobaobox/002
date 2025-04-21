@@ -14,8 +14,6 @@
     <link rel="stylesheet" href="css/main.css">
     <!-- 引入自定义样式，用于优化界面 -->
     <link rel="stylesheet" href="css/custom-styles.css">
-    <!-- 引入个人中心样式 -->
-    <link rel="stylesheet" href="css/profile.css">
     <!-- 引入邀请码管理样式 -->
     <link rel="stylesheet" href="css/invite-code.css">
     <!-- 添加 marked.js 库 -->
@@ -98,16 +96,21 @@
                         <!-- AI设置 -->
                         <div class="settings-panel active" id="ai-panel">
                             <h3>AI配置</h3>
-                            <div class="ai-settings-container">
-                                <div class="ai-settings-group">
-                                    <h4>API 连接配置</h4>
-                                    <div class="ai-settings-row">
-                                        <div class="ai-settings-label">基础 URL</div>
-                                        <div class="ai-settings-input">
+                            <div class="settings-panel-content">
+                                <!-- API连接配置卡片 -->
+                                <div class="settings-card">
+                                    <div class="settings-card-header">
+                                        <h4>API 连接配置</h4>
+                                    </div>
+                                    <div class="settings-item">
+                                        <div class="settings-label">
+                                            <label>基础 URL</label>
+                                            <span class="settings-description">API 服务的基础 URL 地址</span>
+                                        </div>
+                                        <div class="settings-control">
                                             <div class="history-input-container">
-                                                <input type="text" id="ai-base-url"
+                                                <input type="text" id="ai-base-url" class="settings-input"
                                                     placeholder="https://api.openai.com/v1">
-
                                                 <div class="history-dropdown" id="base-url-history-dropdown">
                                                     <div class="history-dropdown-content">
                                                         <!-- 基础 URL 历史记录将通过 JavaScript 动态添加 -->
@@ -117,14 +120,15 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="ai-settings-description">API 服务的基础 URL 地址</div>
-
-                                    <div class="ai-settings-row">
-                                        <div class="ai-settings-label">API 密钥</div>
-                                        <div class="ai-settings-input api-key-container">
+                                    <div class="settings-item">
+                                        <div class="settings-label">
+                                            <label>API 密钥</label>
+                                            <span class="settings-description">您的 API 密钥将安全地存储在服务器端</span>
+                                        </div>
+                                        <div class="settings-control api-key-container">
                                             <div class="history-input-container">
-                                                <input type="password" id="ai-api-key" placeholder="输入您的 API 密钥">
-
+                                                <input type="password" id="ai-api-key" class="settings-input"
+                                                    placeholder="输入您的 API 密钥">
                                                 <button type="button" id="toggle-api-key" class="toggle-visibility"
                                                     data-state="hidden" title="显示/隐藏密钥">
                                                     <span class="eye-icon"></span>
@@ -138,19 +142,22 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="ai-settings-description">您的 API 密钥将安全地存储在服务器端</div>
                                 </div>
 
-                                <div class="ai-settings-group">
-                                    <h4>模型参数设置</h4>
-                                    <div class="ai-settings-row">
-                                        <div class="ai-settings-label">AI 模型</div>
-                                        <div class="ai-settings-input">
+                                <!-- 模型参数设置卡片 -->
+                                <div class="settings-card">
+                                    <div class="settings-card-header">
+                                        <h4>模型参数设置</h4>
+                                    </div>
+                                    <div class="settings-item">
+                                        <div class="settings-label">
+                                            <label>AI 模型</label>
+                                            <span class="settings-description">选择适合您的AI模型，不同模型具有不同的能力和价格</span>
+                                        </div>
+                                        <div class="settings-control">
                                             <div class="history-input-container">
-                                                <input type="text" id="ai-model"
+                                                <input type="text" id="ai-model" class="settings-input"
                                                     placeholder="例如: gpt-3.5-turbo, gpt-4-turbo">
-
-
                                                 <div class="history-dropdown" id="model-history-dropdown">
                                                     <div class="history-dropdown-content">
                                                         <!-- 模型历史记录将通过 JavaScript 动态添加 -->
@@ -168,8 +175,7 @@
                                                     </div>
                                                     <div class="select-option" data-value="claude-2">claude-2</div>
                                                     <div class="select-option" data-value="claude-instant">
-                                                        claude-instant
-                                                    </div>
+                                                        claude-instant</div>
 
                                                     <div class="model-group-label">OpenRouter模型 (免费)</div>
                                                     <div class="select-option"
@@ -197,34 +203,42 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="ai-settings-description">选择适合您的AI模型，不同模型具有不同的能力和价格</div>
-
-                                    <div class="ai-settings-row">
-                                        <div class="ai-settings-label">最大令牌数</div>
-                                        <div class="ai-settings-input">
-                                            <input type="number" id="ai-max-tokens" min="100" max="4000" step="50"
-                                                value="800">
+                                    <div class="settings-item">
+                                        <div class="settings-label">
+                                            <label>最大令牌数</label>
+                                            <span class="settings-description">控制生成便签内容的最大长度，较大的值会产生更长的回复</span>
+                                        </div>
+                                        <div class="settings-control">
+                                            <input type="number" id="ai-max-tokens" class="settings-input" min="100"
+                                                max="4000" step="50" value="800">
                                         </div>
                                     </div>
-                                    <div class="ai-settings-description">控制生成便签内容的最大长度，较大的值会产生更长的回复</div>
-
-                                    <div class="ai-settings-row">
-                                        <div class="ai-settings-label">创意程度</div>
-                                        <div class="ai-settings-input">
+                                    <div class="settings-item">
+                                        <div class="settings-label">
+                                            <label>创意程度</label>
+                                            <span class="settings-description">较低的值 (0-0.5) 使输出更确定，较高的值 (0.7-2)
+                                                使输出更创意随机</span>
+                                        </div>
+                                        <div class="settings-control">
                                             <input type="range" id="ai-temperature" min="0" max="2" step="0.1"
                                                 value="0.7">
                                             <span id="temperature-value">0.7</span>
                                         </div>
                                     </div>
-                                    <div class="ai-settings-description">较低的值 (0-0.5) 使输出更确定，较高的值 (0.7-2) 使输出更创意随机</div>
                                 </div>
 
-                                <div class="ai-settings-actions">
-                                    <!-- 保存设置按钮放在最上面，更加醒目 -->
-                                    <button class="save-button">保存设置</button>
-                                    <div class="secondary-actions">
-                                        <button id="test-ai-connection" class="ai-test-button">测试 API 连接</button>
-                                        <button id="clear-ai-settings" class="ai-clear-button">清除 AI 设置及历史</button>
+                                <!-- 操作按钮卡片 -->
+                                <div class="settings-card">
+                                    <div class="settings-actions">
+                                        <div class="primary-actions">
+                                            <button class="settings-button primary-button save-button">保存设置</button>
+                                        </div>
+                                        <div class="secondary-actions">
+                                            <button id="test-ai-connection" class="settings-button secondary-button">测试
+                                                API 连接</button>
+                                            <button id="clear-ai-settings" class="settings-button danger-button">清除 AI
+                                                设置及历史</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -233,19 +247,23 @@
                         <!-- 外观设置 - 替换为Coming Soon提示 -->
                         <div class="settings-panel" id="appearance-panel">
                             <h3>外观设置</h3>
-                            <div class="coming-soon-container">
-                                <div class="coming-soon-icon">
-                                    <i class="icon-paintbrush"></i>
-                                </div>
-                                <h4 class="coming-soon-title">即将上线</h4>
-                                <p class="coming-soon-description">
-                                    我们正在开发更丰富的自定义外观功能，包括主题颜色、字体样式和布局选项。
-                                    <br>敬请期待！
-                                </p>
-                                <div class="coming-soon-decoration">
-                                    <span class="decoration-dot"></span>
-                                    <span class="decoration-dot"></span>
-                                    <span class="decoration-dot"></span>
+                            <div class="settings-panel-content">
+                                <div class="settings-card">
+                                    <div class="coming-soon-container">
+                                        <div class="coming-soon-icon">
+                                            <i class="icon-paintbrush"></i>
+                                        </div>
+                                        <h4 class="coming-soon-title">即将上线</h4>
+                                        <p class="coming-soon-description">
+                                            我们正在开发更丰富的自定义外观功能，包括主题颜色、字体样式和布局选项。
+                                            <br>敬请期待！
+                                        </p>
+                                        <div class="coming-soon-decoration">
+                                            <span class="decoration-dot"></span>
+                                            <span class="decoration-dot"></span>
+                                            <span class="decoration-dot"></span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -253,49 +271,67 @@
                         <!-- 备份恢复 -->
                         <div class="settings-panel" id="backup-panel">
                             <h3>备份与恢复</h3>
-                            <div class="setting-item">
-                                <div class="setting-label">
-                                    <label>导出便签 (JSON)</label> <!-- Modified Label -->
-                                    <span class="setting-description">将所有便签导出为JSON文件，可通过下方导入功能恢复</span>
-                                    <!-- Modified Description -->
+                            <div class="settings-panel-content">
+                                <!-- 导出卡片 -->
+                                <div class="settings-card">
+                                    <div class="settings-card-header">
+                                        <h4>数据导出</h4>
+                                    </div>
+                                    <div class="settings-item">
+                                        <div class="settings-label">
+                                            <label>导出便签 (JSON)</label>
+                                            <span class="settings-description">将所有便签导出为JSON文件，可通过下方导入功能恢复</span>
+                                        </div>
+                                        <div class="settings-control">
+                                            <button class="settings-button secondary-button" id="export-notes-json">导出便签
+                                                (JSON)</button>
+                                        </div>
+                                    </div>
+                                    <div class="settings-item">
+                                        <div class="settings-label">
+                                            <label>导出完整备份 (.db)</label>
+                                            <span class="settings-description">下载包含所有便签和设置的数据库文件，用于手动恢复或迁移</span>
+                                        </div>
+                                        <div class="settings-control">
+                                            <button class="settings-button secondary-button"
+                                                id="export-database-db">导出数据库 (.db)</button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="setting-control">
-                                    <!-- Use the same classes as the other export button -->
-                                    <button class="action-button export-button" id="export-notes-json">导出便签
-                                        (JSON)</button> <!-- Modified Text & ID -->
-                                </div>
-                            </div>
-                            <div class="setting-item">
-                                <div class="setting-label">
-                                    <label>导出完整备份 (.db)</label> <!-- New Label -->
-                                    <span class="setting-description">下载包含所有便签和设置的数据库文件，用于手动恢复或迁移</span>
-                                    <!-- New Description -->
-                                </div>
-                                <div class="setting-control">
-                                    <!-- Use the same classes as the other export button -->
-                                    <button class="action-button export-button" id="export-database-db">导出数据库
-                                        (.db)</button>
-                                </div>
-                            </div>
-                            <div class="setting-item">
-                                <div class="setting-label">
-                                    <label>导入便签 (JSON)</label> <!-- Clarified Label -->
-                                    <span class="setting-description">从JSON文件导入便签数据 (将替换现有便签)</span>
-                                    <!-- Clarified Description -->
-                                </div>
-                                <div class="setting-control">
-                                    <label for="import-file" class="file-input-label">选择 JSON 文件</label>
-                                    <!-- Clarified Label -->
-                                    <input type="file" id="import-file" accept=".json" class="file-input">
-                                </div>
-                            </div>
 
-                            <!-- 备份操作状态提示区域 -->
-                            <div id="backup-status-area" class="backup-status"></div>
+                                <!-- 导入卡片 -->
+                                <div class="settings-card">
+                                    <div class="settings-card-header">
+                                        <h4>数据导入</h4>
+                                    </div>
+                                    <div class="settings-item">
+                                        <div class="settings-label">
+                                            <label>导入便签 (JSON)</label>
+                                            <span class="settings-description">从JSON文件导入便签数据 (将替换现有便签)</span>
+                                        </div>
+                                        <div class="settings-control">
+                                            <label for="import-file" class="file-input-label">选择 JSON 文件</label>
+                                            <input type="file" id="import-file" accept=".json" class="file-input">
+                                        </div>
+                                    </div>
+                                    <!-- 备份操作状态提示区域 -->
+                                    <div id="backup-status-area" class="settings-status"></div>
+                                </div>
 
-                            <div class="setting-item">
-                                <div class="setting-control">
-                                    <button class="reset-button">重置所有设置</button>
+                                <!-- 重置卡片 -->
+                                <div class="settings-card">
+                                    <div class="settings-card-header">
+                                        <h4>重置选项</h4>
+                                    </div>
+                                    <div class="settings-item">
+                                        <div class="settings-label">
+                                            <label>重置所有设置</label>
+                                            <span class="settings-description">将所有设置恢复为默认值，不会删除您的便签数据</span>
+                                        </div>
+                                        <div class="settings-control">
+                                            <button class="settings-button danger-button reset-button">重置所有设置</button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -303,17 +339,22 @@
                         <!-- 关于 -->
                         <div class="settings-panel" id="about-panel">
                             <h3>关于</h3>
-                            <div class="about-content">
-                                <img src="img/logo.png" alt="Logo" class="app-logo">
-                                <h2>InfinityNotes - 无限便签</h2>
-                                <p class="version">版本 1.0.0</p>
-                                <p class="description">
-                                    一个结合了无限画布和 AI 能力的便签应用，帮助您捕捉灵感、整理思路，并利用 AI 扩展您的想法。
-                                </p>
-                                <div class="links">
-                                    <a href="https://github.com/yourusername/ai-note-canvas" target="_blank">GitHub</a>
-                                    <a href="#" target="_blank">反馈问题</a>
-                                    <a href="#" target="_blank">帮助文档</a>
+                            <div class="settings-panel-content">
+                                <div class="settings-card">
+                                    <div class="about-content">
+                                        <img src="img/logo.png" alt="Logo" class="app-logo">
+                                        <h2>InfinityNotes - 无限便签</h2>
+                                        <p class="version">版本 1.0.0</p>
+                                        <p class="description">
+                                            一个结合了无限画布和 AI 能力的便签应用，帮助您捕捉灵感、整理思路，并利用 AI 扩展您的想法。
+                                        </p>
+                                        <div class="links">
+                                            <a href="https://github.com/yourusername/ai-note-canvas"
+                                                target="_blank">GitHub</a>
+                                            <a href="#" target="_blank">反馈问题</a>
+                                            <a href="#" target="_blank">帮助文档</a>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -321,9 +362,12 @@
                         <!-- 个人中心面板 (原用户管理面板) -->
                         <div class="settings-panel" id="profile-panel">
                             <h3>个人中心</h3>
-                            <div class="profile-container">
+                            <div class="settings-panel-content">
                                 <!-- 个人信息卡片 -->
-                                <div class="profile-card">
+                                <div class="settings-card">
+                                    <div class="settings-card-header">
+                                        <h4>用户信息</h4>
+                                    </div>
                                     <div class="profile-header">
                                         <div class="profile-avatar">
                                             <i class="icon-user">👤</i>
@@ -334,7 +378,8 @@
                                         </div>
                                     </div>
                                     <div class="profile-actions">
-                                        <button id="settings-logout-button" class="profile-action-button logout-button">
+                                        <button id="settings-logout-button"
+                                            class="settings-button secondary-button logout-button">
                                             <i class="icon-logout">⎋</i>
                                             <span>退出登录</span>
                                         </button>
@@ -342,37 +387,55 @@
                                 </div>
 
                                 <!-- 安全设置卡片 -->
-                                <div class="profile-card">
-                                    <div class="profile-card-header">
+                                <div class="settings-card">
+                                    <div class="settings-card-header">
                                         <h4>安全设置</h4>
                                     </div>
                                     <div class="password-form">
-                                        <div class="form-group">
-                                            <label for="current-password">当前密码</label>
-                                            <input type="password" id="current-password" placeholder="输入当前密码">
+                                        <div class="settings-item">
+                                            <div class="settings-label">
+                                                <label for="current-password">当前密码</label>
+                                            </div>
+                                            <div class="settings-control">
+                                                <input type="password" id="current-password" class="settings-input"
+                                                    placeholder="输入当前密码">
+                                            </div>
                                         </div>
-                                        <div class="form-group">
-                                            <label for="new-password">新密码</label>
-                                            <input type="password" id="new-password" placeholder="输入新密码">
+                                        <div class="settings-item">
+                                            <div class="settings-label">
+                                                <label for="new-password">新密码</label>
+                                            </div>
+                                            <div class="settings-control">
+                                                <input type="password" id="new-password" class="settings-input"
+                                                    placeholder="输入新密码">
+                                            </div>
                                         </div>
-                                        <div class="form-group">
-                                            <label for="confirm-password">确认新密码</label>
-                                            <input type="password" id="confirm-password" placeholder="再次输入新密码">
+                                        <div class="settings-item">
+                                            <div class="settings-label">
+                                                <label for="confirm-password">确认新密码</label>
+                                            </div>
+                                            <div class="settings-control">
+                                                <input type="password" id="confirm-password" class="settings-input"
+                                                    placeholder="再次输入新密码">
+                                            </div>
                                         </div>
-                                        <div class="form-actions">
-                                            <button id="change-password-button" class="primary-button">更新密码</button>
+                                        <div class="settings-actions">
+                                            <div class="primary-actions">
+                                                <button id="change-password-button"
+                                                    class="settings-button primary-button">更新密码</button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- 邀请码管理卡片 (仅管理员可见) -->
-                                <div class="profile-card admin-only">
-                                    <div class="profile-card-header">
+                                <div class="settings-card admin-only">
+                                    <div class="settings-card-header">
                                         <h4>邀请码管理</h4>
                                     </div>
                                     <div class="invite-code-container">
                                         <div class="invite-actions">
-                                            <button id="generate-invite-code" class="primary-button">
+                                            <button id="generate-invite-code" class="settings-button primary-button">
                                                 <i class="icon-plus">+</i> 生成新邀请码
                                             </button>
                                         </div>
