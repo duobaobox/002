@@ -31,13 +31,20 @@
         <button id="refresh-button" class="refresh-button">刷新数据</button>
       </div>
     </div>
-    <div class="share-controls">
-      <div class="share-tip">提示: 拖动画布可以移动视图，按住Ctrl键滚动鼠标可以缩放画布</div>
-    </div>
+    <!-- 移除旧的提示区域 -->
 
     <div class="canvas-container">
       <div id="note-canvas" class="note-canvas share-mode">
         <!-- 便签将在这里动态加载 -->
+      </div>
+    </div>
+
+    <!-- 新的悬浮提示 -->
+    <div class="floating-tip" id="share-floating-tip">
+      <div class="tip-content">
+        <span class="tip-icon">💡</span>
+        <span>拖动画布可以移动视图，按住Ctrl键滚动鼠标可以缩放画布</span>
+        <button class="tip-close" id="close-tip">&times;</button>
       </div>
     </div>
   </div>

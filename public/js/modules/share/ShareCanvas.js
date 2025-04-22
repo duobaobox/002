@@ -135,7 +135,10 @@ export class ShareCanvas {
     this.canvas.addEventListener(
       "wheel",
       (e) => {
-        // 按住Ctrl键时进行缩放，否则进行平移
+        // 检查鼠标是否在便签上
+        const isOverNote = e.target.closest(".note") !== null;
+
+        // 按住Ctrl键时进行缩放
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault(); // 防止页面滚动
 
@@ -164,8 +167,14 @@ export class ShareCanvas {
 
           // 应用变换
           this.applyTransform();
-        } else {
-          // 不按Ctrl键时，使用滚轮进行平移
+        }
+        // 如果鼠标在便签上，允许正常滚动便签内容
+        else if (isOverNote) {
+          // 不阻止默认行为，允许滚动便签内容
+          return;
+        }
+        // 在画布空白处使用滚轮进行平移
+        else {
           e.preventDefault();
 
           // 垂直滚动时上下平移，水平滚动时左右平移
