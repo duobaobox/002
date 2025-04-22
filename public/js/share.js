@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // 显示分享ID
   document.getElementById("share-id-display").textContent = shareId;
 
-  // 显示画布名称
+  // 初始显示画布名称（从 URL 参数获取）
   const canvasTitleElement = document.getElementById("canvas-title");
   if (canvasTitleElement) {
     // 解码URL编码的名称
@@ -67,6 +67,15 @@ async function loadSharedCanvas(shareId, silent = false) {
     const response = await fetch(`/api/share/${shareId}`);
 
     if (!response.ok) {
+      // 检查是否是分享已关闭的错误
+      if (response.status === 403) {
+        const errorData = await response.json();
+        if (errorData.isClosed) {
+          // 重定向到分享关闭页面
+          window.location.href = `/share-closed.html?id=${shareId}`;
+          return;
+        }
+      }
       throw new Error("获取分享数据失败");
     }
 
@@ -81,6 +90,14 @@ async function loadSharedCanvas(shareId, silent = false) {
     document.getElementById("last-updated").textContent = new Date(
       data.lastUpdated
     ).toLocaleString();
+
+    // 更新画布名称（使用服务器返回的名称）
+    const canvasTitleElement = document.getElementById("canvas-title");
+    if (canvasTitleElement && data.canvasName) {
+      canvasTitleElement.textContent = data.canvasName;
+      // 更新页面标题
+      document.title = `${data.canvasName} - 分享页面`;
+    }
 
     // 如果是静默刷新且没有变化，则不重新渲染
     if (silent && data.noChanges) {

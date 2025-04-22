@@ -158,6 +158,11 @@ app.get("/share.html", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/share.html"));
 });
 
+// 分享关闭页面不需要登录即可访问
+app.get("/share-closed.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/share-closed.html"));
+});
+
 // 主页重定向到登录页（如果未登录）
 app.get("/", (req, res, next) => {
   if (req.session && req.session.user) {
@@ -172,6 +177,12 @@ app.get("*", (req, res) => {
   // 允许分享相关的路由和页面无需登录即可访问
   if (req.path.startsWith("/share") || req.path === "/share.html") {
     res.sendFile(path.join(__dirname, "../public/share.html"));
+    return;
+  }
+
+  // 允许分享关闭页面无需登录即可访问
+  if (req.path === "/share-closed.html") {
+    res.sendFile(path.join(__dirname, "../public/share-closed.html"));
     return;
   }
 

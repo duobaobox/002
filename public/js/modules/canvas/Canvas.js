@@ -19,6 +19,9 @@ export class Canvas {
     this.minScale = 0.3; // 最小缩放比例30%
     this.maxScale = 2.0; // 最大缩放比例200%
 
+    // 添加分享状态跟踪
+    this.activeShare = null; // 当前活跃的分享信息，如果没有则为 null
+
     // 创建便签容器元素
     this.createNoteContainer();
 
@@ -400,55 +403,27 @@ export class Canvas {
 
   /**
    * 分享画布
-   * 创建一个可分享的画布链接
+   * 打开分享配置弹窗，允许用户开启或关闭分享
    */
-  async shareCanvas() {
-    try {
-      // 移除显示加载中提示，因为分享对话框已经足够清晰
-      console.log("开始创建分享...");
-
-      // 发送请求创建分享
-      const response = await fetch("/api/share", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "same-origin", // 确保发送认证信息
-        body: JSON.stringify({
-          // 不需要发送便签数据，服务器会从数据库获取
-          canvasState: {
-            scale: this.scale,
-            offsetX: this.offset.x,
-            offsetY: this.offset.y,
-          },
-        }),
-      });
-
-      console.log("分享请求响应状态:", response.status);
-
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.message || "创建分享失败");
-      }
-
-      // 创建分享链接
-      const shareUrl = `${window.location.origin}/share.html?id=${data.shareId}`;
-
-      // 显示分享对话框
-      this.showShareDialog(shareUrl, data.shareId);
-    } catch (error) {
-      console.error("分享画布出错:", error);
-      this.showMessage(`分享失败: ${error.message}`, "error");
+  shareCanvas() {
+    // 检查是否已有活跃的分享
+    if (this.activeShare) {
+      // 如果已有活跃分享，直接显示分享链接弹窗
+      this.showShareLinkDialog(
+        this.activeShare.url,
+        this.activeShare.id,
+        this.activeShare.canvasName
+      );
+    } else {
+      // 如果没有活跃分享，打开分享配置弹窗
+      this.showShareConfigDialog();
     }
   }
 
   /**
-   * 显示分享对话框
-   * @param {string} shareUrl - 分享链接
-   * @param {string} shareId - 分享 ID
+   * 显示分享配置弹窗
    */
-  showShareDialog(shareUrl, shareId) {
+  showShareConfigDialog() {
     // 移除现有的对话框
     const existingDialog = document.querySelector(".share-dialog");
     if (existingDialog) {
@@ -463,7 +438,7 @@ export class Canvas {
     dialog.className = "share-dialog";
     dialog.innerHTML = `
       <div class="share-dialog-content">
-        <h3>画布分享链接</h3>
+        <h3>分享画布</h3>
 
         <!-- 添加画布名称输入框 -->
         <div class="canvas-name-container">
@@ -471,15 +446,134 @@ export class Canvas {
           <input type="text" id="canvas-name" class="canvas-name" value="${defaultCanvasName}" placeholder="输入画布名称" />
         </div>
 
+        <p class="share-description">开启分享后，其他人可以通过链接查看您的画布内容。</p>
+
+        <div class="share-actions">
+          <button class="start-share-btn primary-btn">开启分享</button>
+          <button class="close-btn">取消</button>
+        </div>
+      </div>
+    `;
+
+    // 添加到文档
+    document.body.appendChild(dialog);
+
+    // 添加事件处理
+    const startShareBtn = dialog.querySelector(".start-share-btn");
+    const closeBtn = dialog.querySelector(".close-btn");
+    const canvasNameInput = dialog.querySelector("#canvas-name");
+
+    // 开启分享按钮事件
+    startShareBtn.addEventListener("click", async () => {
+      try {
+        startShareBtn.disabled = true;
+        startShareBtn.textContent = "正在创建分享...";
+
+        // 获取画布名称
+        const canvasName = canvasNameInput.value.trim() || defaultCanvasName;
+
+        // 发送请求创建分享
+        const response = await fetch("/api/share", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "same-origin", // 确保发送认证信息
+          body: JSON.stringify({
+            // 不需要发送便签数据，服务器会从数据库获取
+            canvasState: {
+              scale: this.scale,
+              offsetX: this.offset.x,
+              offsetY: this.offset.y,
+            },
+            canvasName: canvasName, // 添加画布名称
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.message || "创建分享失败");
+        }
+
+        // 创建分享链接
+        const shareUrl = `${window.location.origin}/share.html?id=${
+          data.shareId
+        }&name=${encodeURIComponent(canvasName)}`;
+
+        // 保存当前活跃的分享信息
+        this.activeShare = {
+          id: data.shareId,
+          url: shareUrl,
+          canvasName: canvasName,
+          createdAt: new Date().toISOString(),
+        };
+
+        // 关闭当前对话框
+        dialog.remove();
+
+        // 显示分享链接对话框
+        this.showShareLinkDialog(shareUrl, data.shareId, canvasName);
+      } catch (error) {
+        console.error("分享画布出错:", error);
+        startShareBtn.disabled = false;
+        startShareBtn.textContent = "开启分享";
+        this.showMessage(`分享失败: ${error.message}`, "error");
+      }
+    });
+
+    closeBtn.addEventListener("click", () => {
+      dialog.remove();
+    });
+
+    // 点击对话框外部关闭
+    dialog.addEventListener("click", (e) => {
+      if (e.target === dialog) {
+        dialog.remove();
+      }
+    });
+  }
+
+  /**
+   * 显示分享链接对话框
+   * @param {string} shareUrl - 分享链接
+   * @param {string} shareId - 分享 ID
+   * @param {string} canvasName - 画布名称
+   */
+  showShareLinkDialog(shareUrl, shareId, canvasName) {
+    // 移除现有的对话框
+    const existingDialog = document.querySelector(".share-dialog");
+    if (existingDialog) {
+      existingDialog.remove();
+    }
+
+    // 创建对话框
+    const dialog = document.createElement("div");
+    dialog.className = "share-dialog";
+    dialog.innerHTML = `
+      <div class="share-dialog-content">
+        <h3>画布分享已开启</h3>
+
+        <p class="share-status">分享状态: <span class="share-status-active">已开启</span></p>
         <p>使用以下链接分享您的画布：</p>
         <div class="share-url-container">
           <input type="text" class="share-url" value="${shareUrl}" readonly />
           <button class="copy-btn">复制</button>
         </div>
         <p class="share-info">分享 ID: <span class="share-id">${shareId}</span></p>
+        <p class="share-info">画布名称: <span class="canvas-name-display">${canvasName}</span></p>
+
+        <div class="share-options">
+          <div class="share-option-buttons">
+            <button class="refresh-share-btn">刷新分享内容</button>
+            <button class="close-share-btn">关闭分享</button>
+          </div>
+          <p class="share-info-text">刷新分享内容可以将当前画布的最新状态同步到分享页面</p>
+          <p class="close-share-info">关闭后分享链接将无法访问</p>
+        </div>
         <div class="share-actions">
           <button class="open-btn">在新标签页打开</button>
-          <button class="close-btn">关闭</button>
+          <button class="close-btn">关闭窗口</button>
         </div>
       </div>
     `;
@@ -491,26 +585,9 @@ export class Canvas {
     const copyBtn = dialog.querySelector(".copy-btn");
     const openBtn = dialog.querySelector(".open-btn");
     const closeBtn = dialog.querySelector(".close-btn");
+    const closeShareBtn = dialog.querySelector(".close-share-btn");
+    const refreshShareBtn = dialog.querySelector(".refresh-share-btn");
     const urlInput = dialog.querySelector(".share-url");
-
-    // 获取画布名称输入框
-    const canvasNameInput = dialog.querySelector("#canvas-name");
-
-    // 更新URL函数
-    const updateShareUrl = () => {
-      const canvasName = encodeURIComponent(
-        canvasNameInput.value.trim() || defaultCanvasName
-      );
-      const updatedUrl = `${window.location.origin}/share.html?id=${shareId}&name=${canvasName}`;
-      urlInput.value = updatedUrl;
-      return updatedUrl;
-    };
-
-    // 初始更新URL
-    updateShareUrl();
-
-    // 画布名称输入框变化时更新URL
-    canvasNameInput.addEventListener("input", updateShareUrl);
 
     copyBtn.addEventListener("click", () => {
       urlInput.select();
@@ -545,12 +622,98 @@ export class Canvas {
     });
 
     openBtn.addEventListener("click", () => {
-      // 打开时使用当前的URL（包含画布名称）
-      window.open(urlInput.value, "_blank");
+      // 打开分享链接
+      window.open(shareUrl, "_blank");
     });
 
     closeBtn.addEventListener("click", () => {
       dialog.remove();
+    });
+
+    // 刷新分享内容按钮事件
+    refreshShareBtn.addEventListener("click", async () => {
+      try {
+        refreshShareBtn.disabled = true;
+        refreshShareBtn.textContent = "正在刷新...";
+
+        // 发送请求创建分享
+        const response = await fetch(`/api/share/refresh/${shareId}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "same-origin", // 确保发送认证信息
+          body: JSON.stringify({
+            canvasState: {
+              scale: this.scale,
+              offsetX: this.offset.x,
+              offsetY: this.offset.y,
+            },
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.message || "刷新分享失败");
+        }
+
+        // 刷新成功
+        this.showMessage("分享内容已更新", "success");
+        refreshShareBtn.textContent = "刷新分享内容";
+        refreshShareBtn.disabled = false;
+      } catch (error) {
+        console.error("刷新分享出错:", error);
+        refreshShareBtn.textContent = "刷新失败";
+        setTimeout(() => {
+          refreshShareBtn.disabled = false;
+          refreshShareBtn.textContent = "刷新分享内容";
+        }, 2000);
+        this.showMessage(`刷新分享失败: ${error.message}`, "error");
+      }
+    });
+
+    // 关闭分享按钮事件
+    closeShareBtn.addEventListener("click", async () => {
+      if (!confirm("确定要关闭此分享吗？\n关闭后分享链接将无法访问。")) {
+        return;
+      }
+
+      try {
+        // 发送关闭分享请求
+        closeShareBtn.disabled = true;
+        closeShareBtn.textContent = "正在关闭...";
+
+        const response = await fetch(`/api/share/close/${shareId}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "same-origin",
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.message || "关闭分享失败");
+        }
+
+        // 关闭成功
+        this.showMessage("分享已关闭", "success");
+
+        // 清除活跃分享信息
+        this.activeShare = null;
+
+        dialog.remove();
+      } catch (error) {
+        console.error("关闭分享出错:", error);
+        closeShareBtn.textContent = "关闭失败";
+        setTimeout(() => {
+          closeShareBtn.disabled = false;
+          closeShareBtn.textContent = "关闭分享";
+        }, 2000);
+        this.showMessage(`关闭分享失败: ${error.message}`, "error");
+      }
     });
 
     // 点击对话框外部关闭
