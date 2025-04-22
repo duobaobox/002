@@ -404,9 +404,7 @@ export class Canvas {
    */
   async shareCanvas() {
     try {
-      // 显示加载中提示
-      this.showMessage("正在创建分享链接...", "info");
-
+      // 移除显示加载中提示，因为分享对话框已经足够清晰
       console.log("开始创建分享...");
 
       // 发送请求创建分享
@@ -457,12 +455,22 @@ export class Canvas {
       existingDialog.remove();
     }
 
+    // 获取应用名称作为默认画布名称
+    const defaultCanvasName = "AI便签画布"; // 默认软件名称
+
     // 创建对话框
     const dialog = document.createElement("div");
     dialog.className = "share-dialog";
     dialog.innerHTML = `
       <div class="share-dialog-content">
         <h3>画布分享链接</h3>
+
+        <!-- 添加画布名称输入框 -->
+        <div class="canvas-name-container">
+          <label for="canvas-name">画布名称:</label>
+          <input type="text" id="canvas-name" class="canvas-name" value="${defaultCanvasName}" placeholder="输入画布名称" />
+        </div>
+
         <p>使用以下链接分享您的画布：</p>
         <div class="share-url-container">
           <input type="text" class="share-url" value="${shareUrl}" readonly />
@@ -485,161 +493,60 @@ export class Canvas {
     const closeBtn = dialog.querySelector(".close-btn");
     const urlInput = dialog.querySelector(".share-url");
 
-    copyBtn.addEventListener("click", () => {
-      urlInput.select();
-      document.execCommand("copy");
-      copyBtn.textContent = "已复制";
-      setTimeout(() => {
-        copyBtn.textContent = "复制";
-      }, 2000);
-    });
+    // 获取画布名称输入框
+    const canvasNameInput = dialog.querySelector("#canvas-name");
 
-    openBtn.addEventListener("click", () => {
-      window.open(shareUrl, "_blank");
-    });
+    // 更新URL函数
+    const updateShareUrl = () => {
+      const canvasName = encodeURIComponent(
+        canvasNameInput.value.trim() || defaultCanvasName
+      );
+      const updatedUrl = `${window.location.origin}/share.html?id=${shareId}&name=${canvasName}`;
+      urlInput.value = updatedUrl;
+      return updatedUrl;
+    };
 
-    closeBtn.addEventListener("click", () => {
-      dialog.remove();
-    });
+    // 初始更新URL
+    updateShareUrl();
 
-    // 点击对话框外部关闭
-    dialog.addEventListener("click", (e) => {
-      if (e.target === dialog) {
-        dialog.remove();
-      }
-    });
-  }
-
-  /**
-   * 显示消息提示
-   * @param {string} message - 消息内容
-   * @param {string} type - 消息类型（info, success, warning, error）
-   */
-  showMessage(message, type = "info") {
-    // 移除现有的消息
-    const existingMessages = document.querySelectorAll(".canvas-message");
-    existingMessages.forEach((msg) => {
-      msg.remove();
-    });
-
-    // 创建消息元素
-    const messageEl = document.createElement("div");
-    messageEl.className = `canvas-message ${type}`;
-    messageEl.textContent = message;
-
-    // 添加到文档
-    document.body.appendChild(messageEl);
-
-    // 添加动画效果
-    setTimeout(() => {
-      messageEl.classList.add("show");
-    }, 10);
-
-    // 自动移除
-    setTimeout(() => {
-      messageEl.classList.remove("show");
-      setTimeout(() => {
-        messageEl.remove();
-      }, 300);
-    }, 3000);
-  }
-
-  /**
-   * 分享画布
-   * 创建一个可分享的画布链接
-   */
-  async shareCanvas() {
-    try {
-      // 显示加载中提示
-      this.showMessage("正在创建分享链接...", "info");
-
-      console.log("开始创建分享...");
-
-      // 发送请求创建分享
-      const response = await fetch("/api/share", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "same-origin", // 确保发送认证信息
-        body: JSON.stringify({
-          // 不需要发送便签数据，服务器会从数据库获取
-          canvasState: {
-            scale: this.scale,
-            offsetX: this.offset.x,
-            offsetY: this.offset.y,
-          },
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.message || "创建分享失败");
-      }
-
-      // 创建分享链接
-      const shareUrl = `${window.location.origin}/share.html?id=${data.shareId}`;
-
-      // 显示分享对话框
-      this.showShareDialog(shareUrl, data.shareId);
-    } catch (error) {
-      console.error("分享画布出错:", error);
-      this.showMessage(`分享失败: ${error.message}`, "error");
-    }
-  }
-
-  /**
-   * 显示分享对话框
-   * @param {string} shareUrl - 分享链接
-   * @param {string} shareId - 分享 ID
-   */
-  showShareDialog(shareUrl, shareId) {
-    // 移除现有的对话框
-    const existingDialog = document.querySelector(".share-dialog");
-    if (existingDialog) {
-      existingDialog.remove();
-    }
-
-    // 创建对话框
-    const dialog = document.createElement("div");
-    dialog.className = "share-dialog";
-    dialog.innerHTML = `
-      <div class="share-dialog-content">
-        <h3>画布分享链接</h3>
-        <p>使用以下链接分享您的画布：</p>
-        <div class="share-url-container">
-          <input type="text" class="share-url" value="${shareUrl}" readonly />
-          <button class="copy-btn">复制</button>
-        </div>
-        <p class="share-info">分享 ID: <span class="share-id">${shareId}</span></p>
-        <div class="share-actions">
-          <button class="open-btn">在新标签页打开</button>
-          <button class="close-btn">关闭</button>
-        </div>
-      </div>
-    `;
-
-    // 添加到文档
-    document.body.appendChild(dialog);
-
-    // 添加事件处理
-    const copyBtn = dialog.querySelector(".copy-btn");
-    const openBtn = dialog.querySelector(".open-btn");
-    const closeBtn = dialog.querySelector(".close-btn");
-    const urlInput = dialog.querySelector(".share-url");
+    // 画布名称输入框变化时更新URL
+    canvasNameInput.addEventListener("input", updateShareUrl);
 
     copyBtn.addEventListener("click", () => {
       urlInput.select();
-      document.execCommand("copy");
-      copyBtn.textContent = "已复制";
-      setTimeout(() => {
-        copyBtn.textContent = "复制";
-      }, 2000);
+      // 使用现代剪贴板 API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard
+          .writeText(urlInput.value)
+          .then(() => {
+            copyBtn.textContent = "已复制";
+            setTimeout(() => {
+              copyBtn.textContent = "复制";
+            }, 2000);
+          })
+          .catch((err) => {
+            console.error("复制失败:", err);
+            // 如果现代API失败，回退到旧方法
+            urlInput.select();
+            document.execCommand("copy");
+            copyBtn.textContent = "已复制";
+            setTimeout(() => {
+              copyBtn.textContent = "复制";
+            }, 2000);
+          });
+      } else {
+        // 旧方法兼容
+        document.execCommand("copy");
+        copyBtn.textContent = "已复制";
+        setTimeout(() => {
+          copyBtn.textContent = "复制";
+        }, 2000);
+      }
     });
 
     openBtn.addEventListener("click", () => {
-      window.open(shareUrl, "_blank");
+      // 打开时使用当前的URL（包含画布名称）
+      window.open(urlInput.value, "_blank");
     });
 
     closeBtn.addEventListener("click", () => {

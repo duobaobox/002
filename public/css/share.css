@@ -125,197 +125,36 @@
   overflow: hidden;
 }
 
-.note-canvas.share-mode {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  background-color: #f9f9f9;
-  background-image: linear-gradient(
-      rgba(200, 200, 200, 0.2) 1px,
-      transparent 1px
-    ),
-    linear-gradient(90deg, rgba(200, 200, 200, 0.2) 1px, transparent 1px);
-  background-size: 30px 30px;
-}
+/* 画布样式 - 使用与原始页面相同的结构 */
 
-/* 只读模式下的便签样式 */
-.note-canvas.share-mode .note {
-  cursor: default;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.3s ease;
-}
+/* 分享页面只读模式的样式覆盖 */
 
-.note-canvas.share-mode .note:hover {
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-}
-
-.note-canvas.share-mode .note .note-header {
-  cursor: default;
-  padding: 8px 12px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.note-canvas.share-mode .note .note-title {
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-
-/* 只隐藏调整大小控件，保留关闭按钮 */
-.note-canvas.share-mode .note .note-resize-handle {
+/* 隐藏调整大小控件 */
+.note.read-only .note-resize-handle {
   display: none;
 }
 
-/* 关闭按钮样式 - 与原始便签保持一致 */
-.note-canvas.share-mode .note .note-close {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.6);
-  color: #666;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  margin-right: 5px;
-  cursor: default; /* 使用默认光标而非禁用光标 */
-  opacity: 0.7; /* 与原始便签保持一致的不透明度 */
-  pointer-events: none; /* 禁用交互，但保持原样式 */
+/* 禁用关闭按钮交互，但保持原样式 */
+.note.read-only .note-close {
+  pointer-events: none; /* 禁用交互 */
 }
 
-/* 便签内容区域样式 */
-.note-canvas.share-mode .note .note-body {
-  position: relative;
-  flex: 1;
-  display: flex;
-  overflow: hidden; /* 确保内容不会溢出便签 */
-  height: calc(100% - 30px); /* 减去标题高度 */
+/* 确保预览区域始终可见 */
+.note.read-only .markdown-preview {
+  display: block !important;
 }
 
-/* 分享页面中的Markdown预览区域样式 */
-.note-canvas.share-mode .markdown-preview {
-  display: block !important; /* 强制显示预览区域 */
-  width: 100%;
-  height: 100%;
-  padding: 10px 12px;
-  overflow-y: auto;
-  font-family: inherit;
-  font-size: 14px;
-  line-height: 1.5;
-  color: rgba(0, 0, 0, 0.8);
-  /* 隐藏原生滚动条 */
-  scrollbar-width: none; /* Firefox */
-}
-
-/* 隐藏Webkit浏览器的原生滚动条 */
-.note-canvas.share-mode .markdown-preview::-webkit-scrollbar {
-  display: none;
-}
-
-/* 自定义滚动条容器 */
-.note-canvas.share-mode .note .custom-scrollbar {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 6px;
-  height: 100%;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  z-index: 2;
+/* 禁用标题编辑 */
+.note.read-only .note-title {
   pointer-events: none;
 }
 
-/* 便签悬停时显示滚动条 */
-.note-canvas.share-mode .note:hover .custom-scrollbar {
-  opacity: 1;
+/* 禁用便签拖动 */
+.note.read-only .note-header {
+  cursor: default;
 }
 
-/* 滚动条滑块 */
-.note-canvas.share-mode .note .scrollbar-thumb {
-  position: absolute;
-  right: 1px;
-  width: 4px;
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 2px;
-  transition: background-color 0.2s ease;
-}
-
-.note-canvas.share-mode .note .scrollbar-thumb:hover {
-  background-color: rgba(0, 0, 0, 0.3);
-}
-
-/* Markdown 格式化样式 */
-.note-canvas.share-mode .markdown-preview h1,
-.note-canvas.share-mode .markdown-preview h2,
-.note-canvas.share-mode .markdown-preview h3 {
-  margin-top: 16px;
-  margin-bottom: 8px;
-  font-weight: 600;
-}
-
-.note-canvas.share-mode .markdown-preview h1 {
-  font-size: 20px;
-}
-
-.note-canvas.share-mode .markdown-preview h2 {
-  font-size: 18px;
-}
-
-.note-canvas.share-mode .markdown-preview h3 {
-  font-size: 16px;
-}
-
-.note-canvas.share-mode .markdown-preview p {
-  margin-bottom: 10px;
-}
-
-.note-canvas.share-mode .markdown-preview ul,
-.note-canvas.share-mode .markdown-preview ol {
-  margin-left: 20px;
-  margin-bottom: 10px;
-}
-
-.note-canvas.share-mode .markdown-preview code {
-  background-color: rgba(0, 0, 0, 0.05);
-  padding: 2px 4px;
-  border-radius: 3px;
-  font-family: monospace;
-}
-
-.note-canvas.share-mode .markdown-preview pre {
-  background-color: rgba(0, 0, 0, 0.05);
-  padding: 10px;
-  border-radius: 4px;
-  overflow-x: auto;
-  margin-bottom: 10px;
-}
-
-.note-canvas.share-mode .markdown-preview pre code {
-  background-color: transparent;
-  padding: 0;
-}
-
-.note-canvas.share-mode .markdown-preview blockquote {
-  border-left: 4px solid rgba(0, 0, 0, 0.1);
-  padding-left: 10px;
-  margin-left: 0;
-  color: rgba(0, 0, 0, 0.6);
-}
-
-.note-canvas.share-mode .markdown-preview a {
-  color: #1a73e8;
-  text-decoration: none;
-}
-
-.note-canvas.share-mode .markdown-preview a:hover {
-  text-decoration: underline;
-}
-
-.note-canvas.share-mode .markdown-preview img {
-  max-width: 100%;
-  height: auto;
-  display: block;
-  margin: 10px 0;
-}
+/* Markdown样式使用原始页面的markdown.css */
 
 /* 添加加载指示器样式 */
 .loading-indicator {

@@ -9,6 +9,10 @@
   <link rel="stylesheet" href="/css/style.css">
   <!-- 引入主样式文件，包含便签样式等 -->
   <link rel="stylesheet" href="/css/main.css">
+  <!-- 引入便签样式 -->
+  <link rel="stylesheet" href="/css/notes.css">
+  <!-- 引入Markdown样式 -->
+  <link rel="stylesheet" href="/css/markdown.css">
   <!-- 引入自定义样式 -->
   <link rel="stylesheet" href="/css/custom-styles.css">
   <!-- 引入分享页面特定样式 -->
@@ -24,7 +28,7 @@
 <body>
   <div class="share-container">
     <div class="share-header">
-      <h1 class="share-title">便签画布分享</h1>
+      <h1 class="share-title" id="canvas-title">便签画布分享</h1>
       <div class="share-info">
         <span class="share-id">分享ID: <span id="share-id-display"></span></span>
         <span class="share-time">最后更新: <span id="last-updated"></span></span>
@@ -34,8 +38,11 @@
     <!-- 移除旧的提示区域 -->
 
     <div class="canvas-container">
-      <div id="note-canvas" class="note-canvas share-mode">
-        <!-- 便签将在这里动态加载 -->
+      <div id="note-canvas" class="note-canvas">
+        <!-- 便签容器，与原始页面保持一致的结构 -->
+        <div id="note-container" class="note-container">
+          <!-- 便签将在这里动态加载 -->
+        </div>
       </div>
     </div>
 
