@@ -53,6 +53,14 @@ document.addEventListener("DOMContentLoaded", () => {
  * @param {boolean} silent - 是否静默刷新（不显示加载提示）
  */
 async function loadSharedCanvas(shareId, silent = false) {
+  // 添加加载状态跟踪，避免重复加载
+  if (window.isLoading) {
+    console.log("正在加载中，请稍后...");
+    return;
+  }
+
+  window.isLoading = true;
+
   try {
     if (!silent) {
       // 显示加载中提示
@@ -133,6 +141,9 @@ async function loadSharedCanvas(shareId, silent = false) {
       const loadingEl = document.querySelector(".loading-indicator");
       if (loadingEl) loadingEl.remove();
     }
+
+    // 重置加载状态
+    window.isLoading = false;
   }
 }
 
@@ -166,19 +177,25 @@ function renderNotes(notes) {
 
   console.log("开始渲染便签，数量:", notes.length);
 
+  // 使用文档片段批量创建便签，提高性能
+  const fragment = document.createDocumentFragment();
+
   // 渲染每个便签
   notes.forEach((noteData, index) => {
-    console.log(`渲染便签 ${index + 1}:`, noteData);
-    createReadOnlyNote(noteData, noteContainer);
+    const note = createReadOnlyNote(noteData);
+    if (note) fragment.appendChild(note);
   });
+
+  // 一次性添加所有便签到DOM
+  noteContainer.appendChild(fragment);
 }
 
 /**
  * 创建只读便签
  * @param {Object} noteData - 便签数据
- * @param {HTMLElement} container - 便签容器
+ * @returns {HTMLElement} 创建的便签元素
  */
-function createReadOnlyNote(noteData, container) {
+function createReadOnlyNote(noteData) {
   // 创建便签元素 - 使用与原始便签相同的结构
   const note = document.createElement("div");
   note.className = `note ${noteData.colorClass || "note-yellow"} read-only`; // 添加read-only类标记只读状态
@@ -279,17 +296,14 @@ function createReadOnlyNote(noteData, container) {
   note.appendChild(header);
   note.appendChild(body);
 
-  // 添加到容器
-  container.appendChild(note);
-
-  // 初始化滚动条
-  setTimeout(() => {
+  // 初始化滚动条（延迟处理，避免阻塞渲染）
+  requestAnimationFrame(() => {
     const previewElement = note.querySelector(".markdown-preview");
     const scrollbarThumb = note.querySelector(".scrollbar-thumb");
     if (previewElement && scrollbarThumb) {
       updateScrollbar(previewElement, scrollbarThumb);
     }
-  }, 100);
+  });
 
   return note;
 }

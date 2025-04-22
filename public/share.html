@@ -5,24 +5,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>便签画布分享</title>
-  <!-- 引入基础样式 -->
-  <link rel="stylesheet" href="/css/style.css">
-  <!-- 引入主样式文件，包含便签样式等 -->
-  <link rel="stylesheet" href="/css/main.css">
+  <!-- 引入分享页面所需的样式，合并减少HTTP请求 -->
+  <link rel="stylesheet" href="/css/share.css">
   <!-- 引入便签样式 -->
   <link rel="stylesheet" href="/css/notes.css">
   <!-- 引入Markdown样式 -->
   <link rel="stylesheet" href="/css/markdown.css">
-  <!-- 引入自定义样式 -->
-  <link rel="stylesheet" href="/css/custom-styles.css">
-  <!-- 引入分享页面特定样式 -->
-  <link rel="stylesheet" href="/css/share.css">
   <link rel="icon" href="/favicon.ico" type="image/x-icon">
   <!-- 添加 marked.js 库用于Markdown渲染 -->
-  <script src="https://cdn.jsdelivr.net/npm/marked@3.0.8/marked.min.js"></script>
-  <!-- 添加 highlight.js 用于代码高亮 -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@3.0.8/marked.min.js" defer></script>
+  <!-- 添加 highlight.js 用于代码高亮，使用defer延迟加载 -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.3.1/styles/github.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.3.1/highlight.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.3.1/highlight.min.js" defer></script>
 </head>
 
 <body>

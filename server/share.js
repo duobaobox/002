@@ -109,16 +109,8 @@ router.get("/:id", async (req, res) => {
       });
     }
 
-    // 更新分享数据（如果需要）
-    if (shareData.userId) {
-      // 获取最新的便签数据
-      const notes = await getAllNotes();
-
-      // 更新缓存中的数据
-      shareData.notes = notes;
-      shareData.lastUpdated = new Date().toISOString();
-      shareCache.set(shareId, shareData);
-    }
+    // 不自动更新分享数据，只在用户主动刷新时更新
+    // 这样可以避免每次访问分享页面时都要查询数据库
 
     // 返回分享数据
     res.json({
