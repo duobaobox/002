@@ -9,9 +9,10 @@ import { ShareCanvas } from "./modules/share/ShareCanvas.js";
 let shareCanvas = null;
 
 document.addEventListener("DOMContentLoaded", () => {
-  // 从URL获取分享ID
+  // 从URL获取分享ID和画布名称
   const urlParams = new URLSearchParams(window.location.search);
   const shareId = urlParams.get("id");
+  const canvasName = urlParams.get("name") || "AI便签画布"; // 获取画布名称，如果没有则使用默认名称
 
   if (!shareId) {
     showError("无效的分享链接");
@@ -20,6 +21,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 显示分享ID
   document.getElementById("share-id-display").textContent = shareId;
+
+  // 显示画布名称
+  const canvasTitleElement = document.getElementById("canvas-title");
+  if (canvasTitleElement) {
+    // 解码URL编码的名称
+    const decodedName = decodeURIComponent(canvasName);
+    canvasTitleElement.textContent = decodedName;
+    // 更新页面标题
+    document.title = `${decodedName} - 分享页面`;
+  }
 
   // 加载分享数据
   loadSharedCanvas(shareId);
@@ -119,18 +130,20 @@ function renderNotes(notes) {
   const existingNotes = canvas.querySelectorAll(".note");
   existingNotes.forEach((note) => note.remove());
 
-  // 创建便签容器
+  // 创建网格背景（如果不存在）
+  let gridBackground = canvas.querySelector(".grid-background");
+  if (!gridBackground) {
+    gridBackground = document.createElement("div");
+    gridBackground.className = "grid-background";
+    canvas.appendChild(gridBackground);
+  }
+
+  // 确保便签容器存在
   let noteContainer = document.getElementById("note-container");
   if (!noteContainer) {
     noteContainer = document.createElement("div");
     noteContainer.id = "note-container";
     noteContainer.className = "note-container";
-    noteContainer.style.position = "absolute";
-    noteContainer.style.width = "100%";
-    noteContainer.style.height = "100%";
-    noteContainer.style.top = "0";
-    noteContainer.style.left = "0";
-    noteContainer.style.transformOrigin = "0 0";
     canvas.appendChild(noteContainer);
   }
 
@@ -149,9 +162,9 @@ function renderNotes(notes) {
  * @param {HTMLElement} container - 便签容器
  */
 function createReadOnlyNote(noteData, container) {
-  // 创建便签元素
+  // 创建便签元素 - 使用与原始便签相同的结构
   const note = document.createElement("div");
-  note.className = `note ${noteData.colorClass || "note-yellow"}`;
+  note.className = `note ${noteData.colorClass || "note-yellow"} read-only`; // 添加read-only类标记只读状态
   note.style.left = `${noteData.x}px`;
   note.style.top = `${noteData.y}px`;
   note.style.zIndex = noteData.zIndex || 1;
@@ -174,9 +187,9 @@ function createReadOnlyNote(noteData, container) {
   title.textContent = noteData.title || `便签 ${noteData.id}`;
   header.appendChild(title);
 
-  // 添加关闭按钮（禁用状态）
+  // 添加关闭按钮 - 使用与原始便签相同的结构
   const closeBtn = document.createElement("div");
-  closeBtn.className = "note-close disabled";
+  closeBtn.className = "note-close"; // 不添加disabled类，使用CSS选择器来处理只读状态
   closeBtn.innerHTML = "&times;";
   header.appendChild(closeBtn);
 
@@ -228,7 +241,7 @@ function createReadOnlyNote(noteData, container) {
     });
   }
 
-  // 创建自定义滚动条容器
+  // 创建自定义滚动条容器 - 与原始便签相同
   const scrollbarContainer = document.createElement("div");
   scrollbarContainer.className = "custom-scrollbar";
 
