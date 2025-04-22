@@ -31,6 +31,9 @@ document.addEventListener("DOMContentLoaded", () => {
       loadSharedCanvas(shareId);
     });
   }
+
+  // 处理悬浮提示
+  setupFloatingTip();
 });
 
 /**
@@ -171,6 +174,12 @@ function createReadOnlyNote(noteData, container) {
   title.textContent = noteData.title || `便签 ${noteData.id}`;
   header.appendChild(title);
 
+  // 添加关闭按钮（禁用状态）
+  const closeBtn = document.createElement("div");
+  closeBtn.className = "note-close disabled";
+  closeBtn.innerHTML = "&times;";
+  header.appendChild(closeBtn);
+
   // 创建便签内容区域
   const body = document.createElement("div");
   body.className = "note-body";
@@ -219,7 +228,22 @@ function createReadOnlyNote(noteData, container) {
     });
   }
 
+  // 创建自定义滚动条容器
+  const scrollbarContainer = document.createElement("div");
+  scrollbarContainer.className = "custom-scrollbar";
+
+  // 创建滚动条滑块
+  const scrollbarThumb = document.createElement("div");
+  scrollbarThumb.className = "scrollbar-thumb";
+  scrollbarContainer.appendChild(scrollbarThumb);
+
+  // 添加滚动事件监听器
+  preview.addEventListener("scroll", () => {
+    updateScrollbar(preview, scrollbarThumb);
+  });
+
   body.appendChild(preview);
+  body.appendChild(scrollbarContainer);
 
   // 组装便签
   note.appendChild(header);
@@ -227,6 +251,15 @@ function createReadOnlyNote(noteData, container) {
 
   // 添加到容器
   container.appendChild(note);
+
+  // 初始化滚动条
+  setTimeout(() => {
+    const previewElement = note.querySelector(".markdown-preview");
+    const scrollbarThumb = note.querySelector(".scrollbar-thumb");
+    if (previewElement && scrollbarThumb) {
+      updateScrollbar(previewElement, scrollbarThumb);
+    }
+  }, 100);
 
   return note;
 }
@@ -291,4 +324,88 @@ function showError(message) {
   `;
 
   canvas.appendChild(errorEl);
+}
+
+/**
+ * 更新自定义滚动条
+ * @param {HTMLElement} element - 内容元素
+ * @param {HTMLElement} scrollbarThumb - 滚动条滑块元素
+ */
+function updateScrollbar(element, scrollbarThumb) {
+  if (!element || !scrollbarThumb) return;
+
+  // 检查内容是否可以滚动
+  const scrollHeight = element.scrollHeight;
+  const clientHeight = element.clientHeight;
+
+  if (scrollHeight <= clientHeight) {
+    // 无需滚动，隐藏滚动条
+    if (scrollbarThumb.style.display !== "none") {
+      scrollbarThumb.style.display = "none";
+    }
+    return;
+  }
+
+  // 显示滚动条
+  if (scrollbarThumb.style.display !== "block") {
+    scrollbarThumb.style.display = "block";
+  }
+
+  // 计算滚动条高度
+  const scrollRatio = clientHeight / scrollHeight;
+  const thumbHeight = Math.max(30, scrollRatio * clientHeight); // 最小高度30px
+  scrollbarThumb.style.height = `${thumbHeight}px`;
+
+  // 计算滚动条位置
+  const scrollableDistance = scrollHeight - clientHeight;
+  const scrollPosition = element.scrollTop;
+  const scrollPercentage = scrollPosition / scrollableDistance;
+  const thumbPosition = scrollPercentage * (clientHeight - thumbHeight);
+  scrollbarThumb.style.top = `${thumbPosition}px`;
+}
+
+/**
+ * 设置悬浮提示
+ */
+function setupFloatingTip() {
+  const floatingTip = document.getElementById("share-floating-tip");
+  const closeTipBtn = document.getElementById("close-tip");
+
+  // 检查用户是否已经关闭过提示
+  const tipClosed = localStorage.getItem("share_tip_closed");
+
+  // 如果用户已经关闭过提示，则不显示
+  if (tipClosed === "true") {
+    floatingTip.style.display = "none";
+  }
+
+  // 添加关闭按钮事件
+  closeTipBtn.addEventListener("click", () => {
+    // 添加渐隐动画
+    floatingTip.style.opacity = "0";
+    floatingTip.style.transform = "translate(-50%, 20px)";
+    floatingTip.style.transition = "opacity 0.3s, transform 0.3s";
+
+    // 动画结束后隐藏元素
+    setTimeout(() => {
+      floatingTip.style.display = "none";
+    }, 300);
+
+    // 在本地存储中记录用户已关闭提示
+    localStorage.setItem("share_tip_closed", "true");
+  });
+
+  // 设置自动隐藏定时器，10秒后自动隐藏
+  setTimeout(() => {
+    // 如果提示还在显示，则渐隐
+    if (floatingTip.style.display !== "none") {
+      floatingTip.style.opacity = "0";
+      floatingTip.style.transform = "translate(-50%, 20px)";
+      floatingTip.style.transition = "opacity 0.3s, transform 0.3s";
+
+      setTimeout(() => {
+        floatingTip.style.display = "none";
+      }, 300);
+    }
+  }, 10000);
 }

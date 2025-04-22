@@ -60,17 +60,63 @@
   background-color: #2a4ebc;
 }
 
-.share-controls {
-  padding: 0 24px 8px;
-  background-color: #f8f8f8;
-  border-bottom: 1px solid #e8e8e8;
+/* 移除旧的提示区域样式 */
+
+/* 新的悬浮提示样式 */
+.floating-tip {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  width: auto;
+  max-width: 90%;
+  animation: fadeInUp 0.5s ease-out;
 }
 
-.share-tip {
-  font-size: 0.85rem;
-  color: #666;
-  padding: 4px 0;
-  text-align: center;
+.tip-content {
+  display: flex;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.75);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 50px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  font-size: 14px;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.tip-icon {
+  margin-right: 10px;
+  font-size: 16px;
+}
+
+.tip-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 18px;
+  cursor: pointer;
+  margin-left: 15px;
+  padding: 0 5px;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.tip-close:hover {
+  color: white;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
 .canvas-container {
@@ -114,9 +160,35 @@
   font-size: 0.95rem;
 }
 
-.note-canvas.share-mode .note .note-close,
+/* 只隐藏调整大小控件，保留关闭按钮 */
 .note-canvas.share-mode .note .note-resize-handle {
   display: none;
+}
+
+/* 关闭按钮样式 - 与原始便签保持一致 */
+.note-canvas.share-mode .note .note-close {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.6);
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  margin-right: 5px;
+  cursor: default; /* 使用默认光标而非禁用光标 */
+  opacity: 0.7; /* 与原始便签保持一致的不透明度 */
+  pointer-events: none; /* 禁用交互，但保持原样式 */
+}
+
+/* 便签内容区域样式 */
+.note-canvas.share-mode .note .note-body {
+  position: relative;
+  flex: 1;
+  display: flex;
+  overflow: hidden; /* 确保内容不会溢出便签 */
+  height: calc(100% - 30px); /* 减去标题高度 */
 }
 
 /* 分享页面中的Markdown预览区域样式 */
@@ -130,6 +202,45 @@
   font-size: 14px;
   line-height: 1.5;
   color: rgba(0, 0, 0, 0.8);
+  /* 隐藏原生滚动条 */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* 隐藏Webkit浏览器的原生滚动条 */
+.note-canvas.share-mode .markdown-preview::-webkit-scrollbar {
+  display: none;
+}
+
+/* 自定义滚动条容器 */
+.note-canvas.share-mode .note .custom-scrollbar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* 便签悬停时显示滚动条 */
+.note-canvas.share-mode .note:hover .custom-scrollbar {
+  opacity: 1;
+}
+
+/* 滚动条滑块 */
+.note-canvas.share-mode .note .scrollbar-thumb {
+  position: absolute;
+  right: 1px;
+  width: 4px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+  transition: background-color 0.2s ease;
+}
+
+.note-canvas.share-mode .note .scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.3);
 }
 
 /* Markdown 格式化样式 */
