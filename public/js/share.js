@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // 从URL获取分享ID和画布名称
   const urlParams = new URLSearchParams(window.location.search);
   const shareId = urlParams.get("id");
-  const canvasName = urlParams.get("name") || "AI便签画布"; // 获取画布名称，如果没有则使用默认名称
+  const canvasName = urlParams.get("name") || "InfinityNotes"; // 获取画布名称，如果没有则使用默认名称
 
   if (!shareId) {
     showError("无效的分享链接");

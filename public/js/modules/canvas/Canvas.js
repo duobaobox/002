@@ -456,7 +456,7 @@ export class Canvas {
     }
 
     // 获取应用名称作为默认画布名称
-    const defaultCanvasName = "AI便签画布"; // 默认软件名称
+    const defaultCanvasName = "InfinityNotes"; // 默认软件名称
 
     // 创建对话框
     const dialog = document.createElement("div");
