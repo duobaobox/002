@@ -14,8 +14,8 @@ class AIService {
       temperature: 0.7,
       isEmpty: true,
       // 基本应用信息
-      appName: "AI便签画布",
-      appUrl: "https://ai-note-canvas.app", // 可根据实际情况修改
+      appName: "InfinityNotes",
+      appUrl: "https://infinity-notes.app", // 可根据实际情况修改
     };
     this.openai = null;
     this.isConfigured = false; // Start as not configured
@@ -39,8 +39,8 @@ class AIService {
         maxTokens: 800,
         temperature: 0.7,
         isEmpty: true,
-        appName: "AI便签画布",
-        appUrl: "https://ai-note-canvas.app",
+        appName: "InfinityNotes",
+        appUrl: "https://infinity-notes.app",
       };
       this.isConfigured = false;
       this.openai = null;
@@ -65,8 +65,8 @@ class AIService {
         newConfig.isEmpty === true ||
         !(newConfig.apiKey && newConfig.baseURL && newConfig.model),
       // 保留应用信息
-      appName: this.config.appName || "AI便签画布",
-      appUrl: this.config.appUrl || "https://ai-note-canvas.app",
+      appName: this.config.appName || "InfinityNotes",
+      appUrl: this.config.appUrl || "https://infinity-notes.app",
     };
 
     console.log(

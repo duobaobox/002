@@ -96,7 +96,7 @@ app.use("/api/generate", aiGenerateLimiter);
 // 会话配置
 app.use(
   session({
-    secret: "ai-note-canvas-secret", // 在生产环境中，这应该是一个环境变量
+    secret: "infinity-notes-secret", // 在生产环境中，这应该是一个环境变量
     resave: false,
     saveUninitialized: false,
     cookie: {

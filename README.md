@@ -29,7 +29,7 @@
 1. 克隆代码库：
    ```bash
    git clone <repository-url>
-   cd ai-note-canvas
+   cd infinity-notes
    ```
 2. 安装依赖：
    ```bash
