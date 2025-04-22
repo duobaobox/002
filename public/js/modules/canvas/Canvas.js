@@ -9,6 +9,7 @@ export class Canvas {
   constructor() {
     this.canvas = document.getElementById("note-canvas");
     this.isPanning = false;
+    this.isRightPanning = false; // 添加右键拖动状态跟踪
     this.startPoint = { x: 0, y: 0 };
     this.currentPoint = { x: 0, y: 0 };
     this.offset = { x: 0, y: 0 }; // 平移偏移量
@@ -96,9 +97,9 @@ export class Canvas {
       }
     });
 
-    // 创建放大按钮 - 放在最上面
+    // 创建放大按钮 - 使用更现代的图标和样式
     const zoomInBtn = document.createElement("button");
-    zoomInBtn.className = "zoom-btn zoom-in";
+    zoomInBtn.className = "zoom-btn zoom-in modern-btn";
     zoomInBtn.innerHTML = "+";
     zoomInBtn.title = "放大画布";
     zoomInBtn.addEventListener("click", () => this.zoomIn());
@@ -109,30 +110,30 @@ export class Canvas {
     zoomDisplay.id = "zoom-level";
     zoomDisplay.textContent = "100%";
 
-    // 创建缩小按钮 - 放在下面
+    // 创建缩小按钮 - 使用更现代的图标和样式
     const zoomOutBtn = document.createElement("button");
-    zoomOutBtn.className = "zoom-btn zoom-out";
+    zoomOutBtn.className = "zoom-btn zoom-out modern-btn";
     zoomOutBtn.innerHTML = "−";
     zoomOutBtn.title = "缩小画布";
     zoomOutBtn.addEventListener("click", () => this.zoomOut());
 
-    // 创建重置按钮 - 放在最下面
+    // 创建重置按钮 - 使用更现代的图标和样式
     const zoomResetBtn = document.createElement("button");
-    zoomResetBtn.className = "zoom-btn zoom-reset";
+    zoomResetBtn.className = "zoom-btn zoom-reset modern-btn";
     zoomResetBtn.innerHTML = "↻";
     zoomResetBtn.title = "重置缩放";
     zoomResetBtn.addEventListener("click", () => this.resetZoom());
 
     // 创建阅读模式按钮 - 放在重置按钮下方
     const readModeBtn = document.createElement("button");
-    readModeBtn.className = "zoom-btn read-mode-btn"; // 添加特定类名
+    readModeBtn.className = "zoom-btn read-mode-btn modern-btn"; // 添加现代风格类
     readModeBtn.innerHTML = "📖"; // 书本图标
     readModeBtn.title = "切换阅读模式";
     readModeBtn.addEventListener("click", () => this.openReadingMode());
 
     // 创建分享按钮 - 放在阅读模式按钮下方
     const shareBtn = document.createElement("button");
-    shareBtn.className = "zoom-btn share-btn"; // 添加特定类名
+    shareBtn.className = "zoom-btn share-btn modern-btn"; // 添加现代风格类
     shareBtn.innerHTML = "🔗"; // 链接图标
     shareBtn.title = "分享画布";
     shareBtn.addEventListener("click", () => this.shareCanvas());
@@ -207,13 +208,28 @@ export class Canvas {
 
   // 事件处理 - 重命名并简化，移除不必要的性能限制
   setupEvents() {
+    // 阻止右键菜单，以便可以使用右键拖动
+    document.addEventListener("contextmenu", (e) => {
+      // 阻止默认的右键菜单
+      e.preventDefault();
+    });
+
     // 鼠标按下事件 - 开始平移画布
     this.canvas.addEventListener("mousedown", (e) => {
-      // 只有当点击画布空白处或网格背景时才触发平移
-      if (
-        e.target === this.canvas ||
-        e.target.classList.contains("grid") ||
-        e.target.classList.contains("grid-background")
+      // 右键点击 - 在任何位置都可以拖动画布
+      if (e.button === 2) {
+        this.isRightPanning = true;
+        this.startPoint = { x: e.clientX, y: e.clientY };
+        this.canvas.style.cursor = "grabbing";
+        e.preventDefault(); // 防止默认行为
+        e.stopPropagation(); // 阻止事件冒泡
+      }
+      // 左键点击 - 只有在画布空白处或网格背景时才触发平移
+      else if (
+        e.button === 0 &&
+        (e.target === this.canvas ||
+          e.target.classList.contains("grid") ||
+          e.target.classList.contains("grid-background"))
       ) {
         this.isPanning = true;
         this.startPoint = { x: e.clientX, y: e.clientY };
@@ -223,21 +239,26 @@ export class Canvas {
 
     // 鼠标移动事件 - 平移画布 (直接响应，不使用requestAnimationFrame或时间限制)
     document.addEventListener("mousemove", (e) => {
-      if (!this.isPanning) return;
+      if (!this.isPanning && !this.isRightPanning) return;
 
       // 直接移动画布，不进行任何限流或延迟
       this.moveCanvas(e.clientX, e.clientY);
     });
 
     // 鼠标松开事件 - 停止平移
-    document.addEventListener("mouseup", () => {
-      this.isPanning = false;
+    document.addEventListener("mouseup", (e) => {
+      if (e.button === 2) {
+        this.isRightPanning = false;
+      } else {
+        this.isPanning = false;
+      }
       this.canvas.style.cursor = "default";
     });
 
     // 鼠标离开事件 - 停止平移
     document.addEventListener("mouseleave", () => {
       this.isPanning = false;
+      this.isRightPanning = false;
       this.canvas.style.cursor = "default";
     });
 
