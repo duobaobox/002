@@ -34,14 +34,19 @@ router.post("/", async (req, res) => {
     // 获取用户的所有便签
     const notes = await getAllNotes();
 
+    // 获取画布名称（如果有）
+    const canvasName = req.body.canvasName || "InfinityNotes";
+
     // 创建分享记录
     const shareData = {
       id: shareId,
       userId,
       notes,
+      canvasName, // 添加画布名称
       canvasState: req.body.canvasState || {},
       createdAt: new Date().toISOString(),
       lastUpdated: new Date().toISOString(),
+      isActive: true, // 添加标记表示分享是否活跃
     };
 
     // 存储到缓存
@@ -82,6 +87,16 @@ router.get("/:id", async (req, res) => {
       });
     }
 
+    // 检查分享是否已关闭
+    if (shareData.isActive === false) {
+      return res.status(403).json({
+        success: false,
+        message: "分享已关闭",
+        shareId: shareId,
+        isClosed: true,
+      });
+    }
+
     // 如果请求包含lastUpdated参数，检查是否有更新
     if (
       req.query.lastUpdated &&
@@ -109,6 +124,7 @@ router.get("/:id", async (req, res) => {
     res.json({
       success: true,
       notes: shareData.notes,
+      canvasName: shareData.canvasName || "InfinityNotes", // 返回画布名称
       canvasState: shareData.canvasState,
       lastUpdated: shareData.lastUpdated,
     });
@@ -117,6 +133,123 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "获取分享数据失败",
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * 刷新分享内容
+ * POST /api/share/refresh/:id
+ * 不需要身份验证，便于测试
+ */
+router.post("/refresh/:id", async (req, res) => {
+  try {
+    const shareId = req.params.id;
+    // 获取用户ID（如果有），否则使用默认值
+    const userId = req.session && req.session.user ? req.session.user.id : 1;
+
+    console.log("刷新分享内容，用户ID:", userId);
+
+    // 从缓存获取分享数据
+    const shareData = shareCache.get(shareId);
+
+    if (!shareData) {
+      return res.status(404).json({
+        success: false,
+        message: "分享不存在或已过期",
+      });
+    }
+
+    // 检查是否是分享的创建者
+    if (shareData.userId !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "无权刷新此分享",
+      });
+    }
+
+    // 检查分享是否已关闭
+    if (shareData.isActive === false) {
+      return res.status(403).json({
+        success: false,
+        message: "分享已关闭",
+      });
+    }
+
+    // 获取最新的便签数据
+    const notes = await getAllNotes();
+
+    // 更新缓存中的数据
+    shareData.notes = notes;
+    shareData.lastUpdated = new Date().toISOString();
+
+    // 更新画布状态（如果提供了）
+    if (req.body.canvasState) {
+      shareData.canvasState = req.body.canvasState;
+    }
+
+    shareCache.set(shareId, shareData);
+
+    res.json({
+      success: true,
+      message: "分享内容已更新",
+    });
+  } catch (error) {
+    console.error("刷新分享出错:", error);
+    res.status(500).json({
+      success: false,
+      message: "刷新分享失败",
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * 关闭分享
+ * POST /api/share/close/:id
+ * 不需要身份验证，便于测试
+ */
+router.post("/close/:id", (req, res) => {
+  try {
+    const shareId = req.params.id;
+    // 获取用户ID（如果有），否则使用默认值
+    const userId = req.session && req.session.user ? req.session.user.id : 1;
+
+    console.log("关闭分享，用户ID:", userId);
+
+    // 从缓存获取分享数据
+    const shareData = shareCache.get(shareId);
+
+    if (!shareData) {
+      return res.status(404).json({
+        success: false,
+        message: "分享不存在或已过期",
+      });
+    }
+
+    // 检查是否是分享的创建者
+    if (shareData.userId !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "无权关闭此分享",
+      });
+    }
+
+    // 将分享标记为关闭
+    shareData.isActive = false;
+    shareData.closedAt = new Date().toISOString();
+    shareCache.set(shareId, shareData);
+
+    res.json({
+      success: true,
+      message: "分享已关闭",
+    });
+  } catch (error) {
+    console.error("关闭分享出错:", error);
+    res.status(500).json({
+      success: false,
+      message: "关闭分享失败",
       error: error.message,
     });
   }
