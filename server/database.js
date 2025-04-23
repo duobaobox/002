@@ -126,6 +126,9 @@ async function initializeDatabase() {
           // 检查share_id字段是否存在
           const columns = await dbAll("PRAGMA table_info(users)");
           const hasShareId = columns.some((col) => col.name === "share_id");
+          const hasCanvasState = columns.some(
+            (col) => col.name === "share_canvas_state"
+          );
 
           if (!hasShareId) {
             console.log("添加分享相关字段到users表...");
@@ -142,6 +145,15 @@ async function initializeDatabase() {
               "ALTER TABLE users ADD COLUMN share_notes INTEGER DEFAULT 1;"
             );
             console.log("分享相关字段添加成功");
+          }
+
+          // 添加画布状态字段（如果不存在）
+          if (!hasCanvasState) {
+            console.log("添加画布状态字段到users表...");
+            await dbExec(
+              "ALTER TABLE users ADD COLUMN share_canvas_state TEXT;"
+            );
+            console.log("画布状态字段添加成功");
           }
         } catch (error) {
           console.error("检查或添加分享字段失败:", error);
@@ -1118,11 +1130,21 @@ async function getUserShareInfo(userId) {
 
   try {
     const user = await dbGet(
-      "SELECT share_id, share_link, share_status, share_canvas_name, share_notes FROM users WHERE id = ?",
+      "SELECT share_id, share_link, share_status, share_canvas_name, share_notes, share_canvas_state FROM users WHERE id = ?",
       [userId]
     );
 
     if (!user) return null;
+
+    // 解析画布状态JSON（如果有）
+    let canvasState = null;
+    if (user.share_canvas_state) {
+      try {
+        canvasState = JSON.parse(user.share_canvas_state);
+      } catch (e) {
+        console.warn("解析画布状态JSON失败:", e);
+      }
+    }
 
     return {
       shareId: user.share_id,
@@ -1130,6 +1152,7 @@ async function getUserShareInfo(userId) {
       shareStatus: user.share_status === 1,
       canvasName: user.share_canvas_name || "InfinityNotes",
       shareNotes: user.share_notes === 1,
+      canvasState: canvasState,
     };
   } catch (error) {
     console.error("获取用户分享信息失败:", error);
@@ -1147,8 +1170,20 @@ async function updateUserShareInfo(userId, shareInfo) {
   if (!db) throw new Error("数据库未初始化");
 
   try {
-    const { shareId, shareLink, shareStatus, canvasName, shareNotes } =
-      shareInfo;
+    const {
+      shareId,
+      shareLink,
+      shareStatus,
+      canvasName,
+      shareNotes,
+      canvasState,
+    } = shareInfo;
+
+    // 将画布状态转换为JSON字符串（如果有）
+    let canvasStateJson = null;
+    if (canvasState) {
+      canvasStateJson = JSON.stringify(canvasState);
+    }
 
     const result = await dbRun(
       `UPDATE users SET
@@ -1156,7 +1191,8 @@ async function updateUserShareInfo(userId, shareInfo) {
         share_link = ?,
         share_status = ?,
         share_canvas_name = ?,
-        share_notes = ?
+        share_notes = ?,
+        share_canvas_state = ?
       WHERE id = ?`,
       [
         shareId,
@@ -1164,6 +1200,7 @@ async function updateUserShareInfo(userId, shareInfo) {
         shareStatus ? 1 : 0,
         canvasName,
         shareNotes ? 1 : 0,
+        canvasStateJson,
         userId,
       ]
     );
@@ -1208,17 +1245,37 @@ async function getUserByShareId(shareId) {
 
   try {
     const user = await dbGet(
-      "SELECT id, username, share_status, share_canvas_name, share_notes FROM users WHERE share_id = ?",
+      "SELECT id, username, share_status, share_canvas_name, share_notes, share_canvas_state FROM users WHERE share_id = ?",
       [shareId]
     );
 
-    if (!user || user.share_status !== 1) return null;
+    if (!user) {
+      return { notFound: true };
+    }
+
+    if (user.share_status !== 1) {
+      return {
+        closed: true,
+        canvasName: user.share_canvas_name || "InfinityNotes",
+      };
+    }
+
+    // 解析画布状态JSON（如果有）
+    let canvasState = null;
+    if (user.share_canvas_state) {
+      try {
+        canvasState = JSON.parse(user.share_canvas_state);
+      } catch (e) {
+        console.warn("解析画布状态JSON失败:", e);
+      }
+    }
 
     return {
       id: user.id,
       username: user.username,
       canvasName: user.share_canvas_name || "InfinityNotes",
       shareNotes: user.share_notes === 1,
+      canvasState: canvasState,
     };
   } catch (error) {
     console.error("根据分享ID获取用户信息失败:", error);

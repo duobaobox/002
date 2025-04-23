@@ -47,6 +47,7 @@ router.get("/status", requireAuth, async (req, res) => {
       shareLink: shareInfo.shareLink,
       canvasName: shareInfo.canvasName,
       shareNotes: shareInfo.shareNotes,
+      canvasState: shareInfo.canvasState,
       message: "已获取分享状态",
     });
   } catch (error) {
@@ -94,6 +95,9 @@ router.post("/", requireAuth, async (req, res) => {
       "host"
     )}/share.html?id=${shareId}&name=${encodeURIComponent(canvasName)}`;
 
+    // 获取画布状态（如果有）
+    const canvasState = req.body.canvasState || null;
+
     // 更新用户的分享信息
     await updateUserShareInfo(userId, {
       shareId,
@@ -101,6 +105,7 @@ router.post("/", requireAuth, async (req, res) => {
       shareStatus: true,
       canvasName,
       shareNotes: true, // 默认分享便签
+      canvasState, // 保存画布状态
     });
 
     // 返回分享ID和链接
@@ -159,6 +164,7 @@ router.get("/:id", async (req, res) => {
       success: true,
       notes: userData.shareNotes ? notes : [], // 如果用户选择不分享便签，则返回空数组
       canvasName: userData.canvasName || "InfinityNotes", // 返回画布名称
+      canvasState: userData.canvasState, // 返回画布状态
       lastUpdated: lastUpdated,
     });
   } catch (error) {
@@ -203,7 +209,11 @@ router.post("/refresh/:id", requireAuth, async (req, res) => {
 
     // 更新画布状态（如果提供了）
     if (req.body.canvasState) {
-      // 这里我们不需要存储画布状态，因为分享页面会直接从数据库获取最新数据
+      // 更新用户的分享信息，包括新的画布状态
+      await updateUserShareInfo(userId, {
+        ...userShareInfo,
+        canvasState: req.body.canvasState,
+      });
     }
 
     res.json({
