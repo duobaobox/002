@@ -62,8 +62,8 @@
 
 /* 修改悬停规则，只在非编辑模式下显示提示 */
 .note:hover .edit-hint {
-  /* 删除这里的直接设置，改由 JavaScript 控制 */
-  /* opacity: 0.9 !important; */
+  /* 以下设置作为默认行为，也可以被JavaScript覆盖 */
+  opacity: 0.9 !important;
 }
 
 /* Markdown 格式化样式 */
@@ -89,6 +89,14 @@
 
 .markdown-preview p {
   margin-bottom: 10px;
+}
+
+/* 简洁的分割线样式 */
+.markdown-preview hr {
+  height: 1px;
+  border: none;
+  background-color: rgba(0, 0, 0, 0.1);
+  margin: 15px 0;
 }
 
 .markdown-preview ul,
