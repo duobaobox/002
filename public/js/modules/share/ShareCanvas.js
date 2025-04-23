@@ -26,8 +26,8 @@ export class ShareCanvas {
     // 初始化事件处理
     this.setupEvents();
 
-    // 创建缩放控制按钮
-    this.createZoomControls();
+    // 分享页面不需要缩放控制按钮
+    // this.createZoomControls();
 
     // 应用初始变换
     this.applyTransform();
@@ -60,11 +60,11 @@ export class ShareCanvas {
 
   // 应用变换（统一处理缩放和平移）
   applyTransform() {
-    // 更新缩放比例显示
-    const zoomLevelElement = document.getElementById("zoom-level");
-    if (zoomLevelElement) {
-      zoomLevelElement.textContent = `${Math.round(this.scale * 100)}%`;
-    }
+    // 分享页面不需要更新缩放比例显示
+    // const zoomLevelElement = document.getElementById("zoom-level");
+    // if (zoomLevelElement) {
+    //   zoomLevelElement.textContent = `${Math.round(this.scale * 100)}%`;
+    // }
 
     // 应用变换：使用硬件加速
     this.noteContainer.style.transform = `translate(${this.offset.x}px, ${this.offset.y}px) scale(${this.scale})`;
