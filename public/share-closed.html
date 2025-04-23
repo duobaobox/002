@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,7 +12,7 @@
       padding: 0;
       box-sizing: border-box;
     }
-    
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background-color: #f9f9f9;
@@ -22,7 +23,7 @@
       min-height: 100vh;
       padding: 20px;
     }
-    
+
     /* 主容器样式 */
     .closed-container {
       max-width: 600px;
@@ -34,7 +35,7 @@
       text-align: center;
       animation: fadeIn 0.5s ease-out;
     }
-    
+
     /* 头部样式 */
     .closed-header {
       background-color: #4a6ee0;
@@ -42,41 +43,41 @@
       padding: 30px 20px;
       position: relative;
     }
-    
+
     .closed-icon {
       font-size: 64px;
       margin-bottom: 15px;
       display: inline-block;
     }
-    
+
     .closed-title {
       font-size: 24px;
       font-weight: 600;
       margin-bottom: 5px;
     }
-    
+
     .closed-subtitle {
       font-size: 16px;
       opacity: 0.9;
     }
-    
+
     /* 内容样式 */
     .closed-content {
       padding: 30px;
     }
-    
+
     .closed-message {
       font-size: 16px;
       line-height: 1.6;
       color: #555;
       margin-bottom: 25px;
     }
-    
+
     /* 按钮样式 */
     .closed-actions {
       margin-top: 20px;
     }
-    
+
     .home-button {
       display: inline-block;
       background-color: #4a6ee0;
@@ -90,16 +91,16 @@
       text-decoration: none;
       transition: background-color 0.2s, transform 0.2s;
     }
-    
+
     .home-button:hover {
       background-color: #3a5ecc;
       transform: translateY(-2px);
     }
-    
+
     .home-button:active {
       transform: translateY(0);
     }
-    
+
     /* 装饰元素 */
     .decoration {
       position: absolute;
@@ -108,55 +109,57 @@
       border-radius: 50%;
       background-color: rgba(255, 255, 255, 0.1);
     }
-    
+
     .decoration-1 {
       top: -60px;
       right: -60px;
     }
-    
+
     .decoration-2 {
       bottom: -40px;
       left: -40px;
       width: 80px;
       height: 80px;
     }
-    
+
     /* 动画 */
     @keyframes fadeIn {
       from {
         opacity: 0;
         transform: translateY(20px);
       }
+
       to {
         opacity: 1;
         transform: translateY(0);
       }
     }
-    
+
     /* 响应式设计 */
     @media (max-width: 480px) {
       .closed-container {
         border-radius: 8px;
       }
-      
+
       .closed-header {
         padding: 20px 15px;
       }
-      
+
       .closed-icon {
         font-size: 48px;
       }
-      
+
       .closed-title {
         font-size: 20px;
       }
-      
+
       .closed-content {
         padding: 20px 15px;
       }
     }
   </style>
 </head>
+
 <body>
   <div class="closed-container">
     <div class="closed-header">
@@ -166,13 +169,13 @@
       <h1 class="closed-title">分享已关闭</h1>
       <p class="closed-subtitle">此内容不再可用</p>
     </div>
-    
+
     <div class="closed-content">
       <p class="closed-message">
         抱歉，您尝试访问的内容已被创建者关闭分享。<br>
         这可能是因为分享已过期或创建者主动关闭了分享。
       </p>
-      
+
       <div class="closed-actions">
         <a href="/" class="home-button">返回主页</a>
       </div>
@@ -180,17 +183,31 @@
   </div>
 
   <script>
-    // 获取分享ID并显示在页面上（可选）
-    document.addEventListener('DOMContentLoaded', function() {
+    // 获取分享ID和画布名称并显示在页面上
+    document.addEventListener('DOMContentLoaded', function () {
       const urlParams = new URLSearchParams(window.location.search);
       const shareId = urlParams.get('id');
-      
-      // 如果有分享ID，可以在页面上显示
-      if (shareId) {
-        const subtitle = document.querySelector('.closed-subtitle');
-        subtitle.textContent = `分享ID: ${shareId} 已关闭`;
-      }
+      const canvasName = urlParams.get('name') || 'InfinityNotes';
+
+      // 更新页面标题
+      document.title = `${decodeURIComponent(canvasName)} - 分享已关闭`;
+
+      // 更新分享已关闭标题
+      const title = document.querySelector('.closed-title');
+      title.textContent = `${decodeURIComponent(canvasName)}`;
+
+      // 更新副标题
+      const subtitle = document.querySelector('.closed-subtitle');
+      subtitle.textContent = `分享已关闭`;
+
+      // 更新消息内容
+      const message = document.querySelector('.closed-message');
+      message.innerHTML = `
+        抱歉，您尝试访问的画布 <strong>${decodeURIComponent(canvasName)}</strong> 已被创建者关闭分享。<br>
+        这可能是因为分享已过期或创建者主动关闭了分享。
+      `;
     });
   </script>
 </body>
+
 </html>

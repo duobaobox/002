@@ -112,9 +112,41 @@ async function initializeDatabase() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
-            createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+            createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+            share_id TEXT,
+            share_link TEXT,
+            share_status INTEGER DEFAULT 0,
+            share_canvas_name TEXT,
+            share_notes INTEGER DEFAULT 1
           );
         `);
+
+        // 检查并添加分享相关字段
+        try {
+          // 检查share_id字段是否存在
+          const columns = await dbAll("PRAGMA table_info(users)");
+          const hasShareId = columns.some((col) => col.name === "share_id");
+
+          if (!hasShareId) {
+            console.log("添加分享相关字段到users表...");
+            // 添加分享相关字段
+            await dbExec("ALTER TABLE users ADD COLUMN share_id TEXT;");
+            await dbExec("ALTER TABLE users ADD COLUMN share_link TEXT;");
+            await dbExec(
+              "ALTER TABLE users ADD COLUMN share_status INTEGER DEFAULT 0;"
+            );
+            await dbExec(
+              "ALTER TABLE users ADD COLUMN share_canvas_name TEXT;"
+            );
+            await dbExec(
+              "ALTER TABLE users ADD COLUMN share_notes INTEGER DEFAULT 1;"
+            );
+            console.log("分享相关字段添加成功");
+          }
+        } catch (error) {
+          console.error("检查或添加分享字段失败:", error);
+          // 继续初始化过程，不中断
+        }
         console.log('数据库表 "users" 已准备就绪。');
 
         // 创建 invitation_codes 表
@@ -1074,6 +1106,126 @@ async function clearAllApiHistory() {
   }
 }
 
+// --- 用户分享相关函数 ---
+
+/**
+ * 获取用户的分享信息
+ * @param {number} userId - 用户ID
+ * @returns {Promise<object|null>} 分享信息对象或null
+ */
+async function getUserShareInfo(userId) {
+  if (!db) throw new Error("数据库未初始化");
+
+  try {
+    const user = await dbGet(
+      "SELECT share_id, share_link, share_status, share_canvas_name, share_notes FROM users WHERE id = ?",
+      [userId]
+    );
+
+    if (!user) return null;
+
+    return {
+      shareId: user.share_id,
+      shareLink: user.share_link,
+      shareStatus: user.share_status === 1,
+      canvasName: user.share_canvas_name || "InfinityNotes",
+      shareNotes: user.share_notes === 1,
+    };
+  } catch (error) {
+    console.error("获取用户分享信息失败:", error);
+    throw error;
+  }
+}
+
+/**
+ * 更新用户的分享信息
+ * @param {number} userId - 用户ID
+ * @param {object} shareInfo - 分享信息对象
+ * @returns {Promise<boolean>} 是否成功更新
+ */
+async function updateUserShareInfo(userId, shareInfo) {
+  if (!db) throw new Error("数据库未初始化");
+
+  try {
+    const { shareId, shareLink, shareStatus, canvasName, shareNotes } =
+      shareInfo;
+
+    const result = await dbRun(
+      `UPDATE users SET
+        share_id = ?,
+        share_link = ?,
+        share_status = ?,
+        share_canvas_name = ?,
+        share_notes = ?
+      WHERE id = ?`,
+      [
+        shareId,
+        shareLink,
+        shareStatus ? 1 : 0,
+        canvasName,
+        shareNotes ? 1 : 0,
+        userId,
+      ]
+    );
+
+    return result.changes > 0;
+  } catch (error) {
+    console.error("更新用户分享信息失败:", error);
+    throw error;
+  }
+}
+
+/**
+ * 关闭用户的分享
+ * @param {number} userId - 用户ID
+ * @returns {Promise<boolean>} 是否成功关闭
+ */
+async function closeUserShare(userId) {
+  if (!db) throw new Error("数据库未初始化");
+
+  try {
+    const result = await dbRun(
+      `UPDATE users SET
+        share_status = 0
+      WHERE id = ?`,
+      [userId]
+    );
+
+    return result.changes > 0;
+  } catch (error) {
+    console.error("关闭用户分享失败:", error);
+    throw error;
+  }
+}
+
+/**
+ * 根据分享ID获取用户信息
+ * @param {string} shareId - 分享ID
+ * @returns {Promise<object|null>} 用户对象或null
+ */
+async function getUserByShareId(shareId) {
+  if (!db) throw new Error("数据库未初始化");
+
+  try {
+    const user = await dbGet(
+      "SELECT id, username, share_status, share_canvas_name, share_notes FROM users WHERE share_id = ?",
+      [shareId]
+    );
+
+    if (!user || user.share_status !== 1) return null;
+
+    return {
+      id: user.id,
+      username: user.username,
+      canvasName: user.share_canvas_name || "InfinityNotes",
+      shareNotes: user.share_notes === 1,
+    };
+  } catch (error) {
+    console.error("根据分享ID获取用户信息失败:", error);
+    throw error;
+  }
+}
+
 export {
   initializeDatabase,
   // Settings functions
@@ -1112,4 +1264,9 @@ export {
   addOrUpdateApiConfigRelation,
   getApiKeysByBaseUrl,
   getModelsByBaseUrl,
+  // 用户分享相关函数
+  getUserShareInfo,
+  updateUserShareInfo,
+  closeUserShare,
+  getUserByShareId,
 };
