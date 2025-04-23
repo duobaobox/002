@@ -180,19 +180,19 @@
   opacity: 0.7; /* 悬停时增加不透明度 */
 }
 
-/* 便签颜色 - 恢复原来的简单颜色 */
+/* 便签颜色 - 更浅淡的色彩 */
 .note-yellow {
-  background-color: #fff8c5;
+  background-color: #fffad6;
 }
 .note-blue {
-  background-color: #d6eaf8;
+  background-color: #e1f3fd;
 }
 .note-green {
-  background-color: #d5f5e3;
+  background-color: #e5f9f0;
 }
 .note-pink {
-  background-color: #fdedec;
+  background-color: #fef1f0;
 }
 .note-purple {
-  background-color: #e8daef;
+  background-color: #f2e8f7;
 }
