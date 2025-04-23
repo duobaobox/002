@@ -62,7 +62,7 @@ export class Canvas {
     this.noteContainer.style.transition = "none"; // 禁用过渡效果，确保即时响应
   }
 
-  // 创建简单网格背景
+  // 创建网格背景和装饰元素
   createGridBackground() {
     // 创建网格容器
     const gridContainer = document.createElement("div");
@@ -79,6 +79,155 @@ export class Canvas {
 
     // 保存网格引用
     this.gridElement = grid;
+
+    // 创建装饰性背景元素
+    this.createDecorativeBackground();
+  }
+
+  // 创建装饰性背景元素
+  createDecorativeBackground() {
+    // 创建装饰性背景容器
+    const bgContainer = document.createElement("div");
+    bgContainer.className = "canvas-background";
+
+    // 添加点阵装饰
+    this.addDots(bgContainer, 40); // 增加到40个点
+
+    // 添加渐变气泡
+    this.addGradientBubbles(bgContainer, 6); // 增加到6个渐变气泡
+
+    // 添加装饰线条
+    this.addDecorativeLines(bgContainer, 8); // 添加8条装饰线
+
+    // 将装饰性背景容器添加到画布
+    this.canvas.insertBefore(bgContainer, this.canvas.firstChild);
+  }
+
+  // 添加点阵装饰
+  addDots(container, count) {
+    const canvasWidth = this.canvas.clientWidth;
+    const canvasHeight = this.canvas.clientHeight;
+
+    for (let i = 0; i < count; i++) {
+      const dot = document.createElement("div");
+      dot.className = "bg-dots";
+
+      // 随机位置
+      const x = Math.random() * canvasWidth * 2 - canvasWidth / 2;
+      const y = Math.random() * canvasHeight * 2 - canvasHeight / 2;
+
+      // 随机大小 (3-8px)
+      const size = 3 + Math.random() * 5;
+
+      // 随机颜色
+      const colors = [
+        "rgba(26, 115, 232, 0.1)", // 蓝色
+        "rgba(52, 168, 83, 0.1)", // 绿色
+        "rgba(251, 188, 5, 0.1)", // 黄色
+        "rgba(234, 67, 53, 0.1)", // 红色
+        "rgba(103, 58, 183, 0.1)", // 紫色
+      ];
+      const color = colors[Math.floor(Math.random() * colors.length)];
+
+      // 设置样式
+      dot.style.left = `${x}px`;
+      dot.style.top = `${y}px`;
+      dot.style.width = `${size}px`;
+      dot.style.height = `${size}px`;
+      dot.style.backgroundColor = color;
+      dot.style.opacity = (0.3 + Math.random() * 0.7).toFixed(2); // 0.3-1.0的透明度
+
+      container.appendChild(dot);
+    }
+  }
+
+  // 添加渐变气泡
+  addGradientBubbles(container, count) {
+    const canvasWidth = this.canvas.clientWidth;
+    const canvasHeight = this.canvas.clientHeight;
+
+    const colors = [
+      "linear-gradient(45deg, rgba(26, 115, 232, 0.3), rgba(26, 115, 232, 0.1))", // 蓝色
+      "linear-gradient(45deg, rgba(52, 168, 83, 0.3), rgba(52, 168, 83, 0.1))", // 绿色
+      "linear-gradient(45deg, rgba(251, 188, 5, 0.3), rgba(251, 188, 5, 0.1))", // 黄色
+      "linear-gradient(45deg, rgba(234, 67, 53, 0.3), rgba(234, 67, 53, 0.1))", // 红色
+      "linear-gradient(45deg, rgba(103, 58, 183, 0.3), rgba(103, 58, 183, 0.1))", // 紫色
+    ];
+
+    for (let i = 0; i < count; i++) {
+      const bubble = document.createElement("div");
+      bubble.className = "bg-gradient-bubble";
+
+      // 随机位置
+      const x = Math.random() * canvasWidth * 2 - canvasWidth / 2;
+      const y = Math.random() * canvasHeight * 2 - canvasHeight / 2;
+
+      // 随机大小 (100-300px)
+      const size = 100 + Math.random() * 200;
+
+      // 随机颜色
+      const color = colors[Math.floor(Math.random() * colors.length)];
+
+      // 设置样式
+      bubble.style.left = `${x}px`;
+      bubble.style.top = `${y}px`;
+      bubble.style.width = `${size}px`;
+      bubble.style.height = `${size}px`;
+      bubble.style.background = color;
+      bubble.style.opacity = (0.05 + Math.random() * 0.1).toFixed(2); // 0.05-0.15的透明度
+
+      // 添加随机动画延迟
+      bubble.style.animationDelay = `${Math.random() * 5}s`;
+
+      container.appendChild(bubble);
+    }
+  }
+
+  // 添加装饰线条
+  addDecorativeLines(container, count) {
+    const canvasWidth = this.canvas.clientWidth;
+    const canvasHeight = this.canvas.clientHeight;
+
+    const colors = [
+      "rgba(26, 115, 232, 0.1)", // 蓝色
+      "rgba(52, 168, 83, 0.1)", // 绿色
+      "rgba(251, 188, 5, 0.1)", // 黄色
+      "rgba(234, 67, 53, 0.1)", // 红色
+      "rgba(103, 58, 183, 0.1)", // 紫色
+    ];
+
+    for (let i = 0; i < count; i++) {
+      const line = document.createElement("div");
+      line.className = "bg-line";
+
+      // 随机位置
+      const x = Math.random() * canvasWidth * 1.5 - canvasWidth / 4;
+      const y = Math.random() * canvasHeight * 1.5 - canvasHeight / 4;
+
+      // 随机大小 (50-200px)
+      const length = 50 + Math.random() * 150;
+      const thickness = 1 + Math.random() * 2;
+
+      // 随机旋转角度
+      const rotation = Math.random() * 180;
+
+      // 随机颜色
+      const color = colors[Math.floor(Math.random() * colors.length)];
+
+      // 设置样式
+      line.style.left = `${x}px`;
+      line.style.top = `${y}px`;
+      line.style.width = `${length}px`;
+      line.style.height = `${thickness}px`;
+      line.style.backgroundColor = color;
+      line.style.transform = `rotate(${rotation}deg)`;
+      line.style.opacity = (0.1 + Math.random() * 0.3).toFixed(2); // 0.1-0.4的透明度
+
+      // 添加随机动画延迟
+      line.style.animationDelay = `${Math.random() * 5}s`;
+
+      container.appendChild(line);
+    }
   }
 
   // 创建缩放控制器
@@ -326,7 +475,7 @@ export class Canvas {
     // 更新网格背景 - 使用与便签容器相同的变换，但只保留平移部分
     if (this.gridElement) {
       // 直接使用偏移量，但对网格图案应用循环效果
-      const gridSize = 30; // 标准网格大小
+      const gridSize = 30; // 更新为跟新的CSS网格大小一致
       const offsetX = this.offset.x % gridSize;
       const offsetY = this.offset.y % gridSize;
 

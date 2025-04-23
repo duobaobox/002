@@ -15,12 +15,13 @@
 .canvas-container {
   position: relative; /* 添加相对定位，为绝对定位的子元素提供参考 */
   flex: 1; /* 占据父容器中的剩余空间 */
-  background-color: #fcfcfc; /* 设置容器背景为接近白色的颜色 */
+  background-color: #f8f9fd; /* 更柔和的浅蓝色背景 */
   position: relative; /* 建立定位上下文，便于子元素绝对定位 */
   overflow: hidden; /* 隐藏超出容器边界的内容 */
   width: 100%;
   height: 100%;
   cursor: grab;
+  box-shadow: inset 0 0 100px rgba(220, 230, 250, 0.4); /* 添加内阴影，创造柔和的光晕效果 */
 }
 
 /* 画布元素样式 - 实际的工作区背景 */
@@ -45,16 +46,33 @@
   pointer-events: none; /* 让事件穿透到下层 */
 }
 
-/* 实际网格 */
+/* 装饰性背景容器 */
+.canvas-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none; /* 允许点击穿透 */
+  overflow: hidden;
+}
+
+/* 实际网格 - 现代化设计 */
 .grid {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
-  background-size: 30px 30px;
+  background-image: linear-gradient(
+      rgba(65, 90, 160, 0.03) 1px,
+      transparent 1px
+    ),
+    linear-gradient(90deg, rgba(65, 90, 160, 0.03) 1px, transparent 1px),
+    linear-gradient(rgba(65, 90, 160, 0.02) 0.5px, transparent 0.5px),
+    linear-gradient(90deg, rgba(65, 90, 160, 0.02) 0.5px, transparent 0.5px);
+  background-size: 30px 30px, 30px 30px, 6px 6px, 6px 6px;
   z-index: 0;
   will-change: transform; /* 性能优化 */
   transition: none; /* 移除过渡效果 */
@@ -80,6 +98,9 @@
   border-radius: 50%; /* 圆形边框 */
   background-color: rgba(26, 115, 232, 0.05); /* 淡蓝色，透明度低 */
   opacity: 0.5; /* 设置透明度 */
+  box-shadow: 0 0 10px rgba(26, 115, 232, 0.1); /* 添加柔和的光晕 */
+  transition: opacity 2s ease; /* 添加缓慢的透明度变化效果 */
+  animation: float-dots 20s infinite linear; /* 添加缓慢浮动动画 */
 }
 
 /* 渐变气泡装饰 - 添加柔和的背景色块 */
@@ -89,6 +110,65 @@
   filter: blur(60px); /* 添加模糊效果 */
   opacity: 0.1; /* 低透明度，不干扰主要内容 */
   z-index: -1; /* 置于最底层 */
+  animation: pulse-bubble 15s infinite alternate ease-in-out; /* 添加脉动效果 */
+}
+
+/* 装饰线条样式 */
+.bg-line {
+  position: absolute;
+  border-radius: 4px;
+  box-shadow: 0 0 15px rgba(26, 115, 232, 0.1);
+  transform-origin: center;
+  animation: float-line 25s infinite alternate ease-in-out;
+  z-index: -1;
+}
+
+/* 点阵浮动动画 */
+@keyframes float-dots {
+  0% {
+    transform: translateY(0) translateX(0);
+  }
+  25% {
+    transform: translateY(10px) translateX(5px);
+  }
+  50% {
+    transform: translateY(0) translateX(10px);
+  }
+  75% {
+    transform: translateY(-10px) translateX(5px);
+  }
+  100% {
+    transform: translateY(0) translateX(0);
+  }
+}
+
+/* 线条浮动动画 */
+@keyframes float-line {
+  0% {
+    transform: rotate(var(--rotation, 0deg)) translateY(0);
+  }
+  50% {
+    transform: rotate(var(--rotation, 0deg)) translateY(15px);
+  }
+  100% {
+    transform: rotate(var(--rotation, 0deg)) translateY(0);
+  }
+}
+
+/* 气泡脉动动画 */
+@keyframes pulse-bubble {
+  0% {
+    transform: scale(1);
+    opacity: 0.05;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.05;
+  }
 }
 
 /* 便签容器样式 - 所有便签的直接父容器 */
