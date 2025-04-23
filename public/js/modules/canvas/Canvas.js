@@ -40,6 +40,9 @@ export class Canvas {
     // 从本地存储恢复画布状态
     this.restoreCanvasState();
 
+    // 检查用户分享状态
+    this.checkShareStatus();
+
     // 将Canvas实例存储为全局变量，便于其他模块访问
     window.canvasInstance = this;
   }
@@ -557,17 +560,57 @@ export class Canvas {
    * 分享画布
    * 打开分享配置弹窗，允许用户开启或关闭分享
    */
-  shareCanvas() {
-    // 检查是否已有活跃的分享
-    if (this.activeShare) {
-      // 如果已有活跃分享，直接显示分享链接弹窗
-      this.showShareLinkDialog(
-        this.activeShare.url,
-        this.activeShare.id,
-        this.activeShare.canvasName
-      );
-    } else {
-      // 如果没有活跃分享，打开分享配置弹窗
+  async shareCanvas() {
+    try {
+      // 先检查当前分享状态
+      console.log("发送请求到 /api/share/status");
+      const response = await fetch("/api/share/status", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "same-origin",
+      });
+
+      console.log("收到响应:", response.status, response.statusText);
+
+      if (!response.ok) {
+        // 如果请求失败，可能是未登录
+        if (response.status === 401) {
+          this.showMessage("请先登录再进行分享", "error");
+          return;
+        } else if (response.status === 404) {
+          this.showMessage("分享功能未完全配置，请联系管理员", "error");
+          return;
+        }
+        throw new Error(
+          `获取分享状态失败: ${response.status} ${response.statusText}`
+        );
+      }
+
+      const data = await response.json();
+
+      // 更新分享状态
+      if (data.success && data.shareStatus) {
+        this.activeShare = {
+          id: data.shareId,
+          url: data.shareLink,
+          canvasName: data.canvasName,
+        };
+        // 如果已有活跃分享，直接显示分享链接弹窗
+        this.showShareLinkDialog(
+          this.activeShare.url,
+          this.activeShare.id,
+          this.activeShare.canvasName
+        );
+      } else {
+        // 如果没有活跃分享，打开分享配置弹窗
+        this.showShareConfigDialog();
+      }
+    } catch (error) {
+      console.error("获取分享状态失败:", error);
+      this.showMessage(`获取分享状态失败: ${error.message}`, "error");
+      // 出错时仍然尝试打开分享配置弹窗
       this.showShareConfigDialog();
     }
   }
@@ -965,6 +1008,52 @@ export class Canvas {
       }
     } catch (error) {
       console.error("恢复画布状态失败:", error);
+    }
+  }
+
+  /**
+   * 检查用户分享状态
+   * 从服务器获取当前用户的分享状态
+   */
+  async checkShareStatus() {
+    try {
+      // 发送请求获取用户分享状态
+      console.log("初始化时检查分享状态...");
+      const response = await fetch("/api/share/status", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "same-origin", // 确保发送认证信息
+      });
+
+      console.log("分享状态响应:", response.status, response.statusText);
+
+      // 如果请求失败，可能是未登录或其他原因，直接返回
+      if (!response.ok) {
+        if (response.status !== 401) {
+          // 401是未登录，这是正常的
+          console.warn(
+            `检查分享状态失败: ${response.status} ${response.statusText}`
+          );
+        }
+        return;
+      }
+
+      const data = await response.json();
+
+      // 如果有活跃的分享，更新分享状态
+      if (data.success && data.shareStatus) {
+        this.activeShare = {
+          id: data.shareId,
+          url: data.shareLink,
+          canvasName: data.canvasName,
+          createdAt: new Date().toISOString(),
+        };
+        console.log("已恢复分享状态:", this.activeShare);
+      }
+    } catch (error) {
+      console.error("检查分享状态失败:", error);
     }
   }
 }

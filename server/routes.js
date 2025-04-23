@@ -36,6 +36,8 @@ import {
   deleteInviteCode,
   validateInviteCode,
   markInviteCodeAsUsed,
+  // 分享相关函数
+  getUserShareInfo,
   // Import dbFilePath
   dbFilePath,
 } from "./database.js";
@@ -46,6 +48,23 @@ import path from "path";
 import shareRouter from "./share.js";
 
 const router = express.Router();
+
+// 添加一个简单的健康检查路由
+// GET /api/health
+router.get("/health", (req, res) => {
+  res.json({
+    success: true,
+    message: "服务器运行正常",
+    timestamp: new Date().toISOString(),
+    routes: [
+      { path: "/api/share/status", method: "GET", auth: true },
+      { path: "/api/share", method: "POST", auth: true },
+      { path: "/api/share/:id", method: "GET", auth: false },
+      { path: "/api/share/refresh/:id", method: "POST", auth: true },
+      { path: "/api/share/close/:id", method: "POST", auth: true },
+    ],
+  });
+});
 
 // --- 认证路由 ---
 
@@ -234,9 +253,55 @@ router.use("/test-ai-connection", requireAuth);
 router.use("/api-history", requireAuth);
 router.use("/invite-codes", requireAuth);
 
-// 注册分享路由 - 分享路由内部已处理认证
-console.log("注册分享路由: /share");
-router.use("/share", shareRouter);
+// 直接添加分享状态路由
+router.get("/share/status", requireAuth, async (req, res) => {
+  try {
+    if (!req.session || !req.session.user) {
+      return res.status(401).json({
+        success: false,
+        message: "未登录",
+      });
+    }
+
+    const userId = req.session.user.id;
+
+    // 从数据库中获取用户分享信息
+    const shareInfo = await getUserShareInfo(userId);
+
+    if (!shareInfo) {
+      return res.status(404).json({
+        success: false,
+        message: "用户不存在",
+      });
+    }
+
+    if (!shareInfo.shareStatus) {
+      return res.json({
+        success: true,
+        shareStatus: false,
+        message: "没有活跃的分享",
+      });
+    }
+
+    // 返回分享状态
+    res.json({
+      success: true,
+      shareStatus: true,
+      shareId: shareInfo.shareId,
+      shareLink: shareInfo.shareLink,
+      canvasName: shareInfo.canvasName,
+      shareNotes: shareInfo.shareNotes,
+      message: "已获取分享状态",
+    });
+  } catch (error) {
+    console.error("获取分享状态出错:", error);
+    res.status(500).json({
+      success: false,
+      message: "获取分享状态失败",
+      error: error.message,
+    });
+  }
+});
 
 // --- 邀请码管理路由 ---
 
@@ -1352,6 +1417,10 @@ router.delete("/api-history/all", async (req, res) => {
     res.status(500).json({ success: false, message: "清除API历史记录失败" });
   }
 });
+
+// 注册分享路由 - 分享路由内部已处理认证
+console.log("注册分享路由: /share");
+router.use("/share", shareRouter);
 
 // Export only the router (readSettingsData is no longer needed externally)
 export default router;

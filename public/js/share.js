@@ -74,21 +74,20 @@ async function loadSharedCanvas(shareId, silent = false) {
     // 获取分享数据
     const response = await fetch(`/api/share/${shareId}`);
 
-    if (!response.ok) {
-      // 检查是否是分享已关闭的错误
-      if (response.status === 403) {
-        const errorData = await response.json();
-        if (errorData.isClosed) {
-          // 重定向到分享关闭页面
-          window.location.href = `/share-closed.html?id=${shareId}`;
-          return;
-        }
-      }
-      throw new Error("获取分享数据失败");
-    }
-
     const data = await response.json();
     console.log("从服务器获取的分享数据:", data);
+
+    // 检查是否是分享已关闭
+    if (!data.success && data.isClosed) {
+      console.log("分享已关闭，显示关闭提示");
+      // 直接显示关闭提示，而不是重定向
+      showError("分享已关闭");
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error("获取分享数据失败");
+    }
 
     if (!data.success) {
       throw new Error(data.message || "获取分享数据失败");
@@ -359,15 +358,143 @@ function showError(message) {
   const canvas = document.getElementById("note-canvas");
   canvas.innerHTML = "";
 
+  // 获取画布名称
+  const urlParams = new URLSearchParams(window.location.search);
+  const canvasName = urlParams.get("name") || "InfinityNotes";
+  const decodedName = decodeURIComponent(canvasName);
+
+  // 更新页面标题
+  document.title = `${decodedName} - 分享已关闭`;
+
+  // 创建分享关闭样式的错误提示
   const errorEl = document.createElement("div");
-  errorEl.className = "error-message";
+  errorEl.className = "closed-container";
   errorEl.innerHTML = `
-    <h2>出错了</h2>
-    <p>${message}</p>
-    <p>请检查分享链接是否正确，或者稍后再试。</p>
+    <style>
+      /* 分享关闭样式 */
+      #note-canvas {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: calc(100vh - 60px); /* 减去头部高度 */
+      }
+
+      .closed-container {
+        max-width: 600px;
+        width: 100%;
+        background-color: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        overflow: hidden;
+        text-align: center;
+        animation: fadeIn 0.5s ease-out;
+      }
+
+      .closed-header {
+        background-color: #4a6ee0;
+        color: white;
+        padding: 30px 20px;
+        position: relative;
+      }
+
+      .closed-icon {
+        font-size: 64px;
+        margin-bottom: 15px;
+        display: inline-block;
+      }
+
+      .closed-title {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 5px;
+      }
+
+      .closed-subtitle {
+        font-size: 16px;
+        opacity: 0.9;
+      }
+
+      .closed-content {
+        padding: 30px;
+      }
+
+      .closed-message {
+        font-size: 16px;
+        line-height: 1.6;
+        color: #555;
+        margin-bottom: 25px;
+      }
+
+      .closed-actions {
+        margin-top: 20px;
+      }
+
+      .home-button {
+        display: inline-block;
+        background-color: #4a6ee0;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 12px 24px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background-color 0.2s, transform 0.2s;
+      }
+
+      .home-button:hover {
+        background-color: #3a5ecc;
+        transform: translateY(-2px);
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+    <div class="closed-header">
+      <div class="closed-icon">🔒</div>
+      <h1 class="closed-title">${decodedName}</h1>
+      <p class="closed-subtitle">分享已关闭</p>
+    </div>
+
+    <div class="closed-content">
+      <p class="closed-message">
+        抱歉，您尝试访问的画布 <strong>${decodedName}</strong> 已被创建者关闭分享。<br>
+        这可能是因为分享已过期或创建者主动关闭了分享。
+      </p>
+
+      <div class="closed-actions">
+        <a href="/" class="home-button">返回主页</a>
+      </div>
+    </div>
   `;
 
   canvas.appendChild(errorEl);
+
+  // 处理页面其他元素
+  // 隐藏头部
+  const header = document.querySelector(".share-header");
+  if (header) header.style.display = "none";
+
+  // 隐藏悬浮提示
+  const floatingTip = document.getElementById("share-floating-tip");
+  if (floatingTip) floatingTip.style.display = "none";
+
+  // 隐藏刷新按钮
+  const refreshButton = document.getElementById("refresh-button");
+  if (refreshButton) refreshButton.style.display = "none";
+
+  // 清除页面底部的最后更新时间
+  const lastUpdated = document.getElementById("last-updated");
+  if (lastUpdated) lastUpdated.textContent = "";
 }
 
 /**
