@@ -1,9 +1,10 @@
 /**
  * 分享页面的主要脚本
  * 负责从服务器获取分享的便签数据并展示
+ * 使用ReadOnlyCanvas类提供与主画布一致的体验，但禁用编辑功能
  */
 
-import { ShareCanvas } from "./modules/share/ShareCanvas.js";
+import { ReadOnlyCanvas } from "./modules/share/ReadOnlyCanvas.js";
 
 // 全局变量保存画布实例
 let shareCanvas = null;
@@ -111,23 +112,19 @@ async function loadSharedCanvas(shareId, silent = false) {
       return;
     }
 
+    // 初始化画布实例（如果尚未初始化）
+    if (!shareCanvas) {
+      // 创建只读画布实例
+      shareCanvas = new ReadOnlyCanvas();
+      console.log("只读画布已初始化");
+    }
+
     // 渲染便签
     renderNotes(data.notes);
 
-    // 初始化画布移动和缩放功能
-    if (!shareCanvas) {
-      // 等待便签容器创建完成
-      setTimeout(() => {
-        // 创建画布实例
-        shareCanvas = new ShareCanvas();
-
-        // 如果服务器返回了画布状态，应用到分享页面
-        if (data.canvasState) {
-          shareCanvas.applyInitialState(data.canvasState);
-        }
-
-        console.log("画布移动和缩放功能已初始化");
-      }, 100);
+    // 如果服务器返回了画布状态，应用到分享页面
+    if (data.canvasState) {
+      shareCanvas.applyInitialState(data.canvasState);
     }
   } catch (error) {
     console.error("加载分享数据出错:", error);
@@ -151,28 +148,16 @@ async function loadSharedCanvas(shareId, silent = false) {
  * @param {Array} notes - 便签数据数组
  */
 function renderNotes(notes) {
-  const canvas = document.getElementById("note-canvas");
+  // 获取便签容器（由ReadOnlyCanvas创建）
+  const noteContainer = document.getElementById("note-container");
+  if (!noteContainer) {
+    console.error("找不到便签容器，无法渲染便签");
+    return;
+  }
 
   // 清空现有便签
-  const existingNotes = canvas.querySelectorAll(".note");
+  const existingNotes = noteContainer.querySelectorAll(".note");
   existingNotes.forEach((note) => note.remove());
-
-  // 创建网格背景（如果不存在）
-  let gridBackground = canvas.querySelector(".grid-background");
-  if (!gridBackground) {
-    gridBackground = document.createElement("div");
-    gridBackground.className = "grid-background";
-    canvas.appendChild(gridBackground);
-  }
-
-  // 确保便签容器存在
-  let noteContainer = document.getElementById("note-container");
-  if (!noteContainer) {
-    noteContainer = document.createElement("div");
-    noteContainer.id = "note-container";
-    noteContainer.className = "note-container";
-    canvas.appendChild(noteContainer);
-  }
 
   console.log("开始渲染便签，数量:", notes.length);
 
@@ -180,7 +165,7 @@ function renderNotes(notes) {
   const fragment = document.createDocumentFragment();
 
   // 渲染每个便签
-  notes.forEach((noteData, index) => {
+  notes.forEach((noteData) => {
     const note = createReadOnlyNote(noteData);
     if (note) fragment.appendChild(note);
   });
@@ -202,6 +187,9 @@ function createReadOnlyNote(noteData) {
   note.style.top = `${noteData.y}px`;
   note.style.zIndex = noteData.zIndex || 1;
   note.setAttribute("data-id", noteData.id);
+
+  // 显式禁用resize属性
+  note.style.resize = "none";
 
   if (noteData.width) {
     note.style.width = `${noteData.width}px`;
@@ -236,17 +224,9 @@ function createReadOnlyNote(noteData) {
 
   // 获取便签文本
   const noteText = noteData.text || "";
-  console.log(
-    `便签内容: ${noteText.substring(0, 50)}${noteText.length > 50 ? "..." : ""}`
-  );
 
   // 使用marked.js渲染Markdown
   const renderedHtml = renderMarkdown(noteText);
-  console.log(
-    `渲染后的HTML: ${renderedHtml.substring(0, 50)}${
-      renderedHtml.length > 50 ? "..." : ""
-    }`
-  );
   preview.innerHTML = renderedHtml;
 
   // 确保预览区域可见
@@ -254,7 +234,6 @@ function createReadOnlyNote(noteData) {
 
   // 处理图片响应式
   const images = preview.querySelectorAll("img");
-  console.log(`找到图片: ${images.length}个`);
   images.forEach((img) => {
     img.style.maxWidth = "100%";
     img.style.height = "auto";
@@ -267,7 +246,6 @@ function createReadOnlyNote(noteData) {
 
   // 处理代码块
   const codeBlocks = preview.querySelectorAll("pre code");
-  console.log(`找到代码块: ${codeBlocks.length}个`);
   if (window.hljs) {
     codeBlocks.forEach((block) => {
       hljs.highlightBlock(block);
@@ -352,9 +330,9 @@ function renderMarkdown(text) {
 
 /**
  * 显示错误信息
- * @param {string} message - 错误信息
+ * @param {string} errorMessage - 错误信息
  */
-function showError(message) {
+function showError(errorMessage) {
   const canvas = document.getElementById("note-canvas");
   canvas.innerHTML = "";
 
@@ -469,6 +447,11 @@ function showError(message) {
       <p class="closed-message">
         抱歉，您尝试访问的画布 <strong>${decodedName}</strong> 已被创建者关闭分享。<br>
         这可能是因为分享已过期或创建者主动关闭了分享。
+        ${
+          errorMessage
+            ? `<br><br><strong>错误信息:</strong> ${errorMessage}`
+            : ""
+        }
       </p>
 
       <div class="closed-actions">

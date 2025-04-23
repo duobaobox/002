@@ -5,12 +5,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>便签画布分享</title>
-  <!-- 引入分享页面所需的样式，合并减少HTTP请求 -->
-  <link rel="stylesheet" href="/css/share.css">
+  <!-- 引入基础样式 -->
+  <link rel="stylesheet" href="/css/base.css">
+  <!-- 引入画布样式 -->
+  <link rel="stylesheet" href="/css/canvas.css">
   <!-- 引入便签样式 -->
   <link rel="stylesheet" href="/css/notes.css">
   <!-- 引入Markdown样式 -->
   <link rel="stylesheet" href="/css/markdown.css">
+  <!-- 引入分享页面特定样式 -->
+  <link rel="stylesheet" href="/css/share.css">
   <link rel="icon" href="/favicon.ico" type="image/x-icon">
   <!-- 添加 marked.js 库用于Markdown渲染 -->
   <script src="https://cdn.jsdelivr.net/npm/marked@3.0.8/marked.min.js" defer></script>
@@ -29,14 +33,11 @@
         <button id="refresh-button" class="refresh-button">刷新数据</button>
       </div>
     </div>
-    <!-- 移除旧的提示区域 -->
 
+    <!-- 画布容器区域 - 与主页面保持一致的结构 -->
     <div class="canvas-container">
-      <div id="note-canvas" class="note-canvas">
-        <!-- 便签容器，与原始页面保持一致的结构 -->
-        <div id="note-container" class="note-container">
-          <!-- 便签将在这里动态加载 -->
-        </div>
+      <div id="note-canvas">
+        <!-- 背景元素和便签容器将通过JS动态添加，与主页面保持一致 -->
       </div>
     </div>
 
