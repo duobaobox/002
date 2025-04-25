@@ -116,16 +116,10 @@ export default class UserManager {
           this._handleResetPassword(userId);
         }
 
-        // 禁用/启用用户按钮
-        if (
-          target.classList.contains("disable-user") ||
-          target.classList.contains("enable-user")
-        ) {
+        // 删除用户按钮
+        if (target.classList.contains("delete-user")) {
           const userId = target.dataset.userId;
-          const action = target.classList.contains("disable-user")
-            ? "disable"
-            : "enable";
-          this._handleToggleUserStatus(userId, action);
+          this._handleDeleteUser(userId);
         }
       });
     }
@@ -241,11 +235,6 @@ export default class UserManager {
           valueA = new Date(a.createdAt).getTime();
           valueB = new Date(b.createdAt).getTime();
           break;
-        case "status":
-          // 管理员 > 活跃 > 禁用
-          valueA = a.username === "admin" ? 2 : a.isActive ? 1 : 0;
-          valueB = b.username === "admin" ? 2 : b.isActive ? 1 : 0;
-          break;
         default:
           valueA = a[field];
           valueB = b[field];
@@ -358,25 +347,6 @@ export default class UserManager {
       const createdCell = document.createElement("td");
       createdCell.textContent = this._formatDate(user.createdAt);
 
-      // 状态单元格
-      const statusCell = document.createElement("td");
-
-      const statusBadge = document.createElement("span");
-      statusBadge.className = "user-status-badge";
-
-      if (user.username === "admin") {
-        statusBadge.classList.add("status-admin");
-        statusBadge.textContent = "管理员";
-      } else if (user.isActive) {
-        statusBadge.classList.add("status-active");
-        statusBadge.textContent = "活跃";
-      } else {
-        statusBadge.classList.add("status-inactive");
-        statusBadge.textContent = "禁用";
-      }
-
-      statusCell.appendChild(statusBadge);
-
       // 操作单元格
       const actionsCell = document.createElement("td");
       actionsCell.className = "user-actions";
@@ -389,22 +359,19 @@ export default class UserManager {
         resetButton.textContent = "重置密码";
         resetButton.dataset.userId = user.id;
 
-        // 禁用/启用按钮
-        const toggleButton = document.createElement("button");
-        toggleButton.className = user.isActive
-          ? "user-action-button disable-user"
-          : "user-action-button enable-user";
-        toggleButton.textContent = user.isActive ? "禁用" : "启用";
-        toggleButton.dataset.userId = user.id;
+        // 删除用户按钮
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "user-action-button delete-user";
+        deleteButton.textContent = "删除";
+        deleteButton.dataset.userId = user.id;
 
         actionsCell.appendChild(resetButton);
-        actionsCell.appendChild(toggleButton);
+        actionsCell.appendChild(deleteButton);
       }
 
       // 添加所有单元格到行
       userRow.appendChild(nameCell);
       userRow.appendChild(createdCell);
-      userRow.appendChild(statusCell);
       userRow.appendChild(actionsCell);
 
       // 添加行到表格
@@ -447,15 +414,10 @@ export default class UserManager {
    * @private
    */
   _updateStats() {
-    if (!this.totalUsersCount || !this.activeUsersCount || !this.newUsersToday)
-      return;
+    if (!this.totalUsersCount || !this.newUsersToday) return;
 
     // 总用户数
     this.totalUsersCount.textContent = this.users.length;
-
-    // 活跃用户数
-    const activeUsers = this.users.filter((user) => user.isActive);
-    this.activeUsersCount.textContent = activeUsers.length;
 
     // 今日新增用户
     const today = new Date();
@@ -499,36 +461,33 @@ export default class UserManager {
   }
 
   /**
-   * 处理禁用/启用用户
+   * 处理删除用户
    * @param {string} userId - 用户ID
-   * @param {string} action - 操作类型 (disable/enable)
    * @private
    */
-  async _handleToggleUserStatus(userId, action) {
-    const message = action === "disable" ? "禁用" : "启用";
-    if (!confirm(`确定要${message}该用户吗？`)) return;
+  async _handleDeleteUser(userId) {
+    if (!confirm("确定要删除该用户吗？此操作不可恢复！")) return;
 
     try {
-      const response = await fetch(`/api/users/${userId}/status`, {
-        method: "POST",
+      const response = await fetch(`/api/users/${userId}`, {
+        method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ action }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        alert(`用户已${message}`);
+        alert("用户已成功删除");
         // 重新加载用户列表
         this.loadUsers();
       } else {
-        alert(data.message || `${message}用户失败`);
+        alert(data.message || "删除用户失败");
       }
     } catch (error) {
-      console.error(`${message}用户失败:`, error);
-      alert(`${message}用户失败，请检查网络连接`);
+      console.error("删除用户失败:", error);
+      alert("删除用户失败，请检查网络连接");
     }
   }
 
