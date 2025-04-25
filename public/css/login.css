@@ -421,24 +421,52 @@ body {
 /* 消息容器样式 */
 .message-container {
   margin-bottom: 20px;
-  padding: 12px;
+  padding: 15px;
   border-radius: 10px;
   font-size: 14px;
   display: none;
+  animation: message-fade-in 0.3s ease-out;
+}
+
+@keyframes message-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .message-container.error {
-  display: block;
+  display: flex;
+  align-items: center;
   background-color: #fff1f0; /* 温和的红色背景 */
   color: #ff3b30; /* 苹果的错误红色 */
   border: 1px solid #ffcccb;
+  box-shadow: 0 2px 8px rgba(255, 59, 48, 0.15);
+}
+
+.message-container.error::before {
+  content: "⚠️";
+  margin-right: 10px;
+  font-size: 16px;
 }
 
 .message-container.success {
-  display: block;
+  display: flex;
+  align-items: center;
   background-color: #f0fff6; /* 温和的绿色背景 */
   color: #34c759; /* 苹果的成功绿色 */
   border: 1px solid #d1facf;
+  box-shadow: 0 2px 8px rgba(52, 199, 89, 0.15);
+}
+
+.message-container.success::before {
+  content: "✅";
+  margin-right: 10px;
+  font-size: 16px;
 }
 
 /* 响应式布局 */

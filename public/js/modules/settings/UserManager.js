@@ -466,7 +466,12 @@ export default class UserManager {
    * @private
    */
   async _handleDeleteUser(userId) {
-    if (!confirm("确定要删除该用户吗？此操作不可恢复！")) return;
+    if (
+      !confirm(
+        "确定要删除该用户吗？此操作不可恢复！\n被删除的用户将立即被强制登出系统。"
+      )
+    )
+      return;
 
     try {
       const response = await fetch(`/api/users/${userId}`, {
@@ -479,9 +484,18 @@ export default class UserManager {
       const data = await response.json();
 
       if (data.success) {
-        alert("用户已成功删除");
+        // 显示更详细的成功消息
+        alert(
+          `用户已成功删除。\n用户名: ${
+            data.deletedUser?.username || "未知"
+          }\n该用户将在下次操作时被强制登出系统。`
+        );
+
         // 重新加载用户列表
         this.loadUsers();
+
+        // 记录删除信息到控制台
+        console.log("用户删除成功:", data.deletedUser);
       } else {
         alert(data.message || "删除用户失败");
       }

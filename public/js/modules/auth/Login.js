@@ -16,6 +16,9 @@ export function initLogin() {
   // 检查是否已登录
   checkLoginStatus();
 
+  // 检查是否是从账户删除后重定向过来的
+  checkAccountDeletedStatus();
+
   // 登录按钮点击事件
   loginButton.addEventListener("click", handleLogin);
 
@@ -25,6 +28,19 @@ export function initLogin() {
       handleLogin();
     }
   });
+
+  /**
+   * 检查账户删除状态
+   */
+  function checkAccountDeletedStatus() {
+    const accountDeleted = sessionStorage.getItem("accountDeleted");
+    if (accountDeleted === "true") {
+      // 显示账户已删除的消息
+      showMessage("您的账户已被管理员删除，请联系管理员获取更多信息", "error");
+      // 清除状态，避免刷新页面后仍然显示
+      sessionStorage.removeItem("accountDeleted");
+    }
+  }
 
   /**
    * 处理登录请求
