@@ -106,91 +106,91 @@ export class Canvas {
     this.canvas.insertBefore(bgContainer, this.canvas.firstChild);
   }
 
+  /**
+   * 创建装饰元素的通用函数
+   * @param {HTMLElement} container - 容器元素
+   * @param {number} count - 元素数量
+   * @param {Object} options - 配置选项
+   */
+  createDecorativeElements(container, count, options) {
+    const {
+      className, // 元素的CSS类名
+      sizeRange, // 尺寸范围 [min, max]
+      opacityRange, // 透明度范围 [min, max]
+      colors, // 颜色数组
+      positionMultiplier, // 位置乘数 [x, y]
+      positionOffset, // 位置偏移 [x, y]
+      useAnimation = false, // 是否使用动画
+      useRotation = false, // 是否使用旋转
+      isGradient = false, // 是否使用渐变色
+      widthHeightRatio = 1, // 宽高比例
+    } = options;
+
+    const canvasWidth = this.canvas.clientWidth;
+    const canvasHeight = this.canvas.clientHeight;
+
+    for (let i = 0; i < count; i++) {
+      const element = document.createElement("div");
+      element.className = className;
+
+      // 随机位置
+      const x =
+        Math.random() * canvasWidth * positionMultiplier[0] -
+        canvasWidth * positionOffset[0];
+      const y =
+        Math.random() * canvasHeight * positionMultiplier[1] -
+        canvasHeight * positionOffset[1];
+
+      // 随机大小
+      const size = sizeRange[0] + Math.random() * (sizeRange[1] - sizeRange[0]);
+
+      // 随机颜色
+      const color = colors[Math.floor(Math.random() * colors.length)];
+
+      // 设置样式
+      element.style.left = `${x}px`;
+      element.style.top = `${y}px`;
+
+      if (widthHeightRatio === 1) {
+        // 正方形元素
+        element.style.width = `${size}px`;
+        element.style.height = `${size}px`;
+      } else {
+        // 非正方形元素（如线条）
+        element.style.width = `${size}px`;
+        element.style.height = `${size / widthHeightRatio}px`;
+      }
+
+      // 设置颜色
+      if (isGradient) {
+        element.style.background = color;
+      } else {
+        element.style.backgroundColor = color;
+      }
+
+      // 设置透明度
+      element.style.opacity = (
+        opacityRange[0] +
+        Math.random() * (opacityRange[1] - opacityRange[0])
+      ).toFixed(2);
+
+      // 添加旋转（如果需要）
+      if (useRotation) {
+        const rotation = Math.random() * 180;
+        element.style.transform = `rotate(${rotation}deg)`;
+      }
+
+      // 添加动画延迟（如果需要）
+      if (useAnimation) {
+        element.style.animationDelay = `${Math.random() * 5}s`;
+      }
+
+      container.appendChild(element);
+    }
+  }
+
   // 添加点阵装饰
   addDots(container, count) {
-    const canvasWidth = this.canvas.clientWidth;
-    const canvasHeight = this.canvas.clientHeight;
-
-    for (let i = 0; i < count; i++) {
-      const dot = document.createElement("div");
-      dot.className = "bg-dots";
-
-      // 随机位置
-      const x = Math.random() * canvasWidth * 2 - canvasWidth / 2;
-      const y = Math.random() * canvasHeight * 2 - canvasHeight / 2;
-
-      // 随机大小 (3-8px)
-      const size = 3 + Math.random() * 5;
-
-      // 随机颜色
-      const colors = [
-        "rgba(26, 115, 232, 0.1)", // 蓝色
-        "rgba(52, 168, 83, 0.1)", // 绿色
-        "rgba(251, 188, 5, 0.1)", // 黄色
-        "rgba(234, 67, 53, 0.1)", // 红色
-        "rgba(103, 58, 183, 0.1)", // 紫色
-      ];
-      const color = colors[Math.floor(Math.random() * colors.length)];
-
-      // 设置样式
-      dot.style.left = `${x}px`;
-      dot.style.top = `${y}px`;
-      dot.style.width = `${size}px`;
-      dot.style.height = `${size}px`;
-      dot.style.backgroundColor = color;
-      dot.style.opacity = (0.3 + Math.random() * 0.7).toFixed(2); // 0.3-1.0的透明度
-
-      container.appendChild(dot);
-    }
-  }
-
-  // 添加渐变气泡
-  addGradientBubbles(container, count) {
-    const canvasWidth = this.canvas.clientWidth;
-    const canvasHeight = this.canvas.clientHeight;
-
-    const colors = [
-      "linear-gradient(45deg, rgba(26, 115, 232, 0.3), rgba(26, 115, 232, 0.1))", // 蓝色
-      "linear-gradient(45deg, rgba(52, 168, 83, 0.3), rgba(52, 168, 83, 0.1))", // 绿色
-      "linear-gradient(45deg, rgba(251, 188, 5, 0.3), rgba(251, 188, 5, 0.1))", // 黄色
-      "linear-gradient(45deg, rgba(234, 67, 53, 0.3), rgba(234, 67, 53, 0.1))", // 红色
-      "linear-gradient(45deg, rgba(103, 58, 183, 0.3), rgba(103, 58, 183, 0.1))", // 紫色
-    ];
-
-    for (let i = 0; i < count; i++) {
-      const bubble = document.createElement("div");
-      bubble.className = "bg-gradient-bubble";
-
-      // 随机位置
-      const x = Math.random() * canvasWidth * 2 - canvasWidth / 2;
-      const y = Math.random() * canvasHeight * 2 - canvasHeight / 2;
-
-      // 随机大小 (100-300px)
-      const size = 100 + Math.random() * 200;
-
-      // 随机颜色
-      const color = colors[Math.floor(Math.random() * colors.length)];
-
-      // 设置样式
-      bubble.style.left = `${x}px`;
-      bubble.style.top = `${y}px`;
-      bubble.style.width = `${size}px`;
-      bubble.style.height = `${size}px`;
-      bubble.style.background = color;
-      bubble.style.opacity = (0.05 + Math.random() * 0.1).toFixed(2); // 0.05-0.15的透明度
-
-      // 添加随机动画延迟
-      bubble.style.animationDelay = `${Math.random() * 5}s`;
-
-      container.appendChild(bubble);
-    }
-  }
-
-  // 添加装饰线条
-  addDecorativeLines(container, count) {
-    const canvasWidth = this.canvas.clientWidth;
-    const canvasHeight = this.canvas.clientHeight;
-
     const colors = [
       "rgba(26, 115, 232, 0.1)", // 蓝色
       "rgba(52, 168, 83, 0.1)", // 绿色
@@ -199,38 +199,59 @@ export class Canvas {
       "rgba(103, 58, 183, 0.1)", // 紫色
     ];
 
-    for (let i = 0; i < count; i++) {
-      const line = document.createElement("div");
-      line.className = "bg-line";
+    this.createDecorativeElements(container, count, {
+      className: "bg-dots",
+      sizeRange: [3, 8],
+      opacityRange: [0.3, 1.0],
+      colors: colors,
+      positionMultiplier: [2, 2],
+      positionOffset: [0.5, 0.5],
+    });
+  }
 
-      // 随机位置
-      const x = Math.random() * canvasWidth * 1.5 - canvasWidth / 4;
-      const y = Math.random() * canvasHeight * 1.5 - canvasHeight / 4;
+  // 添加渐变气泡
+  addGradientBubbles(container, count) {
+    const colors = [
+      "linear-gradient(45deg, rgba(26, 115, 232, 0.3), rgba(26, 115, 232, 0.1))", // 蓝色
+      "linear-gradient(45deg, rgba(52, 168, 83, 0.3), rgba(52, 168, 83, 0.1))", // 绿色
+      "linear-gradient(45deg, rgba(251, 188, 5, 0.3), rgba(251, 188, 5, 0.1))", // 黄色
+      "linear-gradient(45deg, rgba(234, 67, 53, 0.3), rgba(234, 67, 53, 0.1))", // 红色
+      "linear-gradient(45deg, rgba(103, 58, 183, 0.3), rgba(103, 58, 183, 0.1))", // 紫色
+    ];
 
-      // 随机大小 (50-200px)
-      const length = 50 + Math.random() * 150;
-      const thickness = 1 + Math.random() * 2;
+    this.createDecorativeElements(container, count, {
+      className: "bg-gradient-bubble",
+      sizeRange: [100, 300],
+      opacityRange: [0.05, 0.15],
+      colors: colors,
+      positionMultiplier: [2, 2],
+      positionOffset: [0.5, 0.5],
+      useAnimation: true,
+      isGradient: true,
+    });
+  }
 
-      // 随机旋转角度
-      const rotation = Math.random() * 180;
+  // 添加装饰线条
+  addDecorativeLines(container, count) {
+    const colors = [
+      "rgba(26, 115, 232, 0.1)", // 蓝色
+      "rgba(52, 168, 83, 0.1)", // 绿色
+      "rgba(251, 188, 5, 0.1)", // 黄色
+      "rgba(234, 67, 53, 0.1)", // 红色
+      "rgba(103, 58, 183, 0.1)", // 紫色
+    ];
 
-      // 随机颜色
-      const color = colors[Math.floor(Math.random() * colors.length)];
-
-      // 设置样式
-      line.style.left = `${x}px`;
-      line.style.top = `${y}px`;
-      line.style.width = `${length}px`;
-      line.style.height = `${thickness}px`;
-      line.style.backgroundColor = color;
-      line.style.transform = `rotate(${rotation}deg)`;
-      line.style.opacity = (0.1 + Math.random() * 0.3).toFixed(2); // 0.1-0.4的透明度
-
-      // 添加随机动画延迟
-      line.style.animationDelay = `${Math.random() * 5}s`;
-
-      container.appendChild(line);
-    }
+    this.createDecorativeElements(container, count, {
+      className: "bg-line",
+      sizeRange: [50, 200],
+      opacityRange: [0.1, 0.4],
+      colors: colors,
+      positionMultiplier: [1.5, 1.5],
+      positionOffset: [0.25, 0.25],
+      useAnimation: true,
+      useRotation: true,
+      widthHeightRatio: 100, // 线条的宽高比例，使高度很小
+    });
   }
 
   // 创建缩放控制器
@@ -616,116 +637,177 @@ export class Canvas {
   }
 
   /**
-   * 显示分享配置弹窗
+   * 创建通用对话框
+   * @param {Object} options - 对话框配置选项
+   * @returns {HTMLElement} 创建的对话框元素
    */
-  showShareConfigDialog() {
-    // 移除现有的对话框
-    const existingDialog = document.querySelector(".share-dialog");
+  createDialog(options) {
+    const {
+      className = "share-dialog", // 对话框CSS类名
+      title, // 对话框标题
+      content, // 对话框内容HTML
+      buttons = [], // 按钮配置数组 [{text, className, onClick, primary}]
+      closeOnOutsideClick = true, // 点击外部是否关闭
+      onClose, // 关闭回调
+    } = options;
+
+    // 移除同类现有对话框
+    const existingDialog = document.querySelector(`.${className}`);
     if (existingDialog) {
       existingDialog.remove();
     }
 
-    // 获取应用名称作为默认画布名称
-    const defaultCanvasName = "InfinityNotes"; // 默认软件名称
-
     // 创建对话框
     const dialog = document.createElement("div");
-    dialog.className = "share-dialog";
-    dialog.innerHTML = `
-      <div class="share-dialog-content">
-        <h3>分享画布</h3>
+    dialog.className = className;
 
-        <!-- 添加画布名称输入框 -->
-        <div class="canvas-name-container">
-          <label for="canvas-name">画布名称:</label>
-          <input type="text" id="canvas-name" class="canvas-name" value="${defaultCanvasName}" placeholder="输入画布名称" />
-        </div>
-
-        <p class="share-description">开启分享后，其他人可以通过链接查看您的画布内容。</p>
-
-        <div class="share-actions">
-          <button class="start-share-btn primary-btn">开启分享</button>
-          <button class="close-btn">取消</button>
-        </div>
-      </div>
+    // 构建对话框内容
+    let dialogHTML = `
+      <div class="${className}-content">
+        ${title ? `<h3>${title}</h3>` : ""}
+        ${content}
     `;
+
+    // 添加按钮区域
+    if (buttons.length > 0) {
+      dialogHTML += `<div class="${className}-actions">`;
+      buttons.forEach((button) => {
+        const btnClass =
+          button.className || (button.primary ? "primary-btn" : "");
+        dialogHTML += `<button class="${btnClass}">${button.text}</button>`;
+      });
+      dialogHTML += `</div>`;
+    }
+
+    dialogHTML += `</div>`;
+    dialog.innerHTML = dialogHTML;
 
     // 添加到文档
     document.body.appendChild(dialog);
 
-    // 添加事件处理
-    const startShareBtn = dialog.querySelector(".start-share-btn");
-    const closeBtn = dialog.querySelector(".close-btn");
-    const canvasNameInput = dialog.querySelector("#canvas-name");
-
-    // 开启分享按钮事件
-    startShareBtn.addEventListener("click", async () => {
-      try {
-        startShareBtn.disabled = true;
-        startShareBtn.textContent = "正在创建分享...";
-
-        // 获取画布名称
-        const canvasName = canvasNameInput.value.trim() || defaultCanvasName;
-
-        // 发送请求创建分享
-        const response = await fetch("/api/share", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "same-origin", // 确保发送认证信息
-          body: JSON.stringify({
-            // 不需要发送便签数据，服务器会从数据库获取
-            canvasState: {
-              scale: this.scale,
-              offsetX: this.offset.x,
-              offsetY: this.offset.y,
-            },
-            canvasName: canvasName, // 添加画布名称
-          }),
-        });
-
-        const data = await response.json();
-
-        if (!data.success) {
-          throw new Error(data.message || "创建分享失败");
+    // 绑定按钮事件
+    if (buttons.length > 0) {
+      const buttonElements = dialog.querySelectorAll(
+        `.${className}-actions button`
+      );
+      buttons.forEach((button, index) => {
+        if (button.onClick && buttonElements[index]) {
+          buttonElements[index].addEventListener("click", (e) => {
+            button.onClick(e, dialog);
+          });
         }
-
-        // 创建分享链接
-        const shareUrl = `${window.location.origin}/share.html?id=${
-          data.shareId
-        }&name=${encodeURIComponent(canvasName)}`;
-
-        // 保存当前活跃的分享信息
-        this.activeShare = {
-          id: data.shareId,
-          url: shareUrl,
-          canvasName: canvasName,
-          createdAt: new Date().toISOString(),
-        };
-
-        // 关闭当前对话框
-        dialog.remove();
-
-        // 显示分享链接对话框
-        this.showShareLinkDialog(shareUrl, data.shareId, canvasName);
-      } catch (error) {
-        console.error("分享画布出错:", error);
-        startShareBtn.disabled = false;
-        startShareBtn.textContent = "开启分享";
-        this.showMessage(`分享失败: ${error.message}`, "error");
-      }
-    });
-
-    closeBtn.addEventListener("click", () => {
-      dialog.remove();
-    });
+      });
+    }
 
     // 点击对话框外部关闭
-    dialog.addEventListener("click", (e) => {
-      if (e.target === dialog) {
-        dialog.remove();
-      }
+    if (closeOnOutsideClick) {
+      dialog.addEventListener("click", (e) => {
+        if (e.target === dialog) {
+          dialog.remove();
+          if (onClose) onClose();
+        }
+      });
+    }
+
+    return dialog;
+  }
+
+  /**
+   * 显示分享配置弹窗
+   */
+  showShareConfigDialog() {
+    // 获取应用名称作为默认画布名称
+    const defaultCanvasName = "InfinityNotes"; // 默认软件名称
+
+    // 创建对话框内容
+    const content = `
+      <!-- 添加画布名称输入框 -->
+      <div class="canvas-name-container">
+        <label for="canvas-name">画布名称:</label>
+        <input type="text" id="canvas-name" class="canvas-name" value="${defaultCanvasName}" placeholder="输入画布名称" />
+      </div>
+
+      <p class="share-description">开启分享后，其他人可以通过链接查看您的画布内容。</p>
+    `;
+
+    // 创建对话框
+    const dialog = this.createDialog({
+      title: "分享画布",
+      content: content,
+      buttons: [
+        {
+          text: "开启分享",
+          className: "start-share-btn primary-btn",
+          primary: true,
+          onClick: async (e, dialog) => {
+            const startShareBtn = e.target;
+            const canvasNameInput = dialog.querySelector("#canvas-name");
+
+            try {
+              startShareBtn.disabled = true;
+              startShareBtn.textContent = "正在创建分享...";
+
+              // 获取画布名称
+              const canvasName =
+                canvasNameInput.value.trim() || defaultCanvasName;
+
+              // 发送请求创建分享
+              const response = await fetch("/api/share", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                credentials: "same-origin",
+                body: JSON.stringify({
+                  canvasState: {
+                    scale: this.scale,
+                    offsetX: this.offset.x,
+                    offsetY: this.offset.y,
+                  },
+                  canvasName: canvasName,
+                }),
+              });
+
+              const data = await response.json();
+
+              if (!data.success) {
+                throw new Error(data.message || "创建分享失败");
+              }
+
+              // 创建分享链接
+              const shareUrl = `${window.location.origin}/share.html?id=${
+                data.shareId
+              }&name=${encodeURIComponent(canvasName)}`;
+
+              // 保存当前活跃的分享信息
+              this.activeShare = {
+                id: data.shareId,
+                url: shareUrl,
+                canvasName: canvasName,
+                createdAt: new Date().toISOString(),
+              };
+
+              // 关闭当前对话框
+              dialog.remove();
+
+              // 显示分享链接对话框
+              this.showShareLinkDialog(shareUrl, data.shareId, canvasName);
+            } catch (error) {
+              console.error("分享画布出错:", error);
+              startShareBtn.disabled = false;
+              startShareBtn.textContent = "开启分享";
+              this.showMessage(`分享失败: ${error.message}`, "error");
+            }
+          },
+        },
+        {
+          text: "取消",
+          className: "close-btn",
+          onClick: (e, dialog) => {
+            dialog.remove();
+          },
+        },
+      ],
     });
   }
 
@@ -736,52 +818,51 @@ export class Canvas {
    * @param {string} canvasName - 画布名称
    */
   showShareLinkDialog(shareUrl, shareId, canvasName) {
-    // 移除现有的对话框
-    const existingDialog = document.querySelector(".share-dialog");
-    if (existingDialog) {
-      existingDialog.remove();
-    }
+    // 创建对话框内容
+    const content = `
+      <p class="share-status">分享状态: <span class="share-status-active">已开启</span></p>
+      <p>使用以下链接分享您的画布：</p>
+      <div class="share-url-container">
+        <input type="text" class="share-url" value="${shareUrl}" readonly />
+        <button class="copy-btn">复制</button>
+      </div>
+      <p class="share-info">分享 ID: <span class="share-id">${shareId}</span></p>
+      <p class="share-info">画布名称: <span class="canvas-name-display">${canvasName}</span></p>
 
-    // 创建对话框
-    const dialog = document.createElement("div");
-    dialog.className = "share-dialog";
-    dialog.innerHTML = `
-      <div class="share-dialog-content">
-        <h3>画布分享已开启</h3>
-
-        <p class="share-status">分享状态: <span class="share-status-active">已开启</span></p>
-        <p>使用以下链接分享您的画布：</p>
-        <div class="share-url-container">
-          <input type="text" class="share-url" value="${shareUrl}" readonly />
-          <button class="copy-btn">复制</button>
+      <div class="share-options">
+        <div class="share-option-buttons">
+          <button class="refresh-share-btn">刷新分享内容</button>
+          <button class="close-share-btn">关闭分享</button>
         </div>
-        <p class="share-info">分享 ID: <span class="share-id">${shareId}</span></p>
-        <p class="share-info">画布名称: <span class="canvas-name-display">${canvasName}</span></p>
-
-        <div class="share-options">
-          <div class="share-option-buttons">
-            <button class="refresh-share-btn">刷新分享内容</button>
-            <button class="close-share-btn">关闭分享</button>
-          </div>
-          <p class="share-info-text">刷新分享内容可以将当前画布的最新状态同步到分享页面</p>
-          <p class="close-share-info">关闭后分享链接将无法访问</p>
-        </div>
-        <div class="share-actions">
-          <button class="open-btn">在新标签页打开</button>
-          <button class="close-btn">关闭窗口</button>
-        </div>
+        <p class="share-info-text">刷新分享内容可以将当前画布的最新状态同步到分享页面</p>
+        <p class="close-share-info">关闭后分享链接将无法访问</p>
       </div>
     `;
 
-    // 添加到文档
-    document.body.appendChild(dialog);
+    // 创建对话框
+    const dialog = this.createDialog({
+      title: "画布分享已开启",
+      content: content,
+      buttons: [
+        {
+          text: "在新标签页打开",
+          className: "open-btn",
+          onClick: () => {
+            window.open(shareUrl, "_blank");
+          },
+        },
+        {
+          text: "关闭窗口",
+          className: "close-btn",
+          onClick: (e, dialog) => {
+            dialog.remove();
+          },
+        },
+      ],
+    });
 
-    // 添加事件处理
+    // 添加复制按钮事件
     const copyBtn = dialog.querySelector(".copy-btn");
-    const openBtn = dialog.querySelector(".open-btn");
-    const closeBtn = dialog.querySelector(".close-btn");
-    const closeShareBtn = dialog.querySelector(".close-share-btn");
-    const refreshShareBtn = dialog.querySelector(".refresh-share-btn");
     const urlInput = dialog.querySelector(".share-url");
 
     copyBtn.addEventListener("click", () => {
@@ -816,28 +897,20 @@ export class Canvas {
       }
     });
 
-    openBtn.addEventListener("click", () => {
-      // 打开分享链接
-      window.open(shareUrl, "_blank");
-    });
-
-    closeBtn.addEventListener("click", () => {
-      dialog.remove();
-    });
-
     // 刷新分享内容按钮事件
+    const refreshShareBtn = dialog.querySelector(".refresh-share-btn");
     refreshShareBtn.addEventListener("click", async () => {
       try {
         refreshShareBtn.disabled = true;
         refreshShareBtn.textContent = "正在刷新...";
 
-        // 发送请求创建分享
+        // 发送请求刷新分享
         const response = await fetch(`/api/share/refresh/${shareId}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          credentials: "same-origin", // 确保发送认证信息
+          credentials: "same-origin",
           body: JSON.stringify({
             canvasState: {
               scale: this.scale,
@@ -869,6 +942,7 @@ export class Canvas {
     });
 
     // 关闭分享按钮事件
+    const closeShareBtn = dialog.querySelector(".close-share-btn");
     closeShareBtn.addEventListener("click", async () => {
       if (!confirm("确定要关闭此分享吗？\n关闭后分享链接将无法访问。")) {
         return;
@@ -908,13 +982,6 @@ export class Canvas {
           closeShareBtn.textContent = "关闭分享";
         }, 2000);
         this.showMessage(`关闭分享失败: ${error.message}`, "error");
-      }
-    });
-
-    // 点击对话框外部关闭
-    dialog.addEventListener("click", (e) => {
-      if (e.target === dialog) {
-        dialog.remove();
       }
     });
   }
