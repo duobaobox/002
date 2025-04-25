@@ -466,14 +466,21 @@ export default class UserManager {
    * @private
    */
   async _handleDeleteUser(userId) {
-    if (
-      !confirm(
-        "确定要删除该用户吗？此操作不可恢复！\n被删除的用户将立即被强制登出系统。"
-      )
-    )
-      return;
+    // 获取用户信息
+    const userRow = document.querySelector(`tr[data-user-id="${userId}"]`);
+    const username = userRow
+      ? userRow.querySelector("td:first-child").textContent
+      : "未知用户";
+
+    // 使用自定义确认对话框
+    const confirmResult = this._showDeleteConfirmDialog(username);
+
+    if (!confirmResult) return;
 
     try {
+      // 显示加载状态
+      this._showDeleteLoadingState(userRow);
+
       const response = await fetch(`/api/users/${userId}`, {
         method: "DELETE",
         headers: {
@@ -484,12 +491,17 @@ export default class UserManager {
       const data = await response.json();
 
       if (data.success) {
-        // 显示更详细的成功消息
-        alert(
-          `用户已成功删除。\n用户名: ${
-            data.deletedUser?.username || "未知"
-          }\n该用户将在下次操作时被强制登出系统。`
+        // 显示成功消息
+        this._showSuccessMessage(
+          `用户 ${data.deletedUser?.username || username} 已成功删除`
         );
+
+        // 添加详细信息
+        const notificationMethod = data.notifiedViaWebSocket
+          ? "已通过WebSocket实时通知用户"
+          : "用户将在下次操作时被通知";
+
+        this._showInfoMessage(`${notificationMethod}，用户会话已被立即终止`);
 
         // 重新加载用户列表
         this.loadUsers();
@@ -497,12 +509,253 @@ export default class UserManager {
         // 记录删除信息到控制台
         console.log("用户删除成功:", data.deletedUser);
       } else {
-        alert(data.message || "删除用户失败");
+        this._showErrorMessage(data.message || "删除用户失败");
       }
     } catch (error) {
       console.error("删除用户失败:", error);
-      alert("删除用户失败，请检查网络连接");
+      this._showErrorMessage("删除用户失败，请检查网络连接");
     }
+  }
+
+  /**
+   * 显示删除确认对话框
+   * @param {string} username - 用户名
+   * @returns {boolean} 是否确认删除
+   * @private
+   */
+  _showDeleteConfirmDialog(username) {
+    // 创建模态对话框
+    const modal = document.createElement("div");
+    modal.className = "delete-confirm-modal";
+    modal.innerHTML = `
+      <div class="delete-confirm-content">
+        <div class="delete-confirm-header">
+          <div class="delete-confirm-icon">⚠️</div>
+          <h3>删除用户确认</h3>
+        </div>
+        <div class="delete-confirm-body">
+          <p>您确定要删除用户 <strong>${username}</strong> 吗？</p>
+          <p class="delete-confirm-warning">此操作不可恢复！用户将立即被强制登出系统。</p>
+        </div>
+        <div class="delete-confirm-footer">
+          <button class="delete-confirm-cancel">取消</button>
+          <button class="delete-confirm-delete">删除</button>
+        </div>
+      </div>
+    `;
+
+    // 添加样式
+    const style = document.createElement("style");
+    style.textContent = `
+      .delete-confirm-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+      .delete-confirm-content {
+        background-color: white;
+        border-radius: 8px;
+        padding: 20px;
+        width: 400px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      }
+      .delete-confirm-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+      .delete-confirm-icon {
+        font-size: 24px;
+        margin-right: 10px;
+      }
+      .delete-confirm-header h3 {
+        margin: 0;
+        color: #d32f2f;
+      }
+      .delete-confirm-body {
+        margin-bottom: 20px;
+      }
+      .delete-confirm-warning {
+        color: #d32f2f;
+        font-weight: bold;
+      }
+      .delete-confirm-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+      .delete-confirm-cancel {
+        padding: 8px 16px;
+        background-color: #f5f5f5;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .delete-confirm-delete {
+        padding: 8px 16px;
+        background-color: #d32f2f;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+    `;
+    document.head.appendChild(style);
+    document.body.appendChild(modal);
+
+    // 返回Promise，等待用户操作
+    return new Promise((resolve) => {
+      const cancelButton = modal.querySelector(".delete-confirm-cancel");
+      const deleteButton = modal.querySelector(".delete-confirm-delete");
+
+      cancelButton.addEventListener("click", () => {
+        document.body.removeChild(modal);
+        resolve(false);
+      });
+
+      deleteButton.addEventListener("click", () => {
+        document.body.removeChild(modal);
+        resolve(true);
+      });
+    });
+  }
+
+  /**
+   * 显示删除加载状态
+   * @param {HTMLElement} userRow - 用户行元素
+   * @private
+   */
+  _showDeleteLoadingState(userRow) {
+    if (!userRow) return;
+
+    // 添加加载状态类
+    userRow.classList.add("deleting");
+
+    // 禁用操作按钮
+    const buttons = userRow.querySelectorAll("button");
+    buttons.forEach((button) => {
+      button.disabled = true;
+    });
+
+    // 添加加载指示器
+    const actionsCell = userRow.querySelector(".user-actions");
+    if (actionsCell) {
+      const loadingIndicator = document.createElement("div");
+      loadingIndicator.className = "loading-indicator";
+      loadingIndicator.innerHTML = "删除中...";
+      actionsCell.appendChild(loadingIndicator);
+    }
+  }
+
+  /**
+   * 显示成功消息
+   * @param {string} message - 消息内容
+   * @private
+   */
+  _showSuccessMessage(message) {
+    this._showToast(message, "success");
+  }
+
+  /**
+   * 显示错误消息
+   * @param {string} message - 消息内容
+   * @private
+   */
+  _showErrorMessage(message) {
+    this._showToast(message, "error");
+  }
+
+  /**
+   * 显示信息消息
+   * @param {string} message - 消息内容
+   * @private
+   */
+  _showInfoMessage(message) {
+    this._showToast(message, "info");
+  }
+
+  /**
+   * 显示Toast消息
+   * @param {string} message - 消息内容
+   * @param {string} type - 消息类型 (success, error, info)
+   * @private
+   */
+  _showToast(message, type = "info") {
+    // 检查是否已存在Toast容器
+    let toastContainer = document.querySelector(".toast-container");
+    if (!toastContainer) {
+      toastContainer = document.createElement("div");
+      toastContainer.className = "toast-container";
+      document.body.appendChild(toastContainer);
+
+      // 添加样式
+      const style = document.createElement("style");
+      style.textContent = `
+        .toast-container {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          z-index: 1000;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .toast {
+          padding: 12px 20px;
+          border-radius: 4px;
+          color: white;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+          animation: toast-in 0.3s ease-out;
+          max-width: 300px;
+        }
+        .toast-success {
+          background-color: #4caf50;
+        }
+        .toast-error {
+          background-color: #f44336;
+        }
+        .toast-info {
+          background-color: #2196f3;
+        }
+        @keyframes toast-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    // 创建Toast元素
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    toastContainer.appendChild(toast);
+
+    // 3秒后自动移除
+    setTimeout(() => {
+      toast.style.opacity = "0";
+      toast.style.transform = "translateX(100%)";
+      toast.style.transition = "all 0.3s ease-out";
+
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+      }, 300);
+    }, 3000);
   }
 
   /**

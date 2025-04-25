@@ -7,12 +7,14 @@ import fs from "fs";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import session from "express-session";
+import http from "http";
 import {
   initializeDatabase,
   getAllAiSettings,
   closeDatabase,
 } from "./database.js";
 import aiService from "./ai_service.js";
+import { initWebSocketService } from "./websocket.js";
 
 // 尝试加载.env文件 (如果存在)
 try {
@@ -253,6 +255,7 @@ async function gracefulShutdown() {
 
 // 定义全局服务器变量
 let server;
+let wss;
 
 // 异步启动函数
 async function startServer() {
@@ -272,9 +275,20 @@ async function startServer() {
     aiService.updateConfiguration(initialSettings);
     console.log("[Server Start] AI Service configured with initial settings.");
 
+    // 创建HTTP服务器
+    server = http.createServer(app);
+
+    // 初始化WebSocket服务
+    wss = initWebSocketService(server);
+    console.log("[Server Start] WebSocket service initialized.");
+
+    // 将WebSocket服务添加到app.locals，以便在路由中使用
+    app.locals.wss = wss;
+
     // 启动服务器
-    server = app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`服务器运行在 http://localhost:${PORT}`);
+      console.log(`WebSocket服务运行在 ws://localhost:${PORT}`);
       console.log(`环境: ${process.env.NODE_ENV || "development"}`);
     });
   } catch (error) {

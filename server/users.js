@@ -203,6 +203,26 @@ router.delete("/:id", requireAdmin, async (req, res) => {
     // 删除用户
     await dbRun("DELETE FROM users WHERE id = ?", [userId]);
 
+    // 尝试通过WebSocket通知用户账户已被删除
+    let notified = false;
+    try {
+      // 检查WebSocket服务是否可用
+      if (req.app.locals.wss) {
+        // 导入WebSocket模块
+        const { notifyAccountDeleted } = await import("./websocket.js");
+
+        // 发送通知
+        notified = notifyAccountDeleted(deletedUsername);
+        console.log(
+          `WebSocket通知用户 ${deletedUsername} 账户已被删除: ${
+            notified ? "成功" : "失败"
+          }`
+        );
+      }
+    } catch (error) {
+      console.error(`通过WebSocket通知用户 ${deletedUsername} 失败:`, error);
+    }
+
     // 将被删除的用户信息添加到响应中，以便前端可以使用
     res.json({
       success: true,
@@ -211,17 +231,49 @@ router.delete("/:id", requireAdmin, async (req, res) => {
         id: userId,
         username: deletedUsername,
       },
+      notifiedViaWebSocket: notified,
     });
 
-    // 通知会话管理器，该用户已被删除
-    // 这将在下一次请求时使该用户的会话失效
+    // 立即使该用户的所有会话失效
+    // 1. 查找并删除该用户的所有会话
+    try {
+      // 使用会话存储的destroy方法删除该用户的所有会话
+      if (req.sessionStore && typeof req.sessionStore.all === "function") {
+        req.sessionStore.all((err, sessions) => {
+          if (err) {
+            console.error(`获取所有会话失败:`, err);
+            return;
+          }
+
+          // 遍历所有会话，找到并删除属于该用户的会话
+          for (const sessionId in sessions) {
+            const session = sessions[sessionId];
+            if (session.user && session.user.username === deletedUsername) {
+              req.sessionStore.destroy(sessionId, (destroyErr) => {
+                if (destroyErr) {
+                  console.error(`删除会话 ${sessionId} 失败:`, destroyErr);
+                } else {
+                  console.log(
+                    `已删除用户 ${deletedUsername} 的会话 ${sessionId}`
+                  );
+                }
+              });
+            }
+          }
+        });
+      }
+    } catch (sessionError) {
+      console.error(`删除用户 ${deletedUsername} 的会话失败:`, sessionError);
+    }
+
+    // 2. 同时保留在deletedUsers集合中，作为备用机制
     if (req.app.locals.deletedUsers === undefined) {
       req.app.locals.deletedUsers = new Set();
     }
     req.app.locals.deletedUsers.add(deletedUsername);
 
     console.log(
-      `用户 ${deletedUsername} (ID: ${userId}) 已被删除，其会话将在下次请求时失效`
+      `用户 ${deletedUsername} (ID: ${userId}) 已被删除，其会话已被立即清除`
     );
   } catch (error) {
     console.error("删除用户失败:", error);
