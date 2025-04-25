@@ -1000,32 +1000,21 @@ export class Canvas {
    * @param {string} type - 消息类型（info, success, warning, error）
    */
   showMessage(message, type = "info") {
-    // 移除现有的消息
-    const existingMessages = document.querySelectorAll(".canvas-message");
-    existingMessages.forEach((msg) => {
-      msg.remove();
-    });
-
-    // 创建消息元素
-    const messageEl = document.createElement("div");
-    messageEl.className = `canvas-message ${type}`;
-    messageEl.textContent = message;
-
-    // 添加到文档
-    document.body.appendChild(messageEl);
-
-    // 添加动画效果
-    setTimeout(() => {
-      messageEl.classList.add("show");
-    }, 10);
-
-    // 自动移除
-    setTimeout(() => {
-      messageEl.classList.remove("show");
-      setTimeout(() => {
-        messageEl.remove();
-      }, 300);
-    }, 3000);
+    // 导入并使用统一的通知管理器
+    import("../utils/NotificationManager.js")
+      .then(({ showNotification }) => {
+        showNotification(message, type);
+      })
+      .catch((error) => {
+        console.error("加载通知管理器失败:", error);
+        // 如果导入失败，使用App.js中的showMessage方法作为备选
+        if (window.app && typeof window.app.showMessage === "function") {
+          window.app.showMessage(message, type);
+        } else {
+          // 最后的备选方案：使用alert
+          alert(message);
+        }
+      });
   }
 
   /**

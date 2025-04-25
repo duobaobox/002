@@ -2,6 +2,7 @@
  * 邀请码管理模块
  * 处理邀请码的创建、显示和删除
  */
+import { showSuccess, showError } from "../utils/NotificationManager.js";
 
 /**
  * 初始化邀请码管理功能
@@ -185,13 +186,13 @@ export function initInviteCodeManager(container) {
       if (data.success) {
         // 重新加载邀请码列表
         loadInviteCodes();
-        showToast("邀请码创建成功", "success");
+        showSuccess("邀请码创建成功");
       } else {
-        showToast(`创建邀请码失败: ${data.message}`, "error");
+        showError(`创建邀请码失败: ${data.message}`);
       }
     } catch (error) {
       console.error("创建邀请码失败:", error);
-      showToast("创建邀请码失败，请稍后重试", "error");
+      showError("创建邀请码失败，请稍后重试");
     } finally {
       createButton.disabled = false;
       createButton.textContent = "生成新邀请码";
@@ -206,11 +207,11 @@ export function initInviteCodeManager(container) {
     navigator.clipboard
       .writeText(code)
       .then(() => {
-        showToast("邀请码已复制到剪贴板", "success");
+        showSuccess("邀请码已复制到剪贴板");
       })
       .catch((err) => {
         console.error("复制邀请码失败:", err);
-        showToast("复制邀请码失败", "error");
+        showError("复制邀请码失败");
       });
   }
 
@@ -219,10 +220,171 @@ export function initInviteCodeManager(container) {
    * @param {string} code - 邀请码
    */
   async function deleteInviteCode(code) {
-    if (
-      !confirm("确定要删除这个邀请码吗？删除后，该邀请码将无法用于注册新用户。")
-    ) {
+    // 使用自定义确认对话框
+    const confirmResult = await showDeleteConfirmDialog(code);
+    if (!confirmResult) {
       return;
+    }
+
+    /**
+     * 显示删除确认对话框
+     * @param {string} code - 邀请码
+     * @returns {Promise<boolean>} 是否确认删除
+     */
+    async function showDeleteConfirmDialog(code) {
+      // 创建模态对话框
+      const modal = document.createElement("div");
+      modal.className = "delete-confirm-modal";
+      modal.innerHTML = `
+        <div class="delete-confirm-content">
+          <div class="delete-confirm-header">
+            <div class="delete-confirm-icon">⚠️</div>
+            <h3>删除邀请码确认</h3>
+          </div>
+          <div class="delete-confirm-body">
+            <p class="delete-confirm-title">您确定要删除邀请码 <strong>${code}</strong> 吗？</p>
+            <div class="delete-confirm-info">
+              <p class="delete-confirm-warning">⚠️ 请确认此操作</p>
+              <ul class="delete-confirm-details">
+                <li>删除后，该邀请码将无法用于注册新用户</li>
+                <li>此操作不可恢复</li>
+              </ul>
+            </div>
+          </div>
+          <div class="delete-confirm-footer">
+            <button class="delete-confirm-cancel">取消</button>
+            <button class="delete-confirm-delete">确认删除</button>
+          </div>
+        </div>
+      `;
+
+      // 添加样式
+      const style = document.createElement("style");
+      style.textContent = `
+        .delete-confirm-modal {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0, 0, 0, 0.5);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 100000; /* 确保显示在所有元素之上，包括通知 */
+        }
+        .delete-confirm-content {
+          background-color: white;
+          border-radius: 12px;
+          padding: 25px;
+          width: 450px;
+          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+          animation: modal-in 0.3s ease-out;
+          transform: scale(1);
+        }
+
+        @keyframes modal-in {
+          from {
+            opacity: 0;
+            transform: scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        .delete-confirm-header {
+          display: flex;
+          align-items: center;
+          margin-bottom: 15px;
+        }
+        .delete-confirm-icon {
+          font-size: 24px;
+          margin-right: 10px;
+        }
+        .delete-confirm-header h3 {
+          margin: 0;
+          color: #d32f2f;
+        }
+        .delete-confirm-body {
+          margin-bottom: 25px;
+        }
+        .delete-confirm-title {
+          font-size: 16px;
+          margin-bottom: 15px;
+        }
+        .delete-confirm-info {
+          background-color: #fff8f8;
+          border-radius: 8px;
+          padding: 15px;
+          border-left: 4px solid #d32f2f;
+        }
+        .delete-confirm-warning {
+          color: #d32f2f;
+          font-weight: bold;
+          margin-bottom: 10px;
+        }
+        .delete-confirm-details {
+          margin: 0;
+          padding-left: 20px;
+          color: #555;
+        }
+        .delete-confirm-details li {
+          margin-bottom: 5px;
+        }
+        .delete-confirm-footer {
+          display: flex;
+          justify-content: flex-end;
+          gap: 10px;
+        }
+        .delete-confirm-cancel {
+          padding: 10px 20px;
+          background-color: #f5f5f5;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: 500;
+          transition: all 0.2s ease;
+        }
+        .delete-confirm-cancel:hover {
+          background-color: #e0e0e0;
+        }
+        .delete-confirm-delete {
+          padding: 10px 20px;
+          background-color: #d32f2f;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: 500;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 5px rgba(211, 47, 47, 0.3);
+        }
+        .delete-confirm-delete:hover {
+          background-color: #b71c1c;
+          box-shadow: 0 3px 8px rgba(211, 47, 47, 0.4);
+        }
+      `;
+      document.head.appendChild(style);
+      document.body.appendChild(modal);
+
+      // 返回Promise，等待用户操作
+      return new Promise((resolve) => {
+        const cancelButton = modal.querySelector(".delete-confirm-cancel");
+        const deleteButton = modal.querySelector(".delete-confirm-delete");
+
+        cancelButton.addEventListener("click", () => {
+          document.body.removeChild(modal);
+          resolve(false);
+        });
+
+        deleteButton.addEventListener("click", () => {
+          document.body.removeChild(modal);
+          resolve(true);
+        });
+      });
     }
 
     try {
@@ -250,49 +412,15 @@ export function initInviteCodeManager(container) {
           noInviteCodes.style.display = "block";
         }
 
-        showToast("邀请码已删除", "success");
+        showSuccess("邀请码已删除");
       } else {
-        showToast(`删除邀请码失败: ${data.message}`, "error");
+        showError(`删除邀请码失败: ${data.message}`);
       }
     } catch (error) {
       console.error("删除邀请码失败:", error);
-      showToast("删除邀请码失败，请稍后重试", "error");
+      showError("删除邀请码失败，请稍后重试");
     }
   }
 
-  /**
-   * 显示提示消息
-   * @param {string} message - 消息内容
-   * @param {string} type - 消息类型 (success/error)
-   */
-  function showToast(message, type) {
-    // 检查是否已存在toast容器
-    let toastContainer = document.querySelector(".toast-container");
-
-    if (!toastContainer) {
-      toastContainer = document.createElement("div");
-      toastContainer.className = "toast-container";
-      document.body.appendChild(toastContainer);
-    }
-
-    // 创建新的toast
-    const toast = document.createElement("div");
-    toast.className = `toast ${type}`;
-    toast.textContent = message;
-
-    // 添加到容器
-    toastContainer.appendChild(toast);
-
-    // 自动移除
-    setTimeout(() => {
-      toast.classList.add("fade-out");
-      setTimeout(() => {
-        toast.remove();
-        // 如果没有更多toast，移除容器
-        if (toastContainer.children.length === 0) {
-          toastContainer.remove();
-        }
-      }, 300);
-    }, 3000);
-  }
+  // 使用统一的通知管理器，移除旧的showToast函数
 }

@@ -2,6 +2,12 @@
  * 用户管理模块
  * 处理用户列表、用户操作等功能
  */
+import {
+  showSuccess,
+  showError,
+  showInfo,
+} from "../utils/NotificationManager.js";
+
 export default class UserManager {
   /**
    * 构造函数
@@ -564,7 +570,7 @@ export default class UserManager {
         display: flex;
         justify-content: center;
         align-items: center;
-        z-index: 10000; /* 确保显示在所有元素之上 */
+        z-index: 100000; /* 确保显示在所有元素之上，包括通知 */
       }
       .delete-confirm-content {
         background-color: white;
@@ -713,7 +719,7 @@ export default class UserManager {
    * @private
    */
   _showSuccessMessage(message) {
-    this._showToast(message, "success");
+    showSuccess(message);
   }
 
   /**
@@ -722,7 +728,7 @@ export default class UserManager {
    * @private
    */
   _showErrorMessage(message) {
-    this._showToast(message, "error");
+    showError(message);
   }
 
   /**
@@ -731,84 +737,7 @@ export default class UserManager {
    * @private
    */
   _showInfoMessage(message) {
-    this._showToast(message, "info");
-  }
-
-  /**
-   * 显示Toast消息
-   * @param {string} message - 消息内容
-   * @param {string} type - 消息类型 (success, error, info)
-   * @private
-   */
-  _showToast(message, type = "info") {
-    // 检查是否已存在Toast容器
-    let toastContainer = document.querySelector(".toast-container");
-    if (!toastContainer) {
-      toastContainer = document.createElement("div");
-      toastContainer.className = "toast-container";
-      document.body.appendChild(toastContainer);
-
-      // 添加样式
-      const style = document.createElement("style");
-      style.textContent = `
-        .toast-container {
-          position: fixed;
-          top: 20px;
-          right: 20px;
-          z-index: 1000;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-        .toast {
-          padding: 12px 20px;
-          border-radius: 4px;
-          color: white;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-          animation: toast-in 0.3s ease-out;
-          max-width: 300px;
-        }
-        .toast-success {
-          background-color: #4caf50;
-        }
-        .toast-error {
-          background-color: #f44336;
-        }
-        .toast-info {
-          background-color: #2196f3;
-        }
-        @keyframes toast-in {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-      `;
-      document.head.appendChild(style);
-    }
-
-    // 创建Toast元素
-    const toast = document.createElement("div");
-    toast.className = `toast toast-${type}`;
-    toast.textContent = message;
-    toastContainer.appendChild(toast);
-
-    // 3秒后自动移除
-    setTimeout(() => {
-      toast.style.opacity = "0";
-      toast.style.transform = "translateX(100%)";
-      toast.style.transition = "all 0.3s ease-out";
-
-      setTimeout(() => {
-        if (toast.parentNode) {
-          toast.parentNode.removeChild(toast);
-        }
-      }, 300);
-    }, 3000);
+    showInfo(message);
   }
 
   /**
