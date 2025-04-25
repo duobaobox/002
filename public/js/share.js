@@ -5,6 +5,7 @@
  */
 
 import { ReadOnlyCanvas } from "./modules/share/ReadOnlyCanvas.js";
+import { showError } from "./modules/utils/ShareNotificationManager.js";
 
 // 全局变量保存画布实例
 let shareCanvas = null;
@@ -16,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const canvasName = urlParams.get("name") || "InfinityNotes"; // 获取画布名称，如果没有则使用默认名称
 
   if (!shareId) {
-    showError("无效的分享链接");
+    displayErrorPage("无效的分享链接");
     return;
   }
 
@@ -82,7 +83,7 @@ async function loadSharedCanvas(shareId, silent = false) {
     if (!data.success && data.isClosed) {
       console.log("分享已关闭，显示关闭提示");
       // 直接显示关闭提示，而不是重定向
-      showError("分享已关闭");
+      displayErrorPage("分享已关闭");
       return;
     }
 
@@ -129,7 +130,10 @@ async function loadSharedCanvas(shareId, silent = false) {
   } catch (error) {
     console.error("加载分享数据出错:", error);
     if (!silent) {
+      // 显示顶部通知
       showError(error.message);
+      // 显示错误页面
+      displayErrorPage(error.message);
     }
   } finally {
     // 移除加载提示
@@ -332,7 +336,10 @@ function renderMarkdown(text) {
  * 显示错误信息
  * @param {string} errorMessage - 错误信息
  */
-function showError(errorMessage) {
+function displayErrorPage(errorMessage) {
+  // 显示顶部通知
+  showError(errorMessage);
+
   const canvas = document.getElementById("note-canvas");
   canvas.innerHTML = "";
 

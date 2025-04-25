@@ -3,6 +3,7 @@
  * 处理用户个人信息和邀请码管理
  */
 import { initInviteCodeManager } from "./InviteCodeManager.js";
+import { showSuccess, showError } from "../utils/NotificationManager.js";
 
 /**
  * 初始化个人中心面板
@@ -121,16 +122,19 @@ export function initProfilePanel(container) {
 
     // 基础验证
     if (!currentPassword) {
+      showError("请输入当前密码");
       showMessage(messageContainer, "请输入当前密码", "error");
       return;
     }
 
     if (!newPassword) {
+      showError("请输入新密码");
       showMessage(messageContainer, "请输入新密码", "error");
       return;
     }
 
     if (newPassword !== confirmPassword) {
+      showError("两次输入的新密码不一致");
       showMessage(messageContainer, "两次输入的新密码不一致", "error");
       return;
     }
@@ -151,16 +155,19 @@ export function initProfilePanel(container) {
       const data = await response.json();
 
       if (data.success) {
+        showSuccess("密码修改成功");
         showMessage(messageContainer, "密码修改成功", "success");
         // 清空输入框
         document.getElementById("current-password").value = "";
         document.getElementById("new-password").value = "";
         document.getElementById("confirm-password").value = "";
       } else {
+        showError(data.message || "密码修改失败");
         showMessage(messageContainer, data.message || "密码修改失败", "error");
       }
     } catch (error) {
       console.error("修改密码失败:", error);
+      showError("网络错误，请稍后重试");
       showMessage(messageContainer, "网络错误，请稍后重试", "error");
     } finally {
       // 恢复按钮状态
