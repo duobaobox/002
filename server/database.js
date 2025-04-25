@@ -117,7 +117,8 @@ async function initializeDatabase() {
             share_link TEXT,
             share_status INTEGER DEFAULT 0,
             share_canvas_name TEXT,
-            share_notes INTEGER DEFAULT 1
+            share_notes INTEGER DEFAULT 1,
+            is_active INTEGER DEFAULT 1
           );
         `);
 
@@ -1369,4 +1370,9 @@ export {
   updateUserShareInfo,
   closeUserShare,
   getUserByShareId,
+  // 数据库操作函数
+  dbRun,
+  dbGet,
+  dbAll,
+  dbExec,
 };

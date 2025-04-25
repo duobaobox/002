@@ -66,28 +66,7 @@
   color: #1a73e8;
 }
 
-/* 取消生成按钮样式 */
-.cancel-generation-button {
-  background-color: rgba(244, 67, 54, 0.1);
-  color: #f44336;
-  border: 1px solid rgba(244, 67, 54, 0.3);
-  border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  outline: none;
-}
-
-.cancel-generation-button:hover {
-  background-color: rgba(244, 67, 54, 0.2);
-  border-color: rgba(244, 67, 54, 0.5);
-}
-
-.cancel-generation-button:active {
-  background-color: rgba(244, 67, 54, 0.3);
-  transform: scale(0.98);
-}
+/* 取消生成按钮样式已移除，现在使用 AI 生成按钮的 generating 状态 */
 
 /* 现代化的打字指示器样式 */
 .ai-typing-indicator span {

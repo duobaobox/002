@@ -3,6 +3,7 @@
  * 处理设置面板的初始化和功能
  */
 import { initProfilePanel } from "./ProfilePanel.js";
+import UserManager from "./UserManager.js";
 
 /**
  * 初始化设置面板
@@ -16,6 +17,10 @@ export function initSettingsPanel() {
 
   // 初始化个人中心面板
   initProfilePanel(document.getElementById("profile-panel"));
+
+  // 初始化用户管理功能
+  const userManager = new UserManager();
+  userManager.init();
 
   // 添加关闭设置面板事件
   if (closeSettings) {
@@ -43,6 +48,11 @@ export function initSettingsPanel() {
       const panel = document.getElementById(`${tabId}-panel`);
       if (panel) {
         panel.classList.add("active");
+
+        // 如果切换到用户管理面板，加载用户列表
+        if (tabId === "users") {
+          userManager.loadUsers();
+        }
       }
     });
   });
@@ -74,6 +84,30 @@ export function initSettingsPanel() {
         console.error("退出登录请求失败:", error);
         alert("退出登录失败，请稍后重试");
       }
+    }
+  }
+
+  // 检查并显示管理员专用功能
+  checkAdminStatus();
+
+  /**
+   * 检查当前用户是否为管理员，并显示/隐藏相应功能
+   */
+  async function checkAdminStatus() {
+    try {
+      const response = await fetch("/api/session");
+      const data = await response.json();
+
+      if (data.success && data.isLoggedIn) {
+        const isAdmin = data.user.username === "admin";
+
+        // 显示或隐藏管理员专用功能
+        document.querySelectorAll(".admin-only").forEach((element) => {
+          element.style.display = isAdmin ? "block" : "none";
+        });
+      }
+    } catch (error) {
+      console.error("检查管理员状态失败:", error);
     }
   }
 }

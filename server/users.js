@@ -1,0 +1,273 @@
+/**
+ * 用户管理路由模块
+ * 处理用户管理相关的API请求
+ */
+
+import express from "express";
+import bcrypt from "bcrypt";
+import { requireAuth, requireAdmin } from "./middleware.js";
+import { dbAll, dbGet, dbRun } from "./database.js";
+
+const router = express.Router();
+
+// 所有用户管理路由都需要认证
+router.use(requireAuth);
+
+/**
+ * 获取所有用户列表 (仅管理员)
+ * GET /api/users
+ */
+router.get("/", requireAdmin, async (req, res) => {
+  try {
+    // 检查 is_active 字段是否存在
+    let hasIsActiveField = false;
+    try {
+      const tableInfo = await dbAll("PRAGMA table_info(users)");
+      hasIsActiveField = tableInfo.some(
+        (column) => column.name === "is_active"
+      );
+    } catch (error) {
+      console.error("检查 is_active 字段失败:", error);
+    }
+
+    // 根据 is_active 字段是否存在构建查询
+    const query = hasIsActiveField
+      ? `SELECT id, username, createdAt,
+         CASE WHEN username = 'admin' THEN 1 ELSE is_active END as is_active
+         FROM users ORDER BY id ASC`
+      : `SELECT id, username, createdAt,
+         CASE WHEN username = 'admin' THEN 1 ELSE 1 END as is_active
+         FROM users ORDER BY id ASC`;
+
+    const users = await dbAll(query);
+
+    res.json({
+      success: true,
+      users: users.map((user) => ({
+        id: user.id,
+        username: user.username,
+        createdAt: user.createdAt,
+        isActive: user.is_active === 1,
+      })),
+    });
+  } catch (error) {
+    console.error("获取用户列表失败:", error);
+    res.status(500).json({
+      success: false,
+      message: "获取用户列表失败",
+    });
+  }
+});
+
+/**
+ * 获取用户详情 (仅管理员)
+ * GET /api/users/:id
+ */
+router.get("/:id", requireAdmin, async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    // 检查 is_active 字段是否存在
+    let hasIsActiveField = false;
+    try {
+      const tableInfo = await dbAll("PRAGMA table_info(users)");
+      hasIsActiveField = tableInfo.some(
+        (column) => column.name === "is_active"
+      );
+    } catch (error) {
+      console.error("检查 is_active 字段失败:", error);
+    }
+
+    // 根据 is_active 字段是否存在构建查询
+    const query = hasIsActiveField
+      ? `SELECT id, username, createdAt,
+         CASE WHEN username = 'admin' THEN 1 ELSE is_active END as is_active
+         FROM users WHERE id = ?`
+      : `SELECT id, username, createdAt,
+         CASE WHEN username = 'admin' THEN 1 ELSE 1 END as is_active
+         FROM users WHERE id = ?`;
+
+    const user = await dbGet(query, [userId]);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "用户不存在",
+      });
+    }
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        createdAt: user.createdAt,
+        isActive: user.is_active === 1,
+      },
+    });
+  } catch (error) {
+    console.error("获取用户详情失败:", error);
+    res.status(500).json({
+      success: false,
+      message: "获取用户详情失败",
+    });
+  }
+});
+
+/**
+ * 重置用户密码 (仅管理员)
+ * POST /api/users/:id/reset-password
+ */
+router.post("/:id/reset-password", requireAdmin, async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    // 检查用户是否存在
+    const user = await dbGet("SELECT username FROM users WHERE id = ?", [
+      userId,
+    ]);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "用户不存在",
+      });
+    }
+
+    // 不允许重置管理员密码
+    if (user.username === "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "不允许重置管理员密码",
+      });
+    }
+
+    // 生成随机密码
+    const newPassword = generateRandomPassword(8);
+
+    // 哈希新密码
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // 更新用户密码
+    await dbRun("UPDATE users SET password = ? WHERE id = ?", [
+      hashedPassword,
+      userId,
+    ]);
+
+    res.json({
+      success: true,
+      message: "密码已重置",
+      newPassword: newPassword,
+    });
+  } catch (error) {
+    console.error("重置用户密码失败:", error);
+    res.status(500).json({
+      success: false,
+      message: "重置用户密码失败",
+    });
+  }
+});
+
+/**
+ * 更新用户状态 (启用/禁用) (仅管理员)
+ * POST /api/users/:id/status
+ */
+router.post("/:id/status", requireAdmin, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { action } = req.body;
+
+    if (action !== "enable" && action !== "disable") {
+      return res.status(400).json({
+        success: false,
+        message: "无效的操作，必须是 'enable' 或 'disable'",
+      });
+    }
+
+    // 检查用户是否存在
+    const user = await dbGet("SELECT username FROM users WHERE id = ?", [
+      userId,
+    ]);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "用户不存在",
+      });
+    }
+
+    // 不允许禁用管理员
+    if (user.username === "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "不允许禁用管理员账户",
+      });
+    }
+
+    // 检查 is_active 字段是否存在
+    let hasIsActiveField = false;
+    try {
+      const tableInfo = await dbAll("PRAGMA table_info(users)");
+      hasIsActiveField = tableInfo.some(
+        (column) => column.name === "is_active"
+      );
+    } catch (error) {
+      console.error("检查 is_active 字段失败:", error);
+    }
+
+    // 如果 is_active 字段不存在，先添加该字段
+    if (!hasIsActiveField) {
+      try {
+        await dbExec(
+          "ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1"
+        );
+        console.log("已添加 is_active 字段到 users 表");
+      } catch (error) {
+        console.error("添加 is_active 字段失败:", error);
+        return res.status(500).json({
+          success: false,
+          message: "更新用户状态失败：数据库结构不兼容",
+        });
+      }
+    }
+
+    // 更新用户状态
+    const isActive = action === "enable" ? 1 : 0;
+    await dbRun("UPDATE users SET is_active = ? WHERE id = ?", [
+      isActive,
+      userId,
+    ]);
+
+    res.json({
+      success: true,
+      message: action === "enable" ? "用户已启用" : "用户已禁用",
+    });
+  } catch (error) {
+    console.error("更新用户状态失败:", error);
+    res.status(500).json({
+      success: false,
+      message: "更新用户状态失败",
+    });
+  }
+});
+
+/**
+ * 生成随机密码
+ * @param {number} length - 密码长度
+ * @returns {string} 随机密码
+ */
+function generateRandomPassword(length) {
+  const charset =
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let password = "";
+
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * charset.length);
+    password += charset[randomIndex];
+  }
+
+  return password;
+}
+
+export default router;

@@ -174,26 +174,8 @@ function createTempNoteContent(note, noteId) {
   leftControls.appendChild(loader);
   leftControls.appendChild(progressIndicator);
 
-  // 添加取消生成按钮
-  const cancelButton = document.createElement("button");
-  cancelButton.className = "cancel-generation-button";
-  cancelButton.innerHTML = "取消生成";
-  cancelButton.title = "取消AI内容生成";
-  cancelButton.setAttribute("data-note-id", noteId);
-
-  // 添加取消按钮的点击事件
-  cancelButton.addEventListener("click", (e) => {
-    e.stopPropagation();
-    // 触发自定义事件，让App.js处理取消逻辑
-    const cancelEvent = new CustomEvent("cancel-ai-generation", {
-      detail: { noteId },
-    });
-    document.dispatchEvent(cancelEvent);
-  });
-
-  // 将左侧控制容器和取消按钮添加到主容器
+  // 将左侧控制容器添加到主容器
   loaderContainer.appendChild(leftControls);
-  loaderContainer.appendChild(cancelButton);
 
   // 组装便签
   note.appendChild(body);

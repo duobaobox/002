@@ -190,9 +190,30 @@ export class App {
       this.addEmptyNote();
     });
 
-    // AI生成便签按钮
-    document.getElementById("ai-generate").addEventListener("click", () => {
-      this.generateAiNote();
+    // AI生成便签按钮 - 添加取消功能
+    const aiGenerateButton = document.getElementById("ai-generate");
+    aiGenerateButton.addEventListener("click", () => {
+      // 如果按钮处于生成中状态，则取消生成
+      if (aiGenerateButton.classList.contains("generating")) {
+        this.cancelGeneration().then((canceled) => {
+          if (canceled) {
+            this.showMessage("已取消AI生成", "info");
+
+            // 恢复按钮和输入框状态
+            aiGenerateButton.disabled = false;
+            aiGenerateButton.classList.remove("generating");
+            aiGenerateButton.title = "AI生成便签";
+
+            const promptElement = document.getElementById("ai-prompt");
+            if (promptElement) {
+              promptElement.disabled = false;
+            }
+          }
+        });
+      } else {
+        // 否则开始生成
+        this.generateAiNote();
+      }
     });
 
     // 监听便签删除事件
@@ -220,38 +241,7 @@ export class App {
       this.updateNoteOnServer(e.detail.id);
     });
 
-    // 监听取消AI生成事件
-    document.addEventListener("cancel-ai-generation", async (e) => {
-      // 取消当前的生成请求 - 使用异步方法
-      const canceled = await this.cancelGeneration();
-
-      // 如果成功取消，显示消息并恢复按钮状态
-      if (canceled) {
-        this.showMessage("已取消AI生成", "info");
-
-        // 恢复按钮和输入框状态
-        const generateButton = document.getElementById("ai-generate");
-        const promptElement = document.getElementById("ai-prompt");
-
-        if (generateButton) {
-          generateButton.disabled = false;
-          generateButton.classList.remove("generating");
-        }
-
-        if (promptElement) {
-          promptElement.disabled = false;
-        }
-
-        // 移除临时便签
-        const noteId = e.detail.noteId;
-        if (noteId && noteId.startsWith("temp-ai-note-")) {
-          const noteElement = document.getElementById(noteId);
-          if (noteElement) {
-            noteElement.remove();
-          }
-        }
-      }
-    });
+    // 取消AI生成事件监听器已移除，现在直接通过AI生成按钮处理取消
 
     // 监听输入框内容变化
     const promptElement = document.getElementById("ai-prompt");
@@ -827,8 +817,9 @@ export class App {
     }
 
     // 禁用按钮和输入框，添加生成中的动画样式
-    generateButton.disabled = true;
+    generateButton.disabled = false; // 保持按钮可点击，用于取消生成
     generateButton.classList.add("generating"); // 添加生成中的动画类
+    generateButton.title = "点击取消生成"; // 更新提示文本
     promptElement.disabled = true; // 禁用文本输入框
 
     // 首先创建一个空便签，准备接收流式内容
@@ -3143,6 +3134,14 @@ export class App {
             this.canceledNoteIds = new Set();
           }
           this.canceledNoteIds.add(this.currentNoteId);
+
+          // 移除临时便签
+          if (this.currentNoteId.startsWith("temp-ai-note-")) {
+            const noteElement = document.getElementById(this.currentNoteId);
+            if (noteElement && noteElement.parentNode) {
+              noteElement.remove();
+            }
+          }
         }
       } catch (error) {
         console.error("取消生成时出错:", error);
