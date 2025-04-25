@@ -267,6 +267,30 @@ async function initializeDatabase() {
   });
 }
 
+/**
+ * 关闭数据库连接
+ * @returns {Promise<void>} 关闭成功的Promise
+ */
+async function closeDatabase() {
+  return new Promise((resolve, reject) => {
+    if (!db) {
+      console.log("数据库未初始化或已关闭");
+      return resolve();
+    }
+
+    console.log("正在关闭数据库连接...");
+    db.close((err) => {
+      if (err) {
+        console.error("关闭数据库连接时出错:", err);
+        return reject(err);
+      }
+      console.log("数据库连接已成功关闭");
+      db = null; // 清除数据库引用
+      resolve();
+    });
+  });
+}
+
 // --- Settings Functions ---
 
 /**
@@ -1285,6 +1309,7 @@ async function getUserByShareId(shareId) {
 
 export {
   initializeDatabase,
+  closeDatabase,
   // Settings functions
   getSetting,
   setSetting,
