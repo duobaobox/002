@@ -209,14 +209,10 @@ class AIService {
 
       // 处理流式响应
       let fullText = "";
-      let lastChunkTime = Date.now();
 
       for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content || "";
         if (content) {
-          // 记录当前时间
-          const now = Date.now();
-
           // 更新完整文本
           fullText += content;
 
@@ -224,9 +220,6 @@ class AIService {
           if (onChunk) {
             onChunk(content, fullText);
           }
-
-          // 更新最后块时间
-          lastChunkTime = now;
         }
       }
 

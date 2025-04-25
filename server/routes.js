@@ -24,8 +24,6 @@ import {
   clearAllApiHistory,
   // API 配置关联函数
   addOrUpdateApiConfigRelation,
-  getApiKeysByBaseUrl,
-  getModelsByBaseUrl,
   // User functions
   validateUserLogin,
   updateUserPassword,
