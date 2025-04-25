@@ -11,12 +11,7 @@
   margin-bottom: 20px;
 }
 
-.invite-code-header h3 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 500;
-  color: #1d1d1f;
-}
+/* 移除标题样式，使用卡片标题 */
 
 .invite-code-list-container {
   min-height: 100px;

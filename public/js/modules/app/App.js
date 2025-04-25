@@ -1424,10 +1424,10 @@ export class App {
       });
     }
 
-    // 当个人中心标签被点击时，检查邀请码API是否可用
-    const profileTab = document.querySelector('.nav-item[data-tab="profile"]');
-    if (profileTab) {
-      profileTab.addEventListener("click", () => {
+    // 当用户管理标签被点击时，检查邀请码API是否可用
+    const usersTab = document.querySelector('.nav-item[data-tab="users"]');
+    if (usersTab) {
+      usersTab.addEventListener("click", () => {
         if (this.inviteApiAvailable) {
           this.loadInviteCodes();
         }

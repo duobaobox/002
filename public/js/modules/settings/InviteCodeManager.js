@@ -25,7 +25,6 @@ export function initInviteCodeManager(container) {
     container.innerHTML = `
       <div class="invite-code-manager">
         <div class="invite-code-header">
-          <h3>邀请码管理</h3>
           <button id="generate-invite-code" class="btn btn-primary">生成新邀请码</button>
         </div>
         <div class="invite-code-list-container">
