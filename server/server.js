@@ -7,7 +7,11 @@ import fs from "fs";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import session from "express-session";
-import { initializeDatabase, getAllAiSettings } from "./database.js";
+import {
+  initializeDatabase,
+  getAllAiSettings,
+  closeDatabase,
+} from "./database.js";
 import aiService from "./ai_service.js";
 
 // 尝试加载.env文件 (如果存在)
@@ -220,19 +224,35 @@ app.use((err, req, res, next) => {
 process.on("SIGTERM", gracefulShutdown);
 process.on("SIGINT", gracefulShutdown);
 
-function gracefulShutdown() {
-  console.log("正在关闭服务器...");
-  server.close(() => {
-    console.log("服务器已关闭");
-    process.exit(0);
-  });
+async function gracefulShutdown() {
+  console.log("正在关闭应用...");
 
-  // 如果5秒后还未关闭，强制退出
-  setTimeout(() => {
-    console.error("强制关闭服务器");
+  try {
+    // 1. 关闭数据库连接
+    console.log("正在关闭数据库连接...");
+    await closeDatabase();
+    console.log("数据库连接已关闭");
+
+    // 2. 关闭服务器
+    console.log("正在关闭服务器...");
+    server.close(() => {
+      console.log("服务器已关闭");
+      process.exit(0);
+    });
+  } catch (error) {
+    console.error("关闭过程中出错:", error);
     process.exit(1);
-  }, 5000);
+  }
+
+  // 如果10秒后还未关闭，强制退出
+  setTimeout(() => {
+    console.error("关闭超时，强制退出");
+    process.exit(1);
+  }, 10000);
 }
+
+// 定义全局服务器变量
+let server;
 
 // 异步启动函数
 async function startServer() {
@@ -253,7 +273,7 @@ async function startServer() {
     console.log("[Server Start] AI Service configured with initial settings.");
 
     // 启动服务器
-    const server = app.listen(PORT, () => {
+    server = app.listen(PORT, () => {
       console.log(`服务器运行在 http://localhost:${PORT}`);
       console.log(`环境: ${process.env.NODE_ENV || "development"}`);
     });
