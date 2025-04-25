@@ -282,6 +282,20 @@ export class Note {
       return; // 如果任何元素不存在，提前退出
     }
 
+    this.setupEditModeEvents(textarea, markdownPreview, editHint);
+    this.setupTextareaEvents(textarea);
+    this.setupScrollEvents(textarea, markdownPreview);
+    this.setupHoverEvents();
+    this.setupResizeEvents();
+  }
+
+  /**
+   * 设置编辑模式相关事件
+   * @param {HTMLElement} textarea - 文本区域元素
+   * @param {HTMLElement} markdownPreview - Markdown预览区域元素
+   * @param {HTMLElement} editHint - 编辑提示元素
+   */
+  setupEditModeEvents(textarea, markdownPreview, editHint) {
     // 为预览区域添加双击事件，切换回编辑模式
     markdownPreview.addEventListener("dblclick", () => {
       this.editMode = true;
@@ -298,7 +312,13 @@ export class Note {
         setTimeout(() => textarea.focus(), 10);
       }
     });
+  }
 
+  /**
+   * 设置文本区域相关事件
+   * @param {HTMLElement} textarea - 文本区域元素
+   */
+  setupTextareaEvents(textarea) {
     // 添加文本区域事件监听
     textarea.addEventListener("input", () => {
       this.text = textarea.value;
@@ -333,45 +353,61 @@ export class Note {
     textarea.addEventListener("focus", () => {
       this.editMode = true;
     });
+  }
+
+  /**
+   * 设置滚动相关事件
+   * @param {HTMLElement} textarea - 文本区域元素
+   * @param {HTMLElement} markdownPreview - Markdown预览区域元素
+   */
+  setupScrollEvents(textarea, markdownPreview) {
+    // 添加滚动事件处理函数
+    const handleScroll = (element) => {
+      const scrollbarThumb = this.element?.querySelector(".scrollbar-thumb");
+      if (scrollbarThumb) {
+        updateScrollbar(element, scrollbarThumb);
+      }
+    };
 
     // 添加滚动事件
-    textarea.addEventListener("scroll", () => {
-      const scrollbarThumb = this.element?.querySelector(".scrollbar-thumb");
-      if (scrollbarThumb) {
-        updateScrollbar(textarea, scrollbarThumb);
-      }
-    });
+    textarea.addEventListener("scroll", () => handleScroll(textarea));
+    markdownPreview.addEventListener("scroll", () =>
+      handleScroll(markdownPreview)
+    );
+  }
 
-    markdownPreview.addEventListener("scroll", () => {
-      const scrollbarThumb = this.element?.querySelector(".scrollbar-thumb");
-      if (scrollbarThumb) {
-        updateScrollbar(markdownPreview, scrollbarThumb);
-      }
-    });
-
+  /**
+   * 设置悬停相关事件
+   */
+  setupHoverEvents() {
     // 确保元素存在后再添加事件监听
-    if (this.element) {
-      // 添加悬停事件显示编辑提示
-      this.element.addEventListener("mouseenter", () => {
-        // 只有在非编辑模式下才显示"双击编辑"提示
-        if (!this.editMode && this.element) {
-          const editHint = this.element.querySelector(".edit-hint");
-          if (editHint) {
-            editHint.style.opacity = "1";
-            editHint.style.pointerEvents = "auto";
-          }
-        }
-      });
+    if (!this.element) return;
 
-      this.element.addEventListener("mouseleave", () => {
-        // 离开时无条件隐藏提示
+    // 添加悬停事件显示编辑提示
+    this.element.addEventListener("mouseenter", () => {
+      // 只有在非编辑模式下才显示"双击编辑"提示
+      if (!this.editMode && this.element) {
         const editHint = this.element.querySelector(".edit-hint");
         if (editHint) {
-          editHint.style.opacity = "0";
+          editHint.style.opacity = "1";
+          editHint.style.pointerEvents = "auto";
         }
-      });
-    }
+      }
+    });
 
+    this.element.addEventListener("mouseleave", () => {
+      // 离开时无条件隐藏提示
+      const editHint = this.element.querySelector(".edit-hint");
+      if (editHint) {
+        editHint.style.opacity = "0";
+      }
+    });
+  }
+
+  /**
+   * 设置窗口调整大小事件
+   */
+  setupResizeEvents() {
     // 使用可选链操作符访问元素属性
     window.addEventListener("resize", () => {
       if (!this.editMode && this.element) {
@@ -447,39 +483,71 @@ export class Note {
    */
   update(text) {
     this.text = text;
-    const textarea = this.element.querySelector(".note-content");
+
+    // 更新DOM元素
+    this.updateDOMElements(text);
+
+    // 更新滚动条
+    this.updateScrollbar();
+
+    // 根据内容决定是否切换模式
+    this.updateEditMode(text);
+
+    // 发送更新事件
+    dispatchCustomEvent("note-updated", { id: this.id });
+  }
+
+  /**
+   * 更新DOM元素内容
+   * @param {string} text - 便签文本内容
+   */
+  updateDOMElements(text) {
+    // 更新文本区域
+    const textarea = this.element?.querySelector(".note-content");
     if (textarea) {
       textarea.value = text;
     }
 
     // 立即更新预览（如果处于预览模式）
     if (!this.editMode) {
-      const preview = this.element.querySelector(".markdown-preview");
+      const preview = this.element?.querySelector(".markdown-preview");
       if (preview) {
         preview.innerHTML = renderMarkdown(text);
       }
     }
+  }
 
-    // 更新滚动条
-    const scrollbarThumb = this.element.querySelector(".scrollbar-thumb");
-    const currentElement = this.editMode
-      ? textarea
-      : this.element.querySelector(".markdown-preview");
+  /**
+   * 更新滚动条
+   */
+  updateScrollbar() {
+    const scrollbarThumb = this.element?.querySelector(".scrollbar-thumb");
+    if (!scrollbarThumb) return;
+
+    // 确定当前活动元素
+    const textarea = this.element?.querySelector(".note-content");
+    const preview = this.element?.querySelector(".markdown-preview");
+    const currentElement = this.editMode ? textarea : preview;
+
     if (currentElement) {
       updateScrollbar(currentElement, scrollbarThumb);
     }
+  }
 
-    // 根据内容决定是否切换模式
-    if (text.trim() !== "" && this.editMode) {
-      // 如果有内容且在编辑模式，可以考虑在失焦时切换到预览模式
-    } else if (text.trim() === "" && !this.editMode) {
-      // 如果内容被清空，切换回编辑模式
+  /**
+   * 根据内容更新编辑模式
+   * @param {string} text - 便签文本内容
+   */
+  updateEditMode(text) {
+    const isEmpty = text.trim() === "";
+
+    // 只有当内容为空且当前不在编辑模式时，才切换到编辑模式
+    if (isEmpty && !this.editMode) {
       this.editMode = true;
       this.toggleEditPreviewMode();
     }
 
-    // 发送更新事件
-    dispatchCustomEvent("note-updated", { id: this.id });
+    // 注意：有内容且在编辑模式的情况，在失焦时处理，这里不需要额外处理
   }
 }
 

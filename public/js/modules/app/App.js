@@ -41,7 +41,6 @@ export class App {
     this.currentAbortController = null; // 当前的中止控制器
 
     // 连接管理相关属性
-    this.activeSession = null; // 当前活跃的会话信息
     this.sessionManager = {
       // 会话管理配置
       connectionTimeout: 3 * 60 * 1000, // 会话超时时间 (3分钟)
@@ -369,166 +368,131 @@ export class App {
       console.warn("Import file input not found");
     }
 
-    // 重置设置
-    const resetButton = document.querySelector(".reset-button");
-    let resetClickCount = 0;
-    let resetClickTimer = null;
+    // 创建通用的多次点击确认函数
+    const setupMultiClickConfirmation = (button, options) => {
+      if (!button) return;
 
-    resetButton.addEventListener("click", () => {
-      resetClickCount++;
+      const {
+        buttonText, // 按钮原始文本
+        confirmationTexts, // 确认过程中的文本 [第一次点击文本, 第二次点击文本]
+        processingText, // 处理中的文本
+        successText, // 成功后的文本
+        action, // 执行的操作函数
+        successCallback, // 成功后的回调
+        timeoutMs = 3000, // 超时时间
+      } = options;
 
-      // 更新按钮文本，显示还需点击几次
-      if (resetClickCount === 1) {
-        resetButton.innerHTML = `再点击 2 次确认重置 <span class="reset-progress">⚫◯◯</span>`;
-        resetButton.classList.add("reset-warning");
-      } else if (resetClickCount === 2) {
-        resetButton.innerHTML = `再点击 1 次确认重置 <span class="reset-progress">⚫⚫◯</span>`;
-        resetButton.classList.add("reset-danger");
-      } else if (resetClickCount >= 3) {
-        resetButton.innerHTML = `正在重置...`;
-        resetButton.disabled = true;
+      let clickCount = 0;
+      let clickTimer = null;
 
-        // 执行重置操作
-        this.resetAllData()
-          .then((success) => {
-            if (success) {
-              // 重置完成后恢复按钮状态
-              resetButton.innerHTML = `重置所有设置`;
-              resetButton.classList.remove("reset-warning", "reset-danger");
-              resetButton.disabled = false;
-
-              // 显示重置成功消息
-              this.showMessage("所有数据已重置", "success");
-
-              // 重新加载页面以显示空白状态
-              setTimeout(() => {
-                window.location.reload();
-              }, 1500);
-            }
-          })
-          .catch((error) => {
-            console.error("重置失败:", error);
-            this.showMessage(`重置失败: ${error.message}`, "error");
-
-            // 恢复按钮状态
-            resetButton.innerHTML = `重置所有设置`;
-            resetButton.classList.remove("reset-warning", "reset-danger");
-            resetButton.disabled = false;
-          });
-
-        // 重置计数器
-        resetClickCount = 0;
-        if (resetClickTimer) {
-          clearTimeout(resetClickTimer);
-        }
-        return;
-      }
-
-      // 设置超时，如果超过3秒没有下一次点击，则重置计数器
-      if (resetClickTimer) {
-        clearTimeout(resetClickTimer);
-      }
-
-      resetClickTimer = setTimeout(() => {
-        resetClickCount = 0;
-        resetButton.innerHTML = `重置所有设置`;
-        resetButton.classList.remove("reset-warning", "reset-danger");
-      }, 3000);
-    });
-
-    // 清除AI设置按钮
-    const clearAiSettingsButton = document.getElementById("clear-ai-settings");
-    let clearAiClickCount = 0;
-    let clearAiClickTimer = null;
-
-    if (clearAiSettingsButton) {
-      clearAiSettingsButton.addEventListener("click", () => {
-        clearAiClickCount++;
+      button.addEventListener("click", () => {
+        clickCount++;
 
         // 更新按钮文本，显示还需点击几次
-        if (clearAiClickCount === 1) {
-          clearAiSettingsButton.innerHTML = `再点击 2 次确认清除设置及历史 <span class="reset-progress">⚫◯◯</span>`;
-          clearAiSettingsButton.classList.add("reset-warning");
-        } else if (clearAiClickCount === 2) {
-          clearAiSettingsButton.innerHTML = `再点击 1 次确认清除设置及历史 <span class="reset-progress">⚫⚫◯</span>`;
-          clearAiSettingsButton.classList.add("reset-danger");
-        } else if (clearAiClickCount >= 3) {
-          clearAiSettingsButton.innerHTML = `正在清除设置及历史...`;
-          clearAiSettingsButton.disabled = true;
+        if (clickCount === 1) {
+          button.innerHTML = `${confirmationTexts[0]} <span class="reset-progress">⚫◯◯</span>`;
+          button.classList.add("reset-warning");
+        } else if (clickCount === 2) {
+          button.innerHTML = `${confirmationTexts[1]} <span class="reset-progress">⚫⚫◯</span>`;
+          button.classList.add("reset-danger");
+        } else if (clickCount >= 3) {
+          button.innerHTML = processingText;
+          button.disabled = true;
 
-          // 执行清除操作
-          this.clearAISettings()
+          // 执行操作
+          action()
             .then((success) => {
               if (success) {
-                // 清空表单值
-                document.getElementById("ai-api-key").value = "";
-                document.getElementById("ai-base-url").value = "";
-                document.getElementById("ai-model").value = "";
-                document.getElementById("ai-max-tokens").value = "800";
-                document.getElementById("ai-temperature").value = "0.7";
+                // 操作完成后恢复按钮状态
+                button.innerHTML = successText || buttonText;
+                button.classList.remove("reset-warning", "reset-danger");
+                button.disabled = false;
 
-                // 更新温度值显示 - 重新获取元素
-                const tempValueElement =
-                  document.getElementById("temperature-value");
-                if (tempValueElement) {
-                  // Check if the element exists
-                  tempValueElement.textContent = "0.7"; // Update its text content
+                // 执行成功回调
+                if (successCallback) {
+                  successCallback();
                 }
-
-                // 更新底部栏的AI模型显示
-                const aiModelDisplay = document.querySelector(".ai-model");
-                if (aiModelDisplay) {
-                  aiModelDisplay.textContent = "未设置";
-                }
-
-                // 清除完成后恢复按钮状态
-                clearAiSettingsButton.innerHTML = `清除 AI 设置及历史`;
-                clearAiSettingsButton.classList.remove(
-                  "reset-warning",
-                  "reset-danger"
-                );
-                clearAiSettingsButton.disabled = false;
-
-                // 显示成功消息
-                this.showMessage("所有AI设置及历史已清除", "success");
               }
             })
             .catch((error) => {
-              console.error("清除AI设置失败:", error);
-              this.showMessage(`清除失败: ${error.message}`, "error");
+              console.error(`操作失败:`, error);
+              this.showMessage(`操作失败: ${error.message}`, "error");
 
               // 恢复按钮状态
-              clearAiSettingsButton.innerHTML = `清除 AI 设置及历史`;
-              clearAiSettingsButton.classList.remove(
-                "reset-warning",
-                "reset-danger"
-              );
-              clearAiSettingsButton.disabled = false;
+              button.innerHTML = buttonText;
+              button.classList.remove("reset-warning", "reset-danger");
+              button.disabled = false;
             });
 
           // 重置计数器
-          clearAiClickCount = 0;
-          if (clearAiClickTimer) {
-            clearTimeout(clearAiClickTimer);
+          clickCount = 0;
+          if (clickTimer) {
+            clearTimeout(clickTimer);
           }
           return;
         }
 
-        // 设置超时，如果超过3秒没有下一次点击，则重置计数器
-        if (clearAiClickTimer) {
-          clearTimeout(clearAiClickTimer);
+        // 设置超时，如果超过指定时间没有下一次点击，则重置计数器
+        if (clickTimer) {
+          clearTimeout(clickTimer);
         }
 
-        clearAiClickTimer = setTimeout(() => {
-          clearAiClickCount = 0;
-          clearAiSettingsButton.innerHTML = `清除 AI 设置`;
-          clearAiSettingsButton.classList.remove(
-            "reset-warning",
-            "reset-danger"
-          );
-        }, 3000);
+        clickTimer = setTimeout(() => {
+          clickCount = 0;
+          button.innerHTML = buttonText;
+          button.classList.remove("reset-warning", "reset-danger");
+        }, timeoutMs);
       });
-    }
+    };
+
+    // 重置设置按钮
+    const resetButton = document.querySelector(".reset-button");
+    setupMultiClickConfirmation(resetButton, {
+      buttonText: "重置所有设置",
+      confirmationTexts: ["再点击 2 次确认重置", "再点击 1 次确认重置"],
+      processingText: "正在重置...",
+      action: () => this.resetAllData(),
+      successCallback: () => {
+        this.showMessage("所有数据已重置", "success");
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      },
+    });
+
+    // 清除AI设置按钮
+    const clearAiSettingsButton = document.getElementById("clear-ai-settings");
+    setupMultiClickConfirmation(clearAiSettingsButton, {
+      buttonText: "清除 AI 设置及历史",
+      confirmationTexts: [
+        "再点击 2 次确认清除设置及历史",
+        "再点击 1 次确认清除设置及历史",
+      ],
+      processingText: "正在清除设置及历史...",
+      action: () => this.clearAISettings(),
+      successCallback: () => {
+        // 清空表单值
+        document.getElementById("ai-api-key").value = "";
+        document.getElementById("ai-base-url").value = "";
+        document.getElementById("ai-model").value = "";
+        document.getElementById("ai-max-tokens").value = "800";
+        document.getElementById("ai-temperature").value = "0.7";
+
+        // 更新温度值显示
+        const tempValueElement = document.getElementById("temperature-value");
+        if (tempValueElement) {
+          tempValueElement.textContent = "0.7";
+        }
+
+        // 更新底部栏的AI模型显示
+        const aiModelDisplay = document.querySelector(".ai-model");
+        if (aiModelDisplay) {
+          aiModelDisplay.textContent = "未设置";
+        }
+
+        this.showMessage("所有AI设置及历史已清除", "success");
+      },
+    });
 
     // 测试AI连接按钮 (修正选择器)
     const testConnectionButton = document.getElementById("test-ai-connection");
