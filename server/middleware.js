@@ -41,26 +41,34 @@ export function requireAuth(req, res, next) {
   // 检查用户是否已被删除
   const deletedUsers = req.app.locals.deletedUsers;
   if (deletedUsers && deletedUsers.has(req.session.user.username)) {
-    // 用户已被删除，清除会话并返回错误
+    console.log(`检测到已删除的用户尝试访问: ${req.session.user.username}`);
+
+    // 用户已被删除，清除会话
     req.session.destroy((err) => {
       if (err) {
         console.error("清除已删除用户会话失败:", err);
+      } else {
+        console.log(`已删除用户 ${req.session.user.username} 的会话已清除`);
       }
 
       // 从删除用户集合中移除该用户，因为其会话已被清除
       deletedUsers.delete(req.session.user.username);
+      console.log("已从删除用户集合中移除该用户");
 
       // 如果删除用户集合为空，可以清除它以节省内存
       if (deletedUsers.size === 0) {
         delete req.app.locals.deletedUsers;
+        console.log("删除用户集合已清空");
       }
     });
 
+    // 返回明确的错误响应，包含重定向信息
     return res.status(401).json({
       success: false,
       message: "您的账户已被删除，请联系管理员",
       accountDeleted: true,
       redirectTo: "/login.html",
+      forceRedirect: true, // 添加强制重定向标志
     });
   }
 

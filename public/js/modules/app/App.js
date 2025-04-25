@@ -133,11 +133,106 @@ export class App {
     if (response.status === 401) {
       // 检查是否是账户被删除的情况
       if (data.accountDeleted) {
-        this.showMessage("您的账户已被删除，请联系管理员", "error");
-        // 延迟重定向，让用户有时间看到消息
+        // 如果服务器指示强制重定向，立即执行
+        if (data.forceRedirect) {
+          console.log("服务器要求强制重定向到登录页面");
+          sessionStorage.setItem("accountDeleted", "true");
+          window.location.href = data.redirectTo || "/login.html";
+          return true;
+        }
+        // 创建一个特殊的账户删除提示，更加醒目
+        let messageContainer = document.querySelector(
+          ".account-deleted-message"
+        );
+
+        // 如果不存在，创建一个
+        if (!messageContainer) {
+          messageContainer = document.createElement("div");
+          messageContainer.className =
+            "message-top-center account-deleted-message message-error";
+          document.body.appendChild(messageContainer);
+
+          // 添加更详细的消息内容
+          messageContainer.innerHTML = `
+            <div class="account-deleted-icon">⚠️</div>
+            <div class="account-deleted-content">
+              <div class="account-deleted-title">您的账户已被删除</div>
+              <div class="account-deleted-text">您的账户已被管理员删除，即将返回登录页面</div>
+            </div>
+          `;
+
+          // 添加自定义样式
+          const style = document.createElement("style");
+          style.textContent = `
+            .account-deleted-message {
+              display: flex;
+              align-items: center;
+              padding: 16px 25px !important;
+              background-color: rgba(244, 67, 54, 0.95) !important;
+              max-width: 400px !important;
+            }
+            .account-deleted-icon {
+              font-size: 24px;
+              margin-right: 15px;
+            }
+            .account-deleted-content {
+              display: flex;
+              flex-direction: column;
+            }
+            .account-deleted-title {
+              font-weight: bold;
+              margin-bottom: 5px;
+              font-size: 16px;
+            }
+            .account-deleted-text {
+              font-size: 14px;
+            }
+          `;
+          document.head.appendChild(style);
+        }
+
+        // 显示消息
         setTimeout(() => {
-          window.location.href = "/login.html";
-        }, 2000);
+          messageContainer.classList.add("show");
+          console.log("账户删除消息已显示，准备重定向...");
+
+          // 延迟重定向，让用户有时间看到消息
+          setTimeout(() => {
+            console.log("执行重定向到登录页面...");
+            // 将账户删除状态存储在 sessionStorage 中，以便登录页面可以显示相应消息
+            sessionStorage.setItem("accountDeleted", "true");
+
+            // 使用更可靠的重定向方法
+            try {
+              // 方法1：直接设置location.href
+              window.location.href = "/login.html";
+
+              // 方法2：如果上面的方法失败，使用replace方法
+              setTimeout(() => {
+                if (window.location.pathname !== "/login.html") {
+                  console.log("使用location.replace方法重定向...");
+                  window.location.replace("/login.html");
+                }
+              }, 100);
+
+              // 方法3：最后的备选方案，创建一个表单并提交
+              setTimeout(() => {
+                if (window.location.pathname !== "/login.html") {
+                  console.log("使用表单提交方法重定向...");
+                  const form = document.createElement("form");
+                  form.method = "GET";
+                  form.action = "/login.html";
+                  document.body.appendChild(form);
+                  form.submit();
+                }
+              }, 200);
+            } catch (e) {
+              console.error("重定向过程中发生错误:", e);
+              alert("您的账户已被删除，请手动返回登录页面");
+            }
+          }, 2000);
+        }, 100);
+
         return true;
       }
 
