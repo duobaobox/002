@@ -39,7 +39,7 @@ import {
   // Import dbFilePath
   dbFilePath,
 } from "./database.js";
-import { validateNoteData, requireAuth } from "./middleware.js";
+import { validateNoteData, requireAuth, requireAdmin } from "./middleware.js";
 // Need path for basename
 import path from "path";
 // 导入分享路由
@@ -963,15 +963,7 @@ router.post("/close-connection/:sessionId", requireAuth, (req, res) => {
 });
 
 // 获取当前连接状态的路由 (用于调试和监控)
-router.get("/connection-status", requireAuth, (req, res) => {
-  // 确保只有管理员可以查看
-  if (req.session.user.username !== "admin") {
-    return res.status(403).json({
-      success: false,
-      message: "只有管理员可以查看连接状态",
-    });
-  }
-
+router.get("/connection-status", requireAuth, requireAdmin, (req, res) => {
   const statusList = [];
 
   sseConnections.forEach((connection, sessionId) => {
@@ -1016,15 +1008,7 @@ router.get("/test-ai-connection", async (req, res) => {
 // --- 邀请码路由 ---
 
 // 获取所有可用邀请码
-router.get("/invite-codes", requireAuth, async (req, res) => {
-  // 确保只有admin用户可以管理邀请码
-  if (req.session.user.username !== "admin") {
-    return res.status(403).json({
-      success: false,
-      message: "只有管理员可以管理邀请码",
-    });
-  }
-
+router.get("/invite-codes", requireAuth, requireAdmin, async (req, res) => {
   try {
     const inviteCodes = await getAvailableInviteCodes();
     res.json({
@@ -1041,15 +1025,7 @@ router.get("/invite-codes", requireAuth, async (req, res) => {
 });
 
 // 创建新邀请码
-router.post("/invite-codes", requireAuth, async (req, res) => {
-  // 确保只有admin用户可以创建邀请码
-  if (req.session.user.username !== "admin") {
-    return res.status(403).json({
-      success: false,
-      message: "只有管理员可以创建邀请码",
-    });
-  }
-
+router.post("/invite-codes", requireAuth, requireAdmin, async (req, res) => {
   try {
     const inviteCode = await createInviteCode(req.session.user.id);
     res.json({
@@ -1066,40 +1042,37 @@ router.post("/invite-codes", requireAuth, async (req, res) => {
 });
 
 // 删除邀请码
-router.delete("/invite-codes/:code", requireAuth, async (req, res) => {
-  // 确保只有admin用户可以删除邀请码
-  if (req.session.user.username !== "admin") {
-    return res.status(403).json({
-      success: false,
-      message: "只有管理员可以删除邀请码",
-    });
-  }
+router.delete(
+  "/invite-codes/:code",
+  requireAuth,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const success = await deleteInviteCode(req.params.code);
 
-  try {
-    const success = await deleteInviteCode(req.params.code);
-
-    if (success) {
-      res.json({
-        success: true,
-        message: "邀请码已成功删除",
-      });
-    } else {
-      res.status(404).json({
+      if (success) {
+        res.json({
+          success: true,
+          message: "邀请码已成功删除",
+        });
+      } else {
+        res.status(404).json({
+          success: false,
+          message: "邀请码不存在或已使用",
+        });
+      }
+    } catch (error) {
+      console.error("删除邀请码失败:", error);
+      res.status(500).json({
         success: false,
-        message: "邀请码不存在或已使用",
+        message: "删除邀请码失败",
       });
     }
-  } catch (error) {
-    console.error("删除邀请码失败:", error);
-    res.status(500).json({
-      success: false,
-      message: "删除邀请码失败",
-    });
   }
-});
+);
 
 // --- Database Export Route ---
-router.get("/database/export", (req, res) => {
+router.get("/database/export", requireAuth, requireAdmin, (req, res) => {
   try {
     const filename = path.basename(dbFilePath);
     // Use res.download to send the file as an attachment
