@@ -38,3 +38,29 @@ export function requireAuth(req, res, next) {
     });
   }
 }
+
+/**
+ * 验证用户是否为管理员的中间件
+ * 必须在 requireAuth 中间件之后使用
+ */
+export function requireAdmin(req, res, next) {
+  // 确保用户已登录（虽然通常会先使用 requireAuth 中间件）
+  if (!req.session || !req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "请先登录",
+      redirectTo: "/login.html",
+    });
+  }
+
+  // 检查用户是否为管理员
+  if (req.session.user.username !== "admin") {
+    return res.status(403).json({
+      success: false,
+      message: "只有管理员可以执行此操作",
+    });
+  }
+
+  // 如果是管理员，继续下一步
+  next();
+}
