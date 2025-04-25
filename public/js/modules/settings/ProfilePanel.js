@@ -14,12 +14,7 @@ export function initProfilePanel(container) {
   // 创建个人中心面板UI
   createProfilePanelUI(container);
 
-  // 初始化邀请码管理
-  initInviteCodeManager(
-    document.getElementById("invite-code-manager-container")
-  );
-
-  // 加载用户信息
+  // 加载用户信息，并在用户是管理员时初始化邀请码管理
   loadUserInfo();
 
   /**
@@ -70,8 +65,18 @@ export function initProfilePanel(container) {
         // 更新用户信息
         profileAvatar.textContent = data.user.username.charAt(0).toUpperCase();
         profileName.textContent = data.user.username;
-        profileBadge.textContent =
-          data.user.username === "admin" ? "管理员" : "用户";
+
+        // 检查是否是管理员
+        const isAdmin = data.user.username === "admin";
+        profileBadge.textContent = isAdmin ? "管理员" : "用户";
+
+        // 只有管理员才初始化邀请码管理器
+        if (isAdmin) {
+          // 初始化邀请码管理
+          initInviteCodeManager(
+            document.getElementById("invite-code-manager-container")
+          );
+        }
       } else {
         profileName.textContent = "未登录";
         profileBadge.textContent = "未知";

@@ -122,6 +122,45 @@ export class App {
     }
   }
 
+  /**
+   * 处理API响应错误
+   * @param {Response} response - Fetch API响应对象
+   * @param {Object} data - 响应数据
+   * @returns {boolean} 如果错误已处理返回true，否则返回false
+   */
+  handleApiError(response, data) {
+    // 检查是否是认证错误
+    if (response.status === 401) {
+      // 检查是否是账户被删除的情况
+      if (data.accountDeleted) {
+        this.showMessage("您的账户已被删除，请联系管理员", "error");
+        // 延迟重定向，让用户有时间看到消息
+        setTimeout(() => {
+          window.location.href = "/login.html";
+        }, 2000);
+        return true;
+      }
+
+      // 普通的认证错误（会话过期等）
+      if (data.redirectTo) {
+        this.showMessage("您的登录已过期，请重新登录", "warning");
+        // 延迟重定向，让用户有时间看到消息
+        setTimeout(() => {
+          window.location.href = data.redirectTo;
+        }, 1500);
+        return true;
+      }
+    }
+
+    // 其他错误
+    if (!data.success && data.message) {
+      this.showMessage(data.message, "error");
+      return true;
+    }
+
+    return false; // 错误未处理
+  }
+
   // 检查邀请码API是否可用
   async checkIfInviteApiAvailable() {
     try {
@@ -619,6 +658,11 @@ export class App {
       const response = await fetch("/api/notes");
       const data = await response.json();
 
+      // 处理可能的错误（如用户被删除）
+      if (this.handleApiError(response, data)) {
+        return; // 错误已处理，直接返回
+      }
+
       if (data.success) {
         this.nextId = data.nextId;
 
@@ -742,6 +786,13 @@ export class App {
 
         const data = await response.json();
 
+        // 处理可能的错误（如用户被删除）
+        if (this.handleApiError(response, data)) {
+          // 错误已处理，清除定时器
+          delete this.updateDebounceTimers[id];
+          return;
+        }
+
         if (!data.success) {
           // 如果是404错误（便签不存在），可能是便签已被删除，我们应该从内存中移除它
           if (response.status === 404) {
@@ -779,6 +830,11 @@ export class App {
       });
 
       const data = await response.json();
+
+      // 处理可能的错误（如用户被删除）
+      if (this.handleApiError(response, data)) {
+        return; // 错误已处理，直接返回
+      }
 
       if (data.success) {
         this.notes = this.notes.filter((note) => note.id !== id);
@@ -974,6 +1030,15 @@ export class App {
       });
 
       const noteData = await noteResponse.json();
+
+      // 处理可能的错误（如用户被删除）
+      if (this.handleApiError(noteResponse, noteData)) {
+        // 移除临时便签
+        if (noteElement && noteElement.parentNode) {
+          noteElement.remove();
+        }
+        return; // 错误已处理，直接返回
+      }
 
       if (noteData.success && noteData.note) {
         console.log("AI便签已添加，ID:", noteData.note.id);

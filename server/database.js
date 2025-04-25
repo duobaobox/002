@@ -707,18 +707,18 @@ async function createInviteCode(userId) {
 }
 
 /**
- * 获取所有可用的邀请码
+ * 获取所有邀请码
  * @returns {Promise<Array>} 邀请码数组
  */
 async function getAvailableInviteCodes() {
   if (!db) throw new Error("数据库未初始化");
 
   try {
+    // 修改为返回所有邀请码，不再过滤已使用的邀请码
     return await dbAll(
       `SELECT code, created_at as createdAt, created_by as createdBy,
       is_used as isUsed, used_by as usedBy, used_at as usedAt
       FROM invitation_codes
-      WHERE is_used = 0
       ORDER BY created_at DESC`
     );
   } catch (error) {
@@ -736,10 +736,10 @@ async function deleteInviteCode(code) {
   if (!db) throw new Error("数据库未初始化");
 
   try {
-    const result = await dbRun(
-      "DELETE FROM invitation_codes WHERE code = ? AND is_used = 0",
-      [code]
-    );
+    // 修改为可以删除任何邀请码，不再限制只能删除未使用的邀请码
+    const result = await dbRun("DELETE FROM invitation_codes WHERE code = ?", [
+      code,
+    ]);
 
     return result.changes > 0;
   } catch (error) {
@@ -757,8 +757,10 @@ async function validateInviteCode(code) {
   if (!db) throw new Error("数据库未初始化");
 
   try {
+    // 只检查邀请码是否存在，不检查是否已使用
+    // 这样邀请码可以被重复使用
     const inviteCode = await dbGet(
-      "SELECT * FROM invitation_codes WHERE code = ? AND is_used = 0",
+      "SELECT * FROM invitation_codes WHERE code = ?",
       [code]
     );
 
@@ -779,8 +781,21 @@ async function markInviteCodeAsUsed(code, userId) {
   if (!db) throw new Error("数据库未初始化");
 
   try {
+    // 获取邀请码信息
+    const inviteCode = await dbGet(
+      "SELECT * FROM invitation_codes WHERE code = ?",
+      [code]
+    );
+
+    if (!inviteCode) {
+      return false; // 邀请码不存在
+    }
+
+    // 如果邀请码已被使用过，我们仍然更新使用记录
+    // 这样邀请码可以被多次使用，但我们保留每次使用的记录
+    // 注意：这里我们不再检查 is_used = 0 的条件
     const result = await dbRun(
-      "UPDATE invitation_codes SET is_used = 1, used_by = ?, used_at = CURRENT_TIMESTAMP WHERE code = ? AND is_used = 0",
+      "UPDATE invitation_codes SET is_used = 1, used_by = ?, used_at = CURRENT_TIMESTAMP WHERE code = ?",
       [userId, code]
     );
 

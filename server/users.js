@@ -197,13 +197,32 @@ router.delete("/:id", requireAdmin, async (req, res) => {
       });
     }
 
+    // 获取被删除用户的用户名，用于后续会话清理
+    const deletedUsername = user.username;
+
     // 删除用户
     await dbRun("DELETE FROM users WHERE id = ?", [userId]);
 
+    // 将被删除的用户信息添加到响应中，以便前端可以使用
     res.json({
       success: true,
       message: "用户已成功删除",
+      deletedUser: {
+        id: userId,
+        username: deletedUsername,
+      },
     });
+
+    // 通知会话管理器，该用户已被删除
+    // 这将在下一次请求时使该用户的会话失效
+    if (req.app.locals.deletedUsers === undefined) {
+      req.app.locals.deletedUsers = new Set();
+    }
+    req.app.locals.deletedUsers.add(deletedUsername);
+
+    console.log(
+      `用户 ${deletedUsername} (ID: ${userId}) 已被删除，其会话将在下次请求时失效`
+    );
   } catch (error) {
     console.error("删除用户失败:", error);
     res.status(500).json({
