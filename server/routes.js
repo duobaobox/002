@@ -86,7 +86,7 @@ router.post("/register", async (req, res) => {
     if (!isValidInviteCode) {
       return res.status(400).json({
         success: false,
-        message: "邀请码无效或已被使用",
+        message: "邀请码无效，请联系管理员获取有效的邀请码",
       });
     }
 
@@ -94,7 +94,8 @@ router.post("/register", async (req, res) => {
     try {
       const newUser = await createUser(username, password);
 
-      // 标记邀请码为已使用
+      // 标记邀请码为已使用，但邀请码仍然可以重复使用
+      // 这只是为了记录使用情况，以便于管理和审计
       await markInviteCodeAsUsed(inviteCode, newUser.id);
 
       res.status(201).json({
@@ -1065,7 +1066,7 @@ router.delete(
       } else {
         res.status(404).json({
           success: false,
-          message: "邀请码不存在或已使用",
+          message: "邀请码不存在",
         });
       }
     } catch (error) {

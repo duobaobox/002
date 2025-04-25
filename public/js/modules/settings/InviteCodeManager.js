@@ -59,6 +59,15 @@ export function initInviteCodeManager(container) {
         inviteCodeList.innerHTML = "";
 
         if (data.inviteCodes && data.inviteCodes.length > 0) {
+          // 添加说明文本
+          const infoElement = document.createElement("div");
+          infoElement.className = "invite-code-info-text";
+          infoElement.innerHTML = `
+            <p>所有邀请码均为永久有效，可以重复使用。删除后将无法使用。</p>
+          `;
+          inviteCodeList.appendChild(infoElement);
+
+          // 显示所有邀请码
           data.inviteCodes.forEach((inviteCode) => {
             const inviteCodeElement = createInviteCodeElement(inviteCode);
             inviteCodeList.appendChild(inviteCodeElement);
@@ -99,10 +108,26 @@ export function initInviteCodeManager(container) {
       second: "2-digit",
     });
 
+    // 格式化使用时间（如果有）
+    let usedInfo = "";
+    if (inviteCode.isUsed && inviteCode.usedAt) {
+      const usedAt = new Date(inviteCode.usedAt);
+      const formattedUsedDate = usedAt.toLocaleString("zh-CN", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+      usedInfo = `<div class="invite-code-used">已使用过: ${formattedUsedDate}</div>`;
+    }
+
     inviteCodeElement.innerHTML = `
       <div class="invite-code-info">
         <div class="invite-code-value">${inviteCode.code}</div>
         <div class="invite-code-date">创建于: ${formattedDate}</div>
+        ${usedInfo}
       </div>
       <div class="invite-code-actions">
         <button class="btn btn-icon copy-invite-code" title="复制邀请码">
@@ -194,7 +219,9 @@ export function initInviteCodeManager(container) {
    * @param {string} code - 邀请码
    */
   async function deleteInviteCode(code) {
-    if (!confirm("确定要删除这个邀请码吗？")) {
+    if (
+      !confirm("确定要删除这个邀请码吗？删除后，该邀请码将无法用于注册新用户。")
+    ) {
       return;
     }
 

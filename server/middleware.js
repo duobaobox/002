@@ -26,17 +26,46 @@ export function validateNoteData(req, res, next) {
 
 /**
  * 验证用户是否已登录的中间件
+ * 同时检查用户是否已被删除
  */
 export function requireAuth(req, res, next) {
-  if (req.session && req.session.user) {
-    return next();
-  } else {
+  // 检查用户是否已登录
+  if (!req.session || !req.session.user) {
     return res.status(401).json({
       success: false,
       message: "请先登录",
       redirectTo: "/login.html",
     });
   }
+
+  // 检查用户是否已被删除
+  const deletedUsers = req.app.locals.deletedUsers;
+  if (deletedUsers && deletedUsers.has(req.session.user.username)) {
+    // 用户已被删除，清除会话并返回错误
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("清除已删除用户会话失败:", err);
+      }
+
+      // 从删除用户集合中移除该用户，因为其会话已被清除
+      deletedUsers.delete(req.session.user.username);
+
+      // 如果删除用户集合为空，可以清除它以节省内存
+      if (deletedUsers.size === 0) {
+        delete req.app.locals.deletedUsers;
+      }
+    });
+
+    return res.status(401).json({
+      success: false,
+      message: "您的账户已被删除，请联系管理员",
+      accountDeleted: true,
+      redirectTo: "/login.html",
+    });
+  }
+
+  // 用户已登录且未被删除，继续下一步
+  return next();
 }
 
 /**
