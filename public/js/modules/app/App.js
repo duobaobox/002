@@ -2544,9 +2544,44 @@ export class App {
 
   // 智能预连接到 AI 服务 - 使用连接管理器
   smartPreconnectAIService() {
-    // 直接使用连接管理器的预连接功能
-    // 连接管理器已经在内部实现了智能预连接逻辑
-    connectionManager.preconnect();
+    // 获取当前输入内容
+    const promptElement = document.getElementById("ai-prompt");
+    if (!promptElement) return;
+
+    const promptText = promptElement.value.trim();
+
+    // 添加更智能的触发条件
+    // 1. 检查输入长度是否足够触发预连接
+    if (promptText.length < this.sessionManager.minInputLength) {
+      return;
+    }
+
+    // 2. 检查是否包含完整句子（以句号、问号或感叹号结尾）
+    const hasCompleteSentence = /[.!?。！？]/.test(promptText);
+
+    // 3. 检查用户是否停止输入（使用防抖）
+    clearTimeout(this._preconnectDebounceTimer);
+
+    // 4. 检查是否已经有活跃连接
+    const hasActiveConnection =
+      connectionManager &&
+      connectionManager.hasActiveConnection &&
+      connectionManager.hasActiveConnection();
+
+    // 如果已有活跃连接，不需要再次预连接
+    if (hasActiveConnection) {
+      return;
+    }
+
+    // 如果有完整句子，立即预连接；否则等待用户停止输入
+    if (hasCompleteSentence) {
+      connectionManager.preconnect();
+    } else {
+      // 用户停止输入 1 秒后再预连接，避免频繁请求
+      this._preconnectDebounceTimer = setTimeout(() => {
+        connectionManager.preconnect();
+      }, 1000);
+    }
   }
 
   // 关闭活跃的AI会话 - 使用统一的连接管理
