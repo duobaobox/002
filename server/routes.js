@@ -44,6 +44,8 @@ import { validateNoteData, requireAuth, requireAdmin } from "./middleware.js";
 import path from "path";
 // 导入分享路由
 import shareRouter from "./share.js";
+// 导入用户管理路由
+import usersRouter from "./users.js";
 
 const router = express.Router();
 
@@ -1303,6 +1305,10 @@ router.delete("/api-history/all", async (req, res) => {
 // 注册分享路由 - 分享路由内部已处理认证
 console.log("注册分享路由: /share");
 router.use("/share", shareRouter);
+
+// 注册用户管理路由
+console.log("注册用户管理路由: /users");
+router.use("/users", usersRouter);
 
 // Export only the router (readSettingsData is no longer needed externally)
 export default router;

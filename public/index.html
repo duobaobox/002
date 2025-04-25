@@ -18,6 +18,8 @@
     <link rel="stylesheet" href="css/invite-code.css">
     <!-- 引入分享对话框样式 -->
     <link rel="stylesheet" href="css/share-dialog.css">
+    <!-- 引入用户管理样式 -->
+    <link rel="stylesheet" href="css/user-management.css">
     <!-- 添加 marked.js 库 -->
     <script src="https://cdn.jsdelivr.net/npm/marked@3.0.8/marked.min.js"></script>
     <!-- 添加 highlight.js 用于代码高亮（可选） -->
@@ -88,6 +90,7 @@
                     <div class="settings-nav">
                         <button class="nav-item active" data-tab="ai">AI 设置</button>
                         <button class="nav-item" data-tab="profile">个人中心</button>
+                        <button class="nav-item admin-only" data-tab="users">用户管理</button>
                         <button class="nav-item" data-tab="backup">备份恢复</button>
                         <button class="nav-item" data-tab="appearance">外观</button>
                         <button class="nav-item" data-tab="about">关于</button>
@@ -361,7 +364,7 @@
                             </div>
                         </div>
 
-                        <!-- 个人中心面板 (原用户管理面板) -->
+                        <!-- 个人中心面板 -->
                         <div class="settings-panel" id="profile-panel">
                             <h3>个人中心</h3>
                             <div class="settings-panel-content">
@@ -450,6 +453,72 @@
                                             <ul id="invite-codes-container">
                                                 <!-- 邀请码将通过JavaScript动态添加 -->
                                             </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 用户管理面板 (仅管理员可见) -->
+                        <div class="settings-panel" id="users-panel">
+                            <h3>用户管理</h3>
+                            <div class="settings-panel-content">
+                                <!-- 用户列表卡片 -->
+                                <div class="settings-card">
+                                    <div class="settings-card-header">
+                                        <h4>用户列表</h4>
+                                    </div>
+                                    <div class="users-list-container">
+                                        <div class="users-list-header">
+                                            <div class="user-column user-name">用户名</div>
+                                            <div class="user-column user-created">创建时间</div>
+                                            <div class="user-column user-status">状态</div>
+                                            <div class="user-column user-actions">操作</div>
+                                        </div>
+                                        <div class="users-list-body" id="users-list">
+                                            <!-- 用户列表将通过JavaScript动态添加 -->
+                                            <div class="empty-state" id="no-users">
+                                                <p>正在加载用户列表...</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 用户操作卡片 -->
+                                <div class="settings-card">
+                                    <div class="settings-card-header">
+                                        <h4>用户操作</h4>
+                                    </div>
+                                    <div class="settings-item">
+                                        <div class="settings-label">
+                                            <label>刷新用户列表</label>
+                                            <span class="settings-description">手动刷新用户列表以查看最新数据</span>
+                                        </div>
+                                        <div class="settings-control">
+                                            <button id="refresh-users-list" class="settings-button secondary-button">
+                                                <i class="icon-refresh">🔄</i> 刷新列表
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 用户统计卡片 -->
+                                <div class="settings-card">
+                                    <div class="settings-card-header">
+                                        <h4>用户统计</h4>
+                                    </div>
+                                    <div class="user-stats">
+                                        <div class="stat-item">
+                                            <div class="stat-label">总用户数</div>
+                                            <div class="stat-value" id="total-users-count">-</div>
+                                        </div>
+                                        <div class="stat-item">
+                                            <div class="stat-label">活跃用户</div>
+                                            <div class="stat-value" id="active-users-count">-</div>
+                                        </div>
+                                        <div class="stat-item">
+                                            <div class="stat-label">今日新增</div>
+                                            <div class="stat-value" id="new-users-today">-</div>
                                         </div>
                                     </div>
                                 </div>

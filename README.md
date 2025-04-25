@@ -76,7 +76,7 @@ npm start
 
 欢迎提交 PR 或 Issue。在开始任何重大工作之前，请先在 Issue 中讨论你想要做的改变。
 
-## 优化建议和冗余代码分析
+<!-- ## 优化建议和冗余代码分析
 
 1. 服务器端优化建议
    1.1 路由重复定义
@@ -118,7 +118,9 @@ npm start
     在 server/database.js 中，第 455-568 行的 importNotes 函数使用了串行处理，可以考虑批量插入以提高性能。
     3.2 前端性能优化
     在 public/js/modules/app/App.js 中，第 179-264 行的预连接逻辑可能导致不必要的网络请求，可以添加更智能的触发条件。
-    在 public/js/modules/canvas/Canvas.js 中，第 398-404 行的画布移动没有使用 requestAnimationFrame，可能导致在低性能设备上的卡顿。 4. 代码结构优化建议
+    在 public/js/modules/canvas/Canvas.js 中，第 398-404 行的画布移动没有使用 requestAnimationFrame，可能导致在低性能设备上的卡顿。 -->
+
+     4. 代码结构优化建议
     4.1 模块化改进
     将 server/routes.js 拆分为多个路由文件，按功能分组（认证路由、便签路由、AI 路由等）。
     将 public/js/modules/app/App.js 拆分为更小的模块，例如将 AI 相关功能、设置管理、便签管理分离为独立模块。

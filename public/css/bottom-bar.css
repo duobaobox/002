@@ -192,9 +192,20 @@
   animation: ai-pulse 1.5s infinite ease-in-out;
 }
 
-/* 生成中的按钮图标动画 */
+/* 生成中的按钮变为取消按钮 */
+.ai-button.generating {
+  background-color: #ea4335; /* 红色背景 */
+}
+
+.ai-button.generating:hover {
+  background-color: #d32f2f; /* 深红色 */
+}
+
+/* 生成中的按钮图标变为取消图标 */
 .ai-button.generating .icon-ai:before {
-  content: ""; /* 清空AI文字 */
+  content: "×"; /* 显示取消符号 */
+  font-size: 18px;
+  font-weight: bold;
 }
 
 /* 脉冲动画关键帧 */

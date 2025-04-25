@@ -1,0 +1,235 @@
+/* 用户管理样式 */
+
+/* 用户列表容器 */
+.users-list-container {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+/* 用户列表头部 */
+.users-list-header {
+  display: flex;
+  background-color: var(--bg-light);
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 600;
+  padding: 10px;
+}
+
+/* 用户列表主体 */
+.users-list-body {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* 用户行 */
+.user-row {
+  display: flex;
+  padding: 10px;
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.2s;
+}
+
+.user-row:last-child {
+  border-bottom: none;
+}
+
+.user-row:hover {
+  background-color: var(--hover-bg);
+}
+
+/* 用户列 */
+.user-column {
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+}
+
+.user-name {
+  flex: 2;
+  font-weight: 500;
+}
+
+.user-created {
+  flex: 2;
+  color: var(--text-secondary);
+  font-size: 0.9em;
+}
+
+.user-status {
+  flex: 1;
+}
+
+.user-actions {
+  flex: 2;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* 用户状态标签 */
+.user-status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8em;
+  font-weight: 500;
+}
+
+.status-active {
+  background-color: rgba(46, 204, 113, 0.2);
+  color: #27ae60;
+}
+
+.status-inactive {
+  background-color: rgba(231, 76, 60, 0.2);
+  color: #e74c3c;
+}
+
+.status-admin {
+  background-color: rgba(52, 152, 219, 0.2);
+  color: #2980b9;
+}
+
+/* 用户操作按钮 */
+.user-action-button {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-light);
+  transition: all 0.2s;
+}
+
+.user-action-button:hover {
+  background-color: var(--hover-bg);
+}
+
+.user-action-button.reset-password {
+  color: #3498db;
+  border-color: rgba(52, 152, 219, 0.3);
+}
+
+.user-action-button.reset-password:hover {
+  background-color: rgba(52, 152, 219, 0.1);
+}
+
+.user-action-button.disable-user {
+  color: #e74c3c;
+  border-color: rgba(231, 76, 60, 0.3);
+}
+
+.user-action-button.disable-user:hover {
+  background-color: rgba(231, 76, 60, 0.1);
+}
+
+/* 用户统计 */
+.user-stats {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px 0;
+}
+
+.stat-item {
+  flex: 1;
+  text-align: center;
+  padding: 0 8px;
+}
+
+.stat-label {
+  font-size: 0.9em;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 1.5em;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* 空状态 */
+.empty-state {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+/* 用户详情模态框 */
+.user-detail-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s;
+}
+
+.user-detail-modal.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.user-detail-container {
+  background-color: var(--bg-primary);
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.user-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.user-detail-content {
+  padding: 16px;
+}
+
+.user-detail-footer {
+  padding: 16px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .user-created {
+    display: none;
+  }
+  
+  .user-row {
+    flex-wrap: wrap;
+  }
+  
+  .user-name {
+    flex: 1;
+  }
+  
+  .user-status {
+    flex: 1;
+  }
+  
+  .user-actions {
+    flex-basis: 100%;
+    justify-content: flex-start;
+    margin-top: 8px;
+  }
+}
