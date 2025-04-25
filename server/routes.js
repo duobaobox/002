@@ -303,59 +303,7 @@ router.get("/share/status", requireAuth, async (req, res) => {
   }
 });
 
-// --- 邀请码管理路由 ---
-
-// 获取所有可用邀请码
-router.get("/invite-codes", async (req, res) => {
-  try {
-    const inviteCodes = await getAvailableInviteCodes();
-    res.json({ success: true, inviteCodes });
-  } catch (error) {
-    console.error("获取邀请码失败:", error);
-    res.status(500).json({
-      success: false,
-      message: "无法获取邀请码",
-    });
-  }
-});
-
-// 创建新邀请码
-router.post("/invite-codes", async (req, res) => {
-  try {
-    const userId = req.session.user.id;
-    const inviteCode = await createInviteCode(userId);
-    res.status(201).json({ success: true, inviteCode });
-  } catch (error) {
-    console.error("创建邀请码失败:", error);
-    res.status(500).json({
-      success: false,
-      message: "无法创建邀请码",
-    });
-  }
-});
-
-// 删除邀请码
-router.delete("/invite-codes/:code", async (req, res) => {
-  try {
-    const code = req.params.code;
-    const success = await deleteInviteCode(code);
-
-    if (success) {
-      res.json({ success: true, message: "邀请码已删除" });
-    } else {
-      res.status(404).json({
-        success: false,
-        message: "邀请码不存在或无法删除",
-      });
-    }
-  } catch (error) {
-    console.error("删除邀请码失败:", error);
-    res.status(500).json({
-      success: false,
-      message: "无法删除邀请码",
-    });
-  }
-});
+// 邀请码管理路由已在文件后面定义，包含更完整的权限检查
 
 // --- Note Routes ---
 
@@ -806,43 +754,7 @@ router.post("/generate-stream", requireAuth, async (req, res) => {
 // 存储活跃的 SSE 连接及其关联的提示
 const sseConnections = new Map();
 
-// 初始化 SSE 连接路由 - 优化版本
-router.get("/stream-connection/:sessionId", requireAuth, (req, res) => {
-  const sessionId = req.params.sessionId;
-
-  // 设置 SSE 头部
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
-  res.setHeader("X-Accel-Buffering", "no");
-
-  // 保持连接活跃 - 每30秒发送一次保活信号
-  const keepAliveInterval = setInterval(() => {
-    res.write(": keepalive\n\n");
-  }, 30000);
-
-  // 发送初始连接事件
-  res.write(`data: ${JSON.stringify({ event: "connected", sessionId })}\n\n`);
-
-  // 存储 SSE 响应对象和清理函数
-  sseConnections.set(sessionId, {
-    res,
-    inUse: false,
-    lastActivity: Date.now(),
-    cleanup: () => {
-      clearInterval(keepAliveInterval);
-      sseConnections.delete(sessionId);
-    },
-  });
-
-  // 客户端断开连接时清理
-  req.on("close", () => {
-    const connection = sseConnections.get(sessionId);
-    if (connection) {
-      connection.cleanup();
-    }
-  });
-});
+// 初始化 SSE 连接路由在下面定义了更完整的版本
 
 // --- 连接管理相关的变量和配置 ---
 // 会话管理配置
@@ -1101,13 +1013,7 @@ router.get("/test-ai-connection", async (req, res) => {
     });
   }
 });
-router.get("/health", (req, res) => {
-  res.json({
-    status: "ok",
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
-  });
-});
+// 健康检查路由已在文件顶部定义
 
 // --- 邀请码路由 ---
 
