@@ -89,7 +89,7 @@ export function initInviteCodeManager(container) {
     inviteCodeElement.dataset.code = inviteCode.code;
 
     // 格式化创建时间
-    const createdAt = new Date(inviteCode.created_at);
+    const createdAt = new Date(inviteCode.createdAt);
     const formattedDate = createdAt.toLocaleString("zh-CN", {
       year: "numeric",
       month: "2-digit",

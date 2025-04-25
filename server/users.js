@@ -170,20 +170,12 @@ router.post("/:id/reset-password", requireAdmin, async (req, res) => {
 });
 
 /**
- * 更新用户状态 (启用/禁用) (仅管理员)
- * POST /api/users/:id/status
+ * 删除用户 (仅管理员)
+ * DELETE /api/users/:id
  */
-router.post("/:id/status", requireAdmin, async (req, res) => {
+router.delete("/:id", requireAdmin, async (req, res) => {
   try {
     const userId = req.params.id;
-    const { action } = req.body;
-
-    if (action !== "enable" && action !== "disable") {
-      return res.status(400).json({
-        success: false,
-        message: "无效的操作，必须是 'enable' 或 'disable'",
-      });
-    }
 
     // 检查用户是否存在
     const user = await dbGet("SELECT username FROM users WHERE id = ?", [
@@ -197,57 +189,26 @@ router.post("/:id/status", requireAdmin, async (req, res) => {
       });
     }
 
-    // 不允许禁用管理员
+    // 不允许删除管理员
     if (user.username === "admin") {
       return res.status(403).json({
         success: false,
-        message: "不允许禁用管理员账户",
+        message: "不允许删除管理员账户",
       });
     }
 
-    // 检查 is_active 字段是否存在
-    let hasIsActiveField = false;
-    try {
-      const tableInfo = await dbAll("PRAGMA table_info(users)");
-      hasIsActiveField = tableInfo.some(
-        (column) => column.name === "is_active"
-      );
-    } catch (error) {
-      console.error("检查 is_active 字段失败:", error);
-    }
-
-    // 如果 is_active 字段不存在，先添加该字段
-    if (!hasIsActiveField) {
-      try {
-        await dbExec(
-          "ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1"
-        );
-        console.log("已添加 is_active 字段到 users 表");
-      } catch (error) {
-        console.error("添加 is_active 字段失败:", error);
-        return res.status(500).json({
-          success: false,
-          message: "更新用户状态失败：数据库结构不兼容",
-        });
-      }
-    }
-
-    // 更新用户状态
-    const isActive = action === "enable" ? 1 : 0;
-    await dbRun("UPDATE users SET is_active = ? WHERE id = ?", [
-      isActive,
-      userId,
-    ]);
+    // 删除用户
+    await dbRun("DELETE FROM users WHERE id = ?", [userId]);
 
     res.json({
       success: true,
-      message: action === "enable" ? "用户已启用" : "用户已禁用",
+      message: "用户已成功删除",
     });
   } catch (error) {
-    console.error("更新用户状态失败:", error);
+    console.error("删除用户失败:", error);
     res.status(500).json({
       success: false,
-      message: "更新用户状态失败",
+      message: "删除用户失败",
     });
   }
 });

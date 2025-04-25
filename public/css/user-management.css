@@ -193,12 +193,12 @@
   background-color: rgba(52, 152, 219, 0.1);
 }
 
-.user-action-button.disable-user {
+.user-action-button.delete-user {
   color: #e74c3c;
   border-color: rgba(231, 76, 60, 0.3);
 }
 
-.user-action-button.disable-user:hover {
+.user-action-button.delete-user:hover {
   background-color: rgba(231, 76, 60, 0.1);
 }
 
