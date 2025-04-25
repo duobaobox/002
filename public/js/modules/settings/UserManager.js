@@ -473,7 +473,7 @@ export default class UserManager {
       : "未知用户";
 
     // 使用自定义确认对话框
-    const confirmResult = this._showDeleteConfirmDialog(username);
+    const confirmResult = await this._showDeleteConfirmDialog(username);
 
     if (!confirmResult) return;
 
@@ -534,12 +534,19 @@ export default class UserManager {
           <h3>删除用户确认</h3>
         </div>
         <div class="delete-confirm-body">
-          <p>您确定要删除用户 <strong>${username}</strong> 吗？</p>
-          <p class="delete-confirm-warning">此操作不可恢复！用户将立即被强制登出系统。</p>
+          <p class="delete-confirm-title">您确定要删除用户 <strong>${username}</strong> 吗？</p>
+          <div class="delete-confirm-info">
+            <p class="delete-confirm-warning">⚠️ 此操作不可恢复！</p>
+            <ul class="delete-confirm-details">
+              <li>用户将立即被强制登出系统</li>
+              <li>用户的所有会话将被立即终止</li>
+              <li>用户将无法再次登录系统</li>
+            </ul>
+          </div>
         </div>
         <div class="delete-confirm-footer">
           <button class="delete-confirm-cancel">取消</button>
-          <button class="delete-confirm-delete">删除</button>
+          <button class="delete-confirm-delete">确认删除</button>
         </div>
       </div>
     `;
@@ -557,14 +564,27 @@ export default class UserManager {
         display: flex;
         justify-content: center;
         align-items: center;
-        z-index: 1000;
+        z-index: 10000; /* 确保显示在所有元素之上 */
       }
       .delete-confirm-content {
         background-color: white;
-        border-radius: 8px;
-        padding: 20px;
-        width: 400px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        border-radius: 12px;
+        padding: 25px;
+        width: 450px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        animation: modal-in 0.3s ease-out;
+        transform: scale(1);
+      }
+
+      @keyframes modal-in {
+        from {
+          opacity: 0;
+          transform: scale(0.9);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
       }
       .delete-confirm-header {
         display: flex;
@@ -580,11 +600,30 @@ export default class UserManager {
         color: #d32f2f;
       }
       .delete-confirm-body {
-        margin-bottom: 20px;
+        margin-bottom: 25px;
+      }
+      .delete-confirm-title {
+        font-size: 16px;
+        margin-bottom: 15px;
+      }
+      .delete-confirm-info {
+        background-color: #fff8f8;
+        border-radius: 8px;
+        padding: 15px;
+        border-left: 4px solid #d32f2f;
       }
       .delete-confirm-warning {
         color: #d32f2f;
         font-weight: bold;
+        margin-bottom: 10px;
+      }
+      .delete-confirm-details {
+        margin: 0;
+        padding-left: 20px;
+        color: #555;
+      }
+      .delete-confirm-details li {
+        margin-bottom: 5px;
       }
       .delete-confirm-footer {
         display: flex;
@@ -592,19 +631,33 @@ export default class UserManager {
         gap: 10px;
       }
       .delete-confirm-cancel {
-        padding: 8px 16px;
+        padding: 10px 20px;
         background-color: #f5f5f5;
         border: 1px solid #ddd;
-        border-radius: 4px;
+        border-radius: 6px;
         cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+      }
+      .delete-confirm-cancel:hover {
+        background-color: #e0e0e0;
       }
       .delete-confirm-delete {
-        padding: 8px 16px;
+        padding: 10px 20px;
         background-color: #d32f2f;
         color: white;
         border: none;
-        border-radius: 4px;
+        border-radius: 6px;
         cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 5px rgba(211, 47, 47, 0.3);
+      }
+      .delete-confirm-delete:hover {
+        background-color: #b71c1c;
+        box-shadow: 0 3px 8px rgba(211, 47, 47, 0.4);
       }
     `;
     document.head.appendChild(style);
