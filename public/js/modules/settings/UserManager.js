@@ -10,13 +10,31 @@ export default class UserManager {
   constructor(options = {}) {
     // 初始化属性
     this.users = [];
+    this.filteredUsers = []; // 过滤后的用户列表
     this.isAdmin = false;
     this.isLoading = false;
+
+    // 分页相关
+    this.pageSize = options.pageSize || 10;
+    this.currentPage = 1;
+    this.totalPages = 1;
+
+    // 排序相关
+    this.sortField = "username";
+    this.sortDirection = "asc";
 
     // DOM 元素
     this.usersList = document.getElementById("users-list");
     this.noUsersElement = document.getElementById("no-users");
     this.refreshButton = document.getElementById("refresh-users-list");
+    this.searchInput = document.getElementById("users-search");
+
+    // 分页元素
+    this.paginationStart = document.getElementById("pagination-start");
+    this.paginationEnd = document.getElementById("pagination-end");
+    this.paginationTotal = document.getElementById("pagination-total");
+    this.paginationPrev = document.getElementById("pagination-prev");
+    this.paginationNext = document.getElementById("pagination-next");
 
     // 统计元素
     this.totalUsersCount = document.getElementById("total-users-count");
@@ -52,7 +70,42 @@ export default class UserManager {
       });
     }
 
-    // 用户列表点击事件委托
+    // 搜索框输入事件
+    if (this.searchInput) {
+      this.searchInput.addEventListener("input", () => {
+        this._filterUsers();
+      });
+    }
+
+    // 表格排序事件 - 使用事件委托
+    const tableHeaders = document.querySelectorAll(".users-table th.sortable");
+    tableHeaders.forEach((header) => {
+      header.addEventListener("click", () => {
+        const field = header.dataset.sort;
+        this._sortUsers(field);
+      });
+    });
+
+    // 分页按钮事件
+    if (this.paginationPrev) {
+      this.paginationPrev.addEventListener("click", () => {
+        if (this.currentPage > 1) {
+          this.currentPage--;
+          this._renderPage();
+        }
+      });
+    }
+
+    if (this.paginationNext) {
+      this.paginationNext.addEventListener("click", () => {
+        if (this.currentPage < this.totalPages) {
+          this.currentPage++;
+          this._renderPage();
+        }
+      });
+    }
+
+    // 用户列表点击事件委托 - 处理操作按钮
     if (this.usersList) {
       this.usersList.addEventListener("click", (e) => {
         const target = e.target;
@@ -116,7 +169,8 @@ export default class UserManager {
 
       if (data.success) {
         this.users = data.users;
-        this._renderUsers();
+        this.filteredUsers = [...this.users]; // 初始化过滤后的用户列表
+        this._sortUsers(this.sortField); // 应用默认排序
         this._updateStats();
       } else {
         this._showError(data.message || "加载用户列表失败");
@@ -130,10 +184,147 @@ export default class UserManager {
   }
 
   /**
-   * 渲染用户列表
+   * 过滤用户列表
    * @private
    */
-  _renderUsers() {
+  _filterUsers() {
+    const searchTerm = this.searchInput.value.toLowerCase().trim();
+
+    if (searchTerm === "") {
+      // 如果搜索框为空，显示所有用户
+      this.filteredUsers = [...this.users];
+    } else {
+      // 否则过滤用户列表
+      this.filteredUsers = this.users.filter((user) =>
+        user.username.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    // 重置到第一页
+    this.currentPage = 1;
+
+    // 重新排序和渲染
+    this._sortUsers(this.sortField, true); // 保持当前排序，但不切换方向
+  }
+
+  /**
+   * 排序用户列表
+   * @param {string} field - 排序字段
+   * @param {boolean} keepDirection - 是否保持当前排序方向
+   * @private
+   */
+  _sortUsers(field, keepDirection = false) {
+    // 如果点击当前排序字段，则切换排序方向
+    if (field === this.sortField && !keepDirection) {
+      this.sortDirection = this.sortDirection === "asc" ? "desc" : "asc";
+    } else {
+      this.sortField = field;
+      if (!keepDirection) {
+        this.sortDirection = "asc"; // 默认升序
+      }
+    }
+
+    // 更新排序图标
+    this._updateSortIndicators();
+
+    // 排序用户列表
+    this.filteredUsers.sort((a, b) => {
+      let valueA, valueB;
+
+      // 根据字段获取值
+      switch (field) {
+        case "username":
+          valueA = a.username.toLowerCase();
+          valueB = b.username.toLowerCase();
+          break;
+        case "createdAt":
+          valueA = new Date(a.createdAt).getTime();
+          valueB = new Date(b.createdAt).getTime();
+          break;
+        case "status":
+          // 管理员 > 活跃 > 禁用
+          valueA = a.username === "admin" ? 2 : a.isActive ? 1 : 0;
+          valueB = b.username === "admin" ? 2 : b.isActive ? 1 : 0;
+          break;
+        default:
+          valueA = a[field];
+          valueB = b[field];
+      }
+
+      // 比较值
+      if (valueA < valueB) {
+        return this.sortDirection === "asc" ? -1 : 1;
+      }
+      if (valueA > valueB) {
+        return this.sortDirection === "asc" ? 1 : -1;
+      }
+      return 0;
+    });
+
+    // 渲染当前页
+    this._renderPage();
+  }
+
+  /**
+   * 更新排序指示器
+   * @private
+   */
+  _updateSortIndicators() {
+    // 移除所有排序类
+    document.querySelectorAll(".users-table th.sortable").forEach((th) => {
+      th.classList.remove("sort-asc", "sort-desc");
+    });
+
+    // 添加当前排序类
+    const currentHeader = document.querySelector(
+      `.users-table th[data-sort="${this.sortField}"]`
+    );
+    if (currentHeader) {
+      currentHeader.classList.add(
+        this.sortDirection === "asc" ? "sort-asc" : "sort-desc"
+      );
+    }
+  }
+
+  /**
+   * 渲染当前页
+   * @private
+   */
+  _renderPage() {
+    // 计算总页数
+    this.totalPages = Math.max(
+      1,
+      Math.ceil(this.filteredUsers.length / this.pageSize)
+    );
+
+    // 确保当前页在有效范围内
+    if (this.currentPage > this.totalPages) {
+      this.currentPage = this.totalPages;
+    }
+
+    // 计算当前页的起始和结束索引
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    const endIndex = Math.min(
+      startIndex + this.pageSize,
+      this.filteredUsers.length
+    );
+
+    // 获取当前页的用户
+    const currentPageUsers = this.filteredUsers.slice(startIndex, endIndex);
+
+    // 更新分页信息
+    this._updatePagination(startIndex, endIndex);
+
+    // 渲染用户列表
+    this._renderUsers(currentPageUsers);
+  }
+
+  /**
+   * 渲染用户列表
+   * @param {Array} users - 要渲染的用户列表，默认使用过滤后的用户
+   * @private
+   */
+  _renderUsers(users = null) {
     if (!this.usersList) return;
 
     // 清空列表
@@ -141,9 +332,13 @@ export default class UserManager {
       this.usersList.removeChild(this.usersList.firstChild);
     }
 
+    // 使用传入的用户列表或过滤后的用户列表
+    const usersToRender = users || this.filteredUsers;
+
     // 如果没有用户，显示空状态
-    if (this.users.length === 0) {
-      this.noUsersElement.style.display = "block";
+    if (usersToRender.length === 0) {
+      this.noUsersElement.style.display = "flex";
+      this.noUsersElement.innerHTML = "<p>没有找到匹配的用户</p>";
       return;
     }
 
@@ -151,24 +346,20 @@ export default class UserManager {
     this.noUsersElement.style.display = "none";
 
     // 渲染用户列表
-    this.users.forEach((user) => {
-      const userRow = document.createElement("div");
-      userRow.className = "user-row";
+    usersToRender.forEach((user) => {
+      const userRow = document.createElement("tr");
       userRow.dataset.userId = user.id;
 
-      // 用户名列
-      const nameColumn = document.createElement("div");
-      nameColumn.className = "user-column user-name";
-      nameColumn.textContent = user.username;
+      // 用户名单元格
+      const nameCell = document.createElement("td");
+      nameCell.textContent = user.username;
 
-      // 创建时间列
-      const createdColumn = document.createElement("div");
-      createdColumn.className = "user-column user-created";
-      createdColumn.textContent = this._formatDate(user.createdAt);
+      // 创建时间单元格
+      const createdCell = document.createElement("td");
+      createdCell.textContent = this._formatDate(user.createdAt);
 
-      // 状态列
-      const statusColumn = document.createElement("div");
-      statusColumn.className = "user-column user-status";
+      // 状态单元格
+      const statusCell = document.createElement("td");
 
       const statusBadge = document.createElement("span");
       statusBadge.className = "user-status-badge";
@@ -184,11 +375,11 @@ export default class UserManager {
         statusBadge.textContent = "禁用";
       }
 
-      statusColumn.appendChild(statusBadge);
+      statusCell.appendChild(statusBadge);
 
-      // 操作列
-      const actionsColumn = document.createElement("div");
-      actionsColumn.className = "user-column user-actions";
+      // 操作单元格
+      const actionsCell = document.createElement("td");
+      actionsCell.className = "user-actions";
 
       // 不允许对管理员执行操作
       if (user.username !== "admin") {
@@ -206,19 +397,49 @@ export default class UserManager {
         toggleButton.textContent = user.isActive ? "禁用" : "启用";
         toggleButton.dataset.userId = user.id;
 
-        actionsColumn.appendChild(resetButton);
-        actionsColumn.appendChild(toggleButton);
+        actionsCell.appendChild(resetButton);
+        actionsCell.appendChild(toggleButton);
       }
 
-      // 添加所有列到行
-      userRow.appendChild(nameColumn);
-      userRow.appendChild(createdColumn);
-      userRow.appendChild(statusColumn);
-      userRow.appendChild(actionsColumn);
+      // 添加所有单元格到行
+      userRow.appendChild(nameCell);
+      userRow.appendChild(createdCell);
+      userRow.appendChild(statusCell);
+      userRow.appendChild(actionsCell);
 
-      // 添加行到列表
+      // 添加行到表格
       this.usersList.appendChild(userRow);
     });
+  }
+
+  /**
+   * 更新分页信息
+   * @param {number} startIndex - 当前页起始索引
+   * @param {number} endIndex - 当前页结束索引
+   * @private
+   */
+  _updatePagination(startIndex, endIndex) {
+    // 更新分页信息
+    if (this.paginationStart && this.paginationEnd && this.paginationTotal) {
+      // 如果没有用户，显示0-0
+      if (this.filteredUsers.length === 0) {
+        this.paginationStart.textContent = "0";
+        this.paginationEnd.textContent = "0";
+      } else {
+        // 否则显示当前页范围
+        this.paginationStart.textContent = startIndex + 1;
+        this.paginationEnd.textContent = endIndex;
+      }
+
+      // 更新总数
+      this.paginationTotal.textContent = this.filteredUsers.length;
+    }
+
+    // 更新分页按钮状态
+    if (this.paginationPrev && this.paginationNext) {
+      this.paginationPrev.disabled = this.currentPage <= 1;
+      this.paginationNext.disabled = this.currentPage >= this.totalPages;
+    }
   }
 
   /**
@@ -318,8 +539,11 @@ export default class UserManager {
   _showLoading() {
     if (!this.noUsersElement) return;
 
-    this.noUsersElement.style.display = "block";
-    this.noUsersElement.innerHTML = "<p>正在加载用户列表...</p>";
+    this.noUsersElement.style.display = "flex";
+    this.noUsersElement.innerHTML = `
+      <div class="loading-spinner"></div>
+      <p>正在加载用户列表...</p>
+    `;
   }
 
   /**
@@ -330,8 +554,14 @@ export default class UserManager {
   _showError(message) {
     if (!this.noUsersElement) return;
 
-    this.noUsersElement.style.display = "block";
-    this.noUsersElement.innerHTML = `<p>${message}</p>`;
+    this.noUsersElement.style.display = "flex";
+    this.noUsersElement.innerHTML = `
+      <div class="error-icon">❌</div>
+      <p>${message}</p>
+      <button class="retry-button" onclick="document.getElementById('refresh-users-list').click()">
+        重试
+      </button>
+    `;
   }
 
   /**
