@@ -21,7 +21,8 @@
     "sqlite3": "5.1.7",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.0",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "ws": "^8.18.1"
   },
   "devDependencies": {
     "eslint": "^8.55.0",
