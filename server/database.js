@@ -494,39 +494,49 @@ async function importNotes(notesToImport) {
         await dbExec("DELETE FROM notes");
         console.log("[DB importNotes] Existing notes deleted."); // Log delete end
 
-        const sql = `
-          INSERT INTO notes (text, x, y, title, colorClass, zIndex, width, height, createdAt, updatedAt)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-        console.log("[DB importNotes] Preparing INSERT statement..."); // Log prepare start
-        const stmt = db.prepare(sql);
-        console.log("[DB importNotes] INSERT statement prepared."); // Log prepare end
-
+        // 批量插入的批次大小
+        const BATCH_SIZE = 50;
         let importedCount = 0;
-        for (const [index, note] of notesToImport.entries()) {
-          // Add index for logging
-          // console.log(`[DB importNotes] Processing note ${index + 1}/${notesToImport.length}:`, note); // Log each note (can be verbose)
-          const text = note.text || "";
-          const x = note.x || 50;
-          const y = note.y || 50;
-          const title = note.title || "";
-          const colorClass = note.colorClass || "note-yellow";
-          const zIndex = note.zIndex || 1;
-          const width = note.width; // Keep as potentially undefined
-          const height = note.height; // Keep as potentially undefined
-          // Ensure dates are valid ISO strings or null/default
-          const createdAt =
-            note.createdAt && !isNaN(new Date(note.createdAt))
-              ? new Date(note.createdAt).toISOString()
-              : new Date().toISOString();
-          const updatedAt =
-            note.updatedAt && !isNaN(new Date(note.updatedAt))
-              ? new Date(note.updatedAt).toISOString()
-              : new Date().toISOString();
 
-          // Use stmt.run with a promise wrapper
-          await new Promise((res, rej) => {
-            stmt.run(
+        // 准备批量插入的SQL语句
+        console.log("[DB importNotes] Preparing batch INSERT statements..."); // Log prepare start
+
+        // 处理所有便签
+        for (let i = 0; i < notesToImport.length; i += BATCH_SIZE) {
+          // 获取当前批次的便签
+          const batch = notesToImport.slice(i, i + BATCH_SIZE);
+
+          if (batch.length === 0) continue;
+
+          // 构建批量插入的SQL语句
+          let placeholders = [];
+          let values = [];
+
+          for (const note of batch) {
+            placeholders.push("(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+            // 处理每个便签的字段
+            const text = note.text || "";
+            const x = note.x || 50;
+            const y = note.y || 50;
+            const title = note.title || "";
+            const colorClass = note.colorClass || "note-yellow";
+            const zIndex = note.zIndex || 1;
+            const width = note.width; // Keep as potentially undefined
+            const height = note.height; // Keep as potentially undefined
+
+            // Ensure dates are valid ISO strings or null/default
+            const createdAt =
+              note.createdAt && !isNaN(new Date(note.createdAt))
+                ? new Date(note.createdAt).toISOString()
+                : new Date().toISOString();
+            const updatedAt =
+              note.updatedAt && !isNaN(new Date(note.updatedAt))
+                ? new Date(note.updatedAt).toISOString()
+                : new Date().toISOString();
+
+            // 添加到值数组
+            values.push(
               text,
               x,
               y,
@@ -536,33 +546,41 @@ async function importNotes(notesToImport) {
               width,
               height,
               createdAt,
-              updatedAt,
-              function (err) {
-                // Use standard function for 'this' context if needed, though not used here
-                if (err) {
-                  console.error(
-                    `[DB importNotes] Error inserting note ${index + 1}:`,
-                    err
-                  ); // Log insert error
-                  rej(err);
-                } else {
-                  // console.log(`[DB importNotes] Note ${index + 1} inserted successfully.`); // Log insert success (verbose)
-                  res();
-                }
-              }
+              updatedAt
             );
+          }
+
+          // 构建完整的SQL语句
+          const sql = `
+            INSERT INTO notes (text, x, y, title, colorClass, zIndex, width, height, createdAt, updatedAt)
+            VALUES ${placeholders.join(", ")}
+          `;
+
+          // 执行批量插入
+          console.log(
+            `[DB importNotes] Inserting batch of ${batch.length} notes (${
+              i + 1
+            }-${i + batch.length}/${notesToImport.length})...`
+          );
+          await new Promise((res, rej) => {
+            db.run(sql, values, function (err) {
+              if (err) {
+                console.error(`[DB importNotes] Error inserting batch:`, err);
+                rej(err);
+              } else {
+                importedCount += batch.length;
+                console.log(
+                  `[DB importNotes] Batch inserted successfully. Total: ${importedCount}/${notesToImport.length}`
+                );
+                res();
+              }
+            });
           });
-          importedCount++;
         }
+
         console.log(
           `[DB importNotes] Finished inserting ${importedCount} notes.`
         ); // Log loop end
-
-        console.log("[DB importNotes] Finalizing statement..."); // Log finalize start
-        await new Promise((res, rej) =>
-          stmt.finalize((err) => (err ? rej(err) : res()))
-        );
-        console.log("[DB importNotes] Statement finalized."); // Log finalize end
 
         console.log("[DB importNotes] Committing transaction..."); // Log commit start
         await dbExec("COMMIT");
