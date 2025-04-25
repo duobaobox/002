@@ -468,36 +468,67 @@
                                     <div class="settings-card-header">
                                         <h4>用户列表</h4>
                                     </div>
-                                    <div class="users-list-container">
-                                        <div class="users-list-header">
-                                            <div class="user-column user-name">用户名</div>
-                                            <div class="user-column user-created">创建时间</div>
-                                            <div class="user-column user-status">状态</div>
-                                            <div class="user-column user-actions">操作</div>
-                                        </div>
-                                        <div class="users-list-body" id="users-list">
-                                            <!-- 用户列表将通过JavaScript动态添加 -->
-                                            <div class="empty-state" id="no-users">
-                                                <p>正在加载用户列表...</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
 
-                                <!-- 用户操作卡片 -->
-                                <div class="settings-card">
-                                    <div class="settings-card-header">
-                                        <h4>用户操作</h4>
-                                    </div>
-                                    <div class="settings-item">
-                                        <div class="settings-label">
-                                            <label>刷新用户列表</label>
-                                            <span class="settings-description">手动刷新用户列表以查看最新数据</span>
+                                    <!-- 用户列表工具栏 -->
+                                    <div class="users-toolbar">
+                                        <div class="users-search-container">
+                                            <input type="text" id="users-search" class="users-search"
+                                                placeholder="搜索用户...">
+                                            <i class="search-icon">🔍</i>
                                         </div>
-                                        <div class="settings-control">
-                                            <button id="refresh-users-list" class="settings-button secondary-button">
-                                                <i class="icon-refresh">🔄</i> 刷新列表
+                                        <div class="users-actions">
+                                            <button id="refresh-users-list"
+                                                class="settings-button secondary-button user-toolbar-button">
+                                                <i class="icon-refresh">🔄</i> 刷新
                                             </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- 用户表格容器 -->
+                                    <div class="users-table-container">
+                                        <table class="users-table">
+                                            <thead>
+                                                <tr>
+                                                    <th class="sortable" data-sort="username">
+                                                        <div class="th-content">
+                                                            <span>用户名</span>
+                                                            <i class="sort-icon"></i>
+                                                        </div>
+                                                    </th>
+                                                    <th class="sortable" data-sort="createdAt">
+                                                        <div class="th-content">
+                                                            <span>创建时间</span>
+                                                            <i class="sort-icon"></i>
+                                                        </div>
+                                                    </th>
+                                                    <th class="sortable" data-sort="status">
+                                                        <div class="th-content">
+                                                            <span>状态</span>
+                                                            <i class="sort-icon"></i>
+                                                        </div>
+                                                    </th>
+                                                    <th>操作</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="users-list">
+                                                <!-- 用户列表将通过JavaScript动态添加 -->
+                                            </tbody>
+                                        </table>
+
+                                        <!-- 空状态显示 -->
+                                        <div class="empty-state" id="no-users">
+                                            <p>正在加载用户列表...</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- 分页控制 -->
+                                    <div class="users-pagination">
+                                        <div class="pagination-info">显示 <span id="pagination-start">1</span>-<span
+                                                id="pagination-end">10</span> 共 <span id="pagination-total">0</span> 条
+                                        </div>
+                                        <div class="pagination-controls">
+                                            <button id="pagination-prev" class="pagination-button" disabled>上一页</button>
+                                            <button id="pagination-next" class="pagination-button" disabled>下一页</button>
                                         </div>
                                     </div>
                                 </div>
