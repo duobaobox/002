@@ -767,6 +767,11 @@ const connectionConfig = {
 
 // 定期清理过期连接
 const connectionCleanupTimer = setInterval(() => {
+  // 只在有连接时才执行清理，避免不必要的空循环
+  if (sseConnections.size === 0) {
+    return;
+  }
+
   const now = Date.now();
   let expiredCount = 0;
 
