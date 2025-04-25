@@ -480,7 +480,7 @@ export class Canvas {
     );
   }
 
-  // 移动画布的方法 - 优化直接性能
+  // 移动画布的方法 - 使用 requestAnimationFrame 优化性能
   moveCanvas(clientX, clientY) {
     this.currentPoint = { x: clientX, y: clientY };
 
@@ -492,36 +492,44 @@ export class Canvas {
     this.offset.x += deltaX;
     this.offset.y += deltaY;
 
-    // 直接应用变换，不使用requestAnimationFrame
-    // 应用变换：先平移后缩放
-    this.noteContainer.style.transform = `translate(${this.offset.x}px, ${this.offset.y}px) scale(${this.scale})`;
-
-    // 更新网格背景 - 使用与便签容器相同的变换，但只保留平移部分
-    if (this.gridElement) {
-      // 直接使用偏移量，但对网格图案应用循环效果
-      const gridSize = 30; // 更新为跟新的CSS网格大小一致
-      const offsetX = this.offset.x % gridSize;
-      const offsetY = this.offset.y % gridSize;
-
-      // 为网格应用平移变换
-      this.gridElement.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
-    }
-
     // 更新起始点为当前点
     this.startPoint = { x: this.currentPoint.x, y: this.currentPoint.y };
 
-    // 保存当前画布状态到本地存储（使用节流函数，避免频繁保存）
-    this.throttledSaveCanvasState();
+    // 如果已经有一个动画帧请求，不再创建新的
+    if (!this._animationFrameId) {
+      // 使用 requestAnimationFrame 优化渲染性能
+      this._animationFrameId = requestAnimationFrame(() => {
+        this._animationFrameId = null;
 
-    // 触发变换更新事件，但不调用完整的applyTransform以提高性能
-    const event = new CustomEvent("canvas-transform-updated", {
-      detail: {
-        scale: this.scale,
-        offsetX: this.offset.x,
-        offsetY: this.offset.y,
-      },
-    });
-    document.dispatchEvent(event);
+        // 应用变换：先平移后缩放
+        this.noteContainer.style.transform = `translate(${this.offset.x}px, ${this.offset.y}px) scale(${this.scale})`;
+
+        // 更新网格背景 - 使用与便签容器相同的变换，但只保留平移部分
+        if (this.gridElement) {
+          // 直接使用偏移量，但对网格图案应用循环效果
+          const gridSize = 30; // 更新为跟新的CSS网格大小一致
+          const offsetX = this.offset.x % gridSize;
+          const offsetY = this.offset.y % gridSize;
+
+          // 为网格应用平移变换
+          this.gridElement.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+        }
+
+        // 触发变换更新事件，但不调用完整的applyTransform以提高性能
+        const event = new CustomEvent("canvas-transform-updated", {
+          detail: {
+            scale: this.scale,
+            offsetX: this.offset.x,
+            offsetY: this.offset.y,
+          },
+        });
+        document.dispatchEvent(event);
+      });
+    }
+
+    // 使用节流函数保存画布状态，避免频繁保存
+    // 这个操作不需要在动画帧中执行，可以独立节流
+    this.throttledSaveCanvasState();
   }
 
   /**
