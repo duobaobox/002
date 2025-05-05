@@ -23,6 +23,12 @@ export function toggleEditPreviewMode(element, editMode, text) {
     textarea.style.display = "block";
     preview.style.display = "none";
     updateScrollbar(textarea, scrollbarThumb);
+
+    // 在编辑模式下，始终确保提示隐藏
+    if (editHint) {
+      editHint.style.opacity = "0";
+      editHint.style.pointerEvents = "none";
+    }
   } else {
     textarea.style.display = "none";
     preview.style.display = "block";
@@ -44,15 +50,15 @@ export function updateEditHintVisibility(element, editMode) {
   const editHint = element.querySelector(".edit-hint");
   if (!editHint) return;
 
-  // 始终隐藏编辑提示，只在鼠标悬停时显示
+  // 在编辑模式下始终隐藏提示
   if (editMode) {
     editHint.style.opacity = "0";
     editHint.style.pointerEvents = "none";
   } else {
-    // 默认也隐藏，只在mouseenter事件中显示
+    // 在预览模式下，默认隐藏，只在mouseenter事件中显示
+    // 这里不设置为可见，由mouseenter事件控制
     editHint.style.opacity = "0";
     editHint.style.pointerEvents = "none";
-    // 注意：不在这里设置为可见，而是由mouseenter事件控制
   }
 }
 

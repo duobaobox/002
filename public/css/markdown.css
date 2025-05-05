@@ -1,13 +1,13 @@
 /**
  * Markdown渲染样式表 - markdown.css
- * 
+ *
  * 本文件定义了Markdown内容渲染的所有样式，包括：
  * 1. 预览容器：整体布局、滚动和交互行为
  * 2. 文本元素：标题、段落、列表等基本Markdown元素样式
  * 3. 代码块：行内代码和代码块的高亮样式
  * 4. 特殊元素：引用、表格、链接等特殊Markdown元素样式
  * 5. 编辑提示：双击编辑等用户引导元素
- * 
+ *
  * 这些样式确保了Markdown内容的美观展示和良好的阅读体验，
  * 同时提供了编辑模式和预览模式的无缝切换。
  */
@@ -51,20 +51,19 @@
   background-color: rgba(255, 255, 255, 0.7) !important;
   padding: 3px 8px !important;
   border-radius: 4px !important;
-  opacity: 0;
+  opacity: 0; /* 默认隐藏，由JavaScript控制显示 */
   transition: opacity 0.3s, background-color 0.2s !important;
-  pointer-events: none !important; /* 不干扰其他交互 */
+  pointer-events: none !important; /* 默认不干扰其他交互，由JavaScript控制 */
   z-index: 100 !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
   user-select: none !important;
   border: 1px solid rgba(0, 0, 0, 0.05) !important;
 }
 
-/* 修改悬停规则，只在非编辑模式下显示提示 */
-.note:hover .edit-hint {
-  /* 以下设置作为默认行为，也可以被JavaScript覆盖 */
-  opacity: 0.9 !important;
-}
+/* 修改悬停规则，只在非编辑模式下显示提示
+ * 注意：实际显示逻辑由JavaScript控制，这里不再使用!important强制覆盖
+ */
+/* 移除这个规则，完全由JavaScript控制提示的显示和隐藏 */
 
 /* Markdown 格式化样式 */
 .markdown-preview h1,

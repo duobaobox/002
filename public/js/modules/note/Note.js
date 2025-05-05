@@ -299,6 +299,9 @@ export class Note {
     // 为预览区域添加双击事件，切换回编辑模式
     markdownPreview.addEventListener("dblclick", () => {
       this.editMode = true;
+      // 立即隐藏编辑提示
+      editHint.style.opacity = "0";
+      editHint.style.pointerEvents = "none";
       this.toggleEditPreviewMode();
       setTimeout(() => textarea.focus(), 10); // 聚焦到文本区域
     });
@@ -308,6 +311,9 @@ export class Note {
       if (!this.editMode) {
         e.stopPropagation();
         this.editMode = true;
+        // 立即隐藏编辑提示
+        editHint.style.opacity = "0";
+        editHint.style.pointerEvents = "none";
         this.toggleEditPreviewMode();
         setTimeout(() => textarea.focus(), 10);
       }
@@ -352,6 +358,15 @@ export class Note {
     // 添加焦点事件，聚焦时切换到编辑模式
     textarea.addEventListener("focus", () => {
       this.editMode = true;
+
+      // 确保在获得焦点时隐藏编辑提示
+      if (this.element) {
+        const editHint = this.element.querySelector(".edit-hint");
+        if (editHint) {
+          editHint.style.opacity = "0";
+          editHint.style.pointerEvents = "none";
+        }
+      }
     });
   }
 
@@ -392,6 +407,13 @@ export class Note {
           editHint.style.opacity = "1";
           editHint.style.pointerEvents = "auto";
         }
+      } else {
+        // 在编辑模式下确保提示隐藏
+        const editHint = this.element.querySelector(".edit-hint");
+        if (editHint) {
+          editHint.style.opacity = "0";
+          editHint.style.pointerEvents = "none";
+        }
       }
     });
 
@@ -400,6 +422,7 @@ export class Note {
       const editHint = this.element.querySelector(".edit-hint");
       if (editHint) {
         editHint.style.opacity = "0";
+        editHint.style.pointerEvents = "none";
       }
     });
   }
