@@ -35,3 +35,4 @@ data/api_config.json
 # 忽略IDE和编辑器文件
 *.sublime-project
 *.sublime-workspace
+data/app_data.db
