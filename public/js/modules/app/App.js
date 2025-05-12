@@ -2067,11 +2067,48 @@ export class App {
       });
 
       // 添加 URL 变化事件，当 URL 变化时自动更新其他历史记录
-      baseUrlInput.addEventListener("change", () => {
-        // 当 URL 变化时，清空 API 密钥和模型输入框
-        // 这样可以避免用户选择不匹配的组合
+      baseUrlInput.addEventListener("change", async () => {
+        const newBaseUrl = baseUrlInput.value.trim();
+        // 先清空 API 密钥和模型输入框
         apiKeyInput.value = "";
         modelInput.value = "";
+
+        // 如果URL不为空，尝试获取匹配的API密钥和模型
+        if (newBaseUrl) {
+          try {
+            // 获取与此URL匹配的API密钥
+            const keyResponse = await fetch(
+              `/api/api-history/key?baseUrl=${encodeURIComponent(newBaseUrl)}`
+            );
+            const keyData = await keyResponse.json();
+
+            // 获取与此URL匹配的模型
+            const modelResponse = await fetch(
+              `/api/api-history/model?baseUrl=${encodeURIComponent(newBaseUrl)}`
+            );
+            const modelData = await modelResponse.json();
+
+            // 如果找到匹配的API密钥，填充第一个
+            if (
+              keyData.success &&
+              keyData.history &&
+              keyData.history.length > 0
+            ) {
+              apiKeyInput.value = keyData.history[0].apiKey;
+            }
+
+            // 如果找到匹配的模型，填充第一个
+            if (
+              modelData.success &&
+              modelData.history &&
+              modelData.history.length > 0
+            ) {
+              modelInput.value = modelData.history[0].modelName;
+            }
+          } catch (error) {
+            console.error("获取匹配的API密钥和模型失败:", error);
+          }
+        }
       });
     }
 
@@ -2251,7 +2288,7 @@ export class App {
       `;
 
       // 添加点击事件，选择此历史记录
-      historyItem.addEventListener("click", (e) => {
+      historyItem.addEventListener("click", async (e) => {
         if (!e.target.classList.contains("history-item-delete")) {
           if (inputElement) {
             inputElement.value = item[valueKey];
@@ -2262,7 +2299,60 @@ export class App {
                 inputElement.type = "password";
               }, 500);
             }
+
+            // 如果是选择了URL，尝试自动填充匹配的API密钥和模型
+            if (valueKey === "baseUrl") {
+              const selectedBaseUrl = item[valueKey];
+              // 清空现有的API密钥和模型
+              const apiKeyInput = document.getElementById("ai-api-key");
+              const modelInput = document.getElementById("ai-model");
+              if (apiKeyInput) apiKeyInput.value = "";
+              if (modelInput) modelInput.value = "";
+
+              try {
+                // 获取与此URL匹配的API密钥
+                const keyResponse = await fetch(
+                  `/api/api-history/key?baseUrl=${encodeURIComponent(
+                    selectedBaseUrl
+                  )}`
+                );
+                const keyData = await keyResponse.json();
+
+                // 获取与此URL匹配的模型
+                const modelResponse = await fetch(
+                  `/api/api-history/model?baseUrl=${encodeURIComponent(
+                    selectedBaseUrl
+                  )}`
+                );
+                const modelData = await modelResponse.json();
+
+                // 如果找到匹配的API密钥，填充第一个
+                if (
+                  keyData.success &&
+                  keyData.history &&
+                  keyData.history.length > 0
+                ) {
+                  apiKeyInput.value = keyData.history[0].apiKey;
+                }
+
+                // 如果找到匹配的模型，填充第一个
+                if (
+                  modelData.success &&
+                  modelData.history &&
+                  modelData.history.length > 0
+                ) {
+                  modelInput.value = modelData.history[0].modelName;
+                }
+              } catch (error) {
+                console.error("获取匹配的API密钥和模型失败:", error);
+              }
+            }
+
             inputElement.dispatchEvent(new Event("input"));
+            // 对于URL变更，还需要触发change事件
+            if (valueKey === "baseUrl") {
+              inputElement.dispatchEvent(new Event("change"));
+            }
           }
           dropdownElement.classList.remove("active");
         }
