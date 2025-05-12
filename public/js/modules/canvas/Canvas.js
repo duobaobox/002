@@ -346,9 +346,75 @@ export class Canvas {
     }
   }
 
-  // 重置缩放
+  // 重置缩放 - 以当前屏幕中心为基准
   resetZoom() {
+    // 获取画布容器的尺寸和位置
+    const canvasRect = this.canvas.getBoundingClientRect();
+    const canvasCenterX = canvasRect.width / 2;
+    const canvasCenterY = canvasRect.height / 2;
+
+    // 保存旧的缩放比例，用于计算偏移量调整
+    const oldScale = this.scale;
+
+    // 设置新的缩放比例为1.0（100%）
     this.scale = 1.0;
+
+    // 计算缩放比例变化
+    const scaleFactor = this.scale / oldScale;
+
+    // 调整偏移量，以保持屏幕中心点不变
+    this.offset.x =
+      canvasCenterX - (canvasCenterX - this.offset.x) * scaleFactor;
+    this.offset.y =
+      canvasCenterY - (canvasCenterY - this.offset.y) * scaleFactor;
+
+    // 应用变换
+    this.applyTransform();
+
+    // 检查是否有便签，如果没有便签则不需要进一步处理
+    const notes = document.querySelectorAll(".note");
+    if (notes.length === 0) return;
+
+    // 计算所有便签的边界框，以确定它们的整体范围
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
+
+    notes.forEach((note) => {
+      const x = parseInt(note.style.left) || 0;
+      const y = parseInt(note.style.top) || 0;
+      const width = note.offsetWidth;
+      const height = note.offsetHeight;
+
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x + width);
+      maxY = Math.max(maxY, y + height);
+    });
+
+    // 如果找不到有效的便签边界，则退出
+    if (
+      minX === Infinity ||
+      minY === Infinity ||
+      maxX === -Infinity ||
+      maxY === -Infinity
+    )
+      return;
+
+    // 计算便签的中心点
+    const notesCenterX = (minX + maxX) / 2;
+    const notesCenterY = (minY + maxY) / 2;
+
+    // 计算需要的偏移量，使便签中心与屏幕中心对齐
+    const offsetX = canvasCenterX - notesCenterX;
+    const offsetY = canvasCenterY - notesCenterY;
+
+    // 应用新的偏移量
+    this.offset.x = offsetX;
+    this.offset.y = offsetY;
+
+    // 再次应用变换
     this.applyTransform();
   }
 

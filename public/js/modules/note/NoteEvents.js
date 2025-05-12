@@ -180,6 +180,8 @@ export function setupResizeEvents(note, resizeHandle, context) {
     e.stopPropagation();
 
     context.isResizing = true;
+    // 添加调整大小时的活跃状态类
+    note.classList.add("resizing");
     context.resizeStartWidth = note.offsetWidth;
     context.resizeStartHeight = note.offsetHeight;
 
@@ -246,6 +248,8 @@ export function setupResizeEvents(note, resizeHandle, context) {
     if (context.isResizing) {
       // 便签调整大小完成后触发事件，通知服务器更新数据
       dispatchCustomEvent("note-resized", { id: context.id });
+      // 移除调整大小时的活跃状态类
+      note.classList.remove("resizing");
     }
     context.isResizing = false;
   });
