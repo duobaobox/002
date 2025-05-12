@@ -274,26 +274,49 @@ export class NodeConnectionManager {
 
     const slotRect = slot.getBoundingClientRect();
 
-    // 计算连接线路径 - 从右下角节点按钮中心到插槽顶部中心
+    // 计算连接线路径 - 从左下角节点按钮中心到插槽顶部中心
     const startX = nodeRect.left + nodeRect.width / 2;
     const startY = nodeRect.top + nodeRect.height / 2;
     const endX = slotRect.left + slotRect.width / 2;
-    const endY = slotRect.top;
+    const endY = slotRect.top + 2; // 稍微偏移，使线条连接到插槽边框上
 
     // 创建贝塞尔曲线路径 - 调整控制点使曲线更自然
     const dx = endX - startX;
     const dy = endY - startY;
 
-    // 调整控制点，使曲线从左下角自然延伸
-    const controlX1 = startX;
-    const controlY1 = startY + dy / 3;
-    const controlX2 = endX;
-    const controlY2 = endY - Math.abs(dy) / 3;
+    // 计算控制点 - 使用更自然的曲线
+    // 对于向上的连接，使用更平滑的曲线
+    let controlX1, controlY1, controlX2, controlY2;
 
+    if (dy < 0) {
+      // 向上连接（便签在插槽下方）
+      // 第一个控制点：从便签节点垂直向上
+      controlX1 = startX;
+      controlY1 = startY + dy * 0.4; // 向上40%距离
+
+      // 第二个控制点：从插槽垂直向下
+      controlX2 = endX;
+      controlY2 = endY - dy * 0.2; // 向下20%距离
+    } else {
+      // 向下连接（便签在插槽上方）
+      // 使用更平缓的曲线
+      controlX1 = startX + dx * 0.2;
+      controlY1 = startY + dy * 0.4;
+      controlX2 = endX - dx * 0.2;
+      controlY2 = endY - dy * 0.4;
+    }
+
+    // 生成路径数据
     const pathData = `M ${startX} ${startY} C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${endX} ${endY}`;
 
     // 更新路径
     path.setAttribute("d", pathData);
+
+    // 添加数据属性，用于交互
+    path.dataset.startX = startX;
+    path.dataset.startY = startY;
+    path.dataset.endX = endX;
+    path.dataset.endY = endY;
   }
 
   /**
