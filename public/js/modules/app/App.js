@@ -13,6 +13,8 @@ import {
 
 // 导入智能连接管理器
 import connectionManager from "../utils/ConnectionManager.js";
+// 导入节点连接管理器
+import nodeConnectionManager from "../utils/NodeConnectionManager.js";
 
 /**
  * App 主控制类
@@ -345,8 +347,15 @@ export class App {
           }
         });
       } else {
-        // 否则开始生成
-        this.generateAiNote();
+        // 检查是否有连接的便签
+        const connectedNotes = nodeConnectionManager.getConnectedNotes();
+        if (connectedNotes.length > 0) {
+          // 如果有连接的便签，使用连接便签生成
+          this.generateFromConnectedNotes();
+        } else {
+          // 否则使用普通生成
+          this.generateAiNote();
+        }
       }
     });
 
@@ -373,6 +382,28 @@ export class App {
     // 监听便签层级变化事件
     document.addEventListener("note-zindex-changed", (e) => {
       this.updateNoteOnServer(e.detail.id);
+    });
+
+    // 监听便签选中事件
+    document.addEventListener("note-selected", (e) => {
+      console.log("便签选中:", e.detail.note.id);
+    });
+
+    // 监听便签取消选中事件
+    document.addEventListener("note-deselected", () => {
+      console.log("便签取消选中");
+    });
+
+    // 监听便签连接事件
+    document.addEventListener("note-connected", (e) => {
+      console.log("便签已连接:", e.detail.note.id);
+      this.updatePromptPlaceholder();
+    });
+
+    // 监听便签断开连接事件
+    document.addEventListener("note-disconnected", (e) => {
+      console.log("便签已断开连接:", e.detail.note.id);
+      this.updatePromptPlaceholder();
     });
 
     // 取消AI生成事件监听器已移除，现在直接通过AI生成按钮处理取消
@@ -659,6 +690,119 @@ export class App {
     } else {
       addButton.style.display = "block";
       aiButton.style.display = "none";
+    }
+  }
+
+  // 更新提示框占位文本
+  updatePromptPlaceholder() {
+    const promptElement = document.getElementById("ai-prompt");
+    const connectedNotes = nodeConnectionManager.getConnectedNotes();
+
+    if (connectedNotes.length > 0) {
+      promptElement.placeholder = `基于 ${connectedNotes.length} 个便签生成内容...`;
+    } else {
+      promptElement.placeholder = "输入提示或直接添加便签...";
+    }
+  }
+
+  // 基于连接的便签生成新便签
+  async generateFromConnectedNotes() {
+    const promptElement = document.getElementById("ai-prompt");
+    const userPrompt = promptElement.value.trim();
+    const connectedNotes = nodeConnectionManager.getConnectedNotes();
+
+    if (connectedNotes.length === 0) {
+      this.showMessage("没有连接的便签", "warning");
+      return;
+    }
+
+    // 获取生成按钮
+    const generateButton = document.getElementById("ai-generate");
+
+    // 禁用按钮和输入框，防止重复提交
+    generateButton.disabled = true;
+    generateButton.classList.add("generating");
+    generateButton.title = "点击取消生成";
+    promptElement.disabled = true;
+
+    // 更新连接状态为生成中
+    if (this.updateConnectionStatus) {
+      this.updateConnectionStatus("generating");
+    }
+
+    try {
+      // 创建临时便签
+      const { noteElement, noteId } = createEmptyAiNote();
+      const noteContainer = document.getElementById("note-container");
+      noteContainer.appendChild(noteElement);
+
+      // 构建提示词
+      let combinedPrompt = "基于以下内容";
+      if (userPrompt) {
+        combinedPrompt += `，按照要求"${userPrompt}"`;
+      }
+      combinedPrompt += "生成新的内容：\n\n";
+
+      // 添加连接便签的内容
+      connectedNotes.forEach((note, index) => {
+        combinedPrompt += `【便签 ${index + 1}：${note.title}】\n${
+          note.text
+        }\n\n`;
+      });
+
+      // 生成内容
+      const fullText = await this.generateWithSSE(combinedPrompt, noteElement);
+
+      // 获取临时便签的位置和大小
+      const currentX = parseInt(noteElement.style.left) || 100;
+      const currentY = parseInt(noteElement.style.top) || 100;
+      const noteWidth = noteElement.offsetWidth;
+      const noteHeight = noteElement.offsetHeight;
+
+      // 设置标题
+      let finalTitle = userPrompt;
+      if (!finalTitle || finalTitle.length === 0) {
+        finalTitle = "基于连接便签生成";
+      }
+      if (finalTitle.length > 20) {
+        finalTitle = finalTitle.substring(0, 20) + "...";
+      }
+
+      // 获取颜色类
+      const colorClass = noteElement.classList[1] || "note-yellow";
+
+      // 保存到服务器
+      await this.saveStreamingNoteToServer(
+        noteElement,
+        fullText,
+        currentX,
+        currentY,
+        finalTitle,
+        colorClass,
+        noteWidth,
+        noteHeight
+      );
+
+      // 清空输入框
+      promptElement.value = "";
+      this.updateButtonVisibility();
+
+      // 显示成功消息
+      this.showMessage("基于连接便签生成成功", "success");
+    } catch (error) {
+      console.error("基于连接便签生成失败:", error);
+      this.showMessage("生成失败: " + error.message, "error");
+    } finally {
+      // 恢复按钮和输入框状态
+      generateButton.disabled = false;
+      generateButton.classList.remove("generating");
+      generateButton.title = "AI生成便签";
+      promptElement.disabled = false;
+
+      // 更新连接状态
+      if (this.updateConnectionStatus) {
+        this.updateConnectionStatus("connected");
+      }
     }
   }
 

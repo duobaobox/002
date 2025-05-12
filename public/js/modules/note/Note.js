@@ -15,6 +15,7 @@ import {
   updateEditHintVisibility,
   editTitle,
 } from "./NoteUI.js";
+import nodeConnectionManager from "../utils/NodeConnectionManager.js";
 
 /**
  * 便签类 - 负责创建和管理便签实例
@@ -51,6 +52,10 @@ export class Note {
     this.editMode = text.trim() === "";
     this.updateTimer = null; // 用于防抖渲染
     this.resizeTimer = null; // 用于resize操作的防抖
+
+    // 节点连接相关属性
+    this.isSelected = false; // 是否被选中
+    this.isConnected = false; // 是否已连接
 
     // 保存便签的颜色类名
     this.colorClass = colorClass;
@@ -252,6 +257,15 @@ export class Note {
     const resizeHandle = document.createElement("div");
     resizeHandle.className = "note-resize-handle";
 
+    // 创建节点按钮
+    const nodeButton = document.createElement("div");
+    nodeButton.className = "note-node-button";
+    nodeButton.title = "连接到底部插槽";
+    nodeButton.addEventListener("click", (e) => {
+      e.stopPropagation(); // 阻止事件冒泡
+      this.toggleConnection();
+    });
+
     // 组装便签
     body.appendChild(textarea);
     body.appendChild(markdownPreview);
@@ -259,6 +273,7 @@ export class Note {
     body.appendChild(editHint);
     note.appendChild(body);
     note.appendChild(resizeHandle);
+    note.appendChild(nodeButton);
 
     // 添加点击事件，确保点击时将便签置于最前
     this.setupNoteClickEvent(note);
@@ -448,14 +463,49 @@ export class Note {
       // 如果点击的是便签本身而不是其内部的可编辑元素
       if (
         e.target.closest(".note") &&
-        !e.target.matches("textarea, input, [contenteditable='true']")
+        !e.target.matches("textarea, input, [contenteditable='true']") &&
+        !e.target.classList.contains("note-node-button") // 排除节点按钮
       ) {
         note.style.zIndex = getHighestZIndex() + 1;
 
         // 触发层级变化事件
         dispatchCustomEvent("note-zindex-changed", { id: this.id });
+
+        // 选中便签
+        nodeConnectionManager.selectNote(this);
       }
     });
+  }
+
+  /**
+   * 切换便签连接状态
+   */
+  toggleConnection() {
+    if (nodeConnectionManager.isNoteConnected(this)) {
+      // 如果已连接，断开连接
+      nodeConnectionManager.disconnectNote(this);
+      this.isConnected = false;
+
+      // 更新节点按钮样式
+      if (this.element) {
+        const nodeButton = this.element.querySelector(".note-node-button");
+        if (nodeButton) {
+          nodeButton.classList.remove("connected");
+        }
+      }
+    } else {
+      // 如果未连接，建立连接
+      nodeConnectionManager.connectNote(this);
+      this.isConnected = true;
+
+      // 更新节点按钮样式
+      if (this.element) {
+        const nodeButton = this.element.querySelector(".note-node-button");
+        if (nodeButton) {
+          nodeButton.classList.add("connected");
+        }
+      }
+    }
   }
 
   /**
