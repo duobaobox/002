@@ -20,7 +20,9 @@
   width: 200px;
   height: 200px;
   border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  /* 优化阴影效果，增强边界感 */
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.04),
+    /* 添加细微的边框效果 */ 0 2px 4px rgba(0, 0, 0, 0.12); /* 更清晰的阴影效果 */
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -33,7 +35,8 @@
 }
 
 .note:hover {
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06),
+    /* 悬停时边框更明显 */ 0 4px 8px rgba(0, 0, 0, 0.15); /* 增强阴影效果 */
 }
 
 /* 便签头部 - 调整内边距 */
