@@ -69,7 +69,7 @@ export function createEmptyAiNote() {
   const note = document.createElement("div");
   const noteId = "temp-ai-note-" + Date.now();
   note.id = noteId;
-  note.className = `note ${colorClass}`;
+  note.className = `note ${colorClass} ai-generating-note`; // 添加AI生成中的标记类
 
   // 设置便签位置 - 使用画布坐标系
   note.style.left = `${x}px`;

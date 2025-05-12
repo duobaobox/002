@@ -996,7 +996,8 @@ export class App {
           this.updateConnectionStatus("error");
         }
 
-        // 移除临时便签
+        // 移除临时便签，同时移除AI生成中的样式
+        noteElement.classList.remove("ai-generating-note");
         noteElement.remove();
         throw new Error("AI配置需要完成");
       }
@@ -1049,6 +1050,8 @@ export class App {
       console.error("生成AI便签出错:", error);
       // 确保在出错时也移除临时便签
       if (noteElement && noteElement.parentNode) {
+        // 移除临时便签，同时移除AI生成中的样式
+        noteElement.classList.remove("ai-generating-note");
         noteElement.remove();
       }
 
@@ -1096,14 +1099,14 @@ export class App {
 
       // 获取便签的尺寸，考虑画布缩放比例
       // 将屏幕上的尺寸除以缩放比例，得到画布坐标系中的实际尺寸
-      const currentWidth = Math.round(noteElement.offsetWidth / canvasScale);
-      const currentHeight = Math.round(noteElement.offsetHeight / canvasScale);
+      let noteWidth = Math.round(noteElement.offsetWidth / canvasScale);
+      let noteHeight = Math.round(noteElement.offsetHeight / canvasScale);
 
       console.log("保存便签，使用当前位置和大小:", {
         x: currentX,
         y: currentY,
-        width: currentWidth,
-        height: currentHeight,
+        width: noteWidth,
+        height: noteHeight,
       });
 
       // 创建便签到服务器
@@ -1116,8 +1119,8 @@ export class App {
           text: text,
           x: currentX,
           y: currentY,
-          width: currentWidth,
-          height: currentHeight,
+          width: noteWidth,
+          height: noteHeight,
           title: finalTitle,
           colorClass: colorClass,
           zIndex: parseInt(noteElement.style.zIndex || getHighestZIndex() + 1),
@@ -1140,7 +1143,22 @@ export class App {
 
         // 先移除临时便签
         if (noteElement && noteElement.parentNode) {
+          // 在移除前记录临时便签的位置和大小，以便新便签能够无缝衔接
+          const tempNoteRect = {
+            x: parseInt(noteElement.style.left) || x,
+            y: parseInt(noteElement.style.top) || y,
+            width: noteElement.offsetWidth,
+            height: noteElement.offsetHeight,
+          };
+
+          // 移除临时便签
           noteElement.remove();
+
+          // 使用临时便签的位置和大小
+          x = tempNoteRect.x;
+          y = tempNoteRect.y;
+          noteWidth = tempNoteRect.width;
+          noteHeight = tempNoteRect.height;
         }
 
         // 创建正式的Note实例替代临时便签
@@ -1172,8 +1190,9 @@ export class App {
         // 添加到notes数组
         this.notes.push(note);
 
-        // 添加苹果风格的AI高亮效果
+        // 添加苹果风格的AI高亮效果，并确保平滑过渡
         note.element.classList.add("new-note-highlight");
+        // 延迟移除高亮效果
         setTimeout(() => {
           note.element.classList.remove("new-note-highlight");
         }, 2000);
@@ -1184,6 +1203,8 @@ export class App {
       } else {
         // 如果创建失败，也需要移除临时便签
         if (noteElement && noteElement.parentNode) {
+          // 移除临时便签，同时移除AI生成中的样式
+          noteElement.classList.remove("ai-generating-note");
           noteElement.remove();
         }
         console.error("创建AI便签失败:", noteData);
@@ -1192,6 +1213,8 @@ export class App {
     } catch (error) {
       // 确保在出错时也移除临时便签
       if (noteElement && noteElement.parentNode) {
+        // 移除临时便签，同时移除AI生成中的样式
+        noteElement.classList.remove("ai-generating-note");
         noteElement.remove();
       }
       console.error("保存AI便签到服务器出错:", error);
@@ -3216,6 +3239,8 @@ export class App {
           if (this.currentNoteId.startsWith("temp-ai-note-")) {
             const noteElement = document.getElementById(this.currentNoteId);
             if (noteElement && noteElement.parentNode) {
+              // 移除临时便签，同时移除AI生成中的样式
+              noteElement.classList.remove("ai-generating-note");
               noteElement.remove();
             }
           }

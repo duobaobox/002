@@ -107,11 +107,50 @@
   }
 }
 
-/* 便签生成中的微妙边框效果 */
-.note:has(.ai-generation-controls) {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24),
-    0 0 0 1px rgba(74, 144, 226, 0.1);
-  transition: box-shadow 0.3s ease;
+/* AI便签生成中的蓝色阴影效果 */
+.note:has(.ai-generation-controls),
+.ai-generating-note {
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2), 0 0 8px rgba(0, 122, 255, 0.3),
+    0 0 16px rgba(0, 122, 255, 0.1);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+  animation: ai-generating-glow 3s infinite ease-in-out;
+  transform-origin: center center;
+}
+
+/* 添加微妙的缩放呼吸效果 */
+.note:has(.ai-generation-controls),
+.ai-generating-note {
+  animation: ai-generating-glow 3s infinite ease-in-out,
+    ai-generating-pulse 3s infinite ease-in-out;
+}
+
+/* AI便签生成中的呼吸光效果 - 更自然的呼吸节奏 */
+@keyframes ai-generating-glow {
+  0% {
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.15),
+      0 0 8px rgba(0, 122, 255, 0.25), 0 0 16px rgba(0, 122, 255, 0.08);
+  }
+  50% {
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3),
+      0 0 15px rgba(0, 122, 255, 0.4), 0 0 30px rgba(0, 122, 255, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.15),
+      0 0 8px rgba(0, 122, 255, 0.25), 0 0 16px rgba(0, 122, 255, 0.08);
+  }
+}
+
+/* 微妙的缩放呼吸动画 */
+@keyframes ai-generating-pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.005);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* 让markdown内容区域支持滚动 */

@@ -317,22 +317,27 @@
   animation: apple-style-glow 2s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* 苹果风格的柔和阴影效果 */
+/* 苹果风格的柔和阴影效果 - 从生成中的效果平滑过渡 */
 @keyframes apple-style-glow {
   0% {
-    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2), 0 0 8px rgba(0, 122, 255, 0.3),
-      0 0 16px rgba(0, 122, 255, 0.1);
+    /* 与生成中的效果保持一致，确保平滑过渡 */
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3),
+      0 0 15px rgba(0, 122, 255, 0.4), 0 0 30px rgba(0, 122, 255, 0.2);
+    transform: scale(1.005);
   }
   30% {
-    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.15),
-      0 0 8px rgba(0, 122, 255, 0.25), 0 0 16px rgba(0, 122, 255, 0.08);
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2),
+      0 0 10px rgba(0, 122, 255, 0.3), 0 0 20px rgba(0, 122, 255, 0.1);
+    transform: scale(1.003);
   }
   60% {
-    box-shadow: 0 0 0 1px rgba(0, 122, 255, 0.1),
-      0 0 6px rgba(0, 122, 255, 0.15), 0 0 12px rgba(0, 122, 255, 0.05);
+    box-shadow: 0 0 0 1px rgba(0, 122, 255, 0.15),
+      0 0 6px rgba(0, 122, 255, 0.2), 0 0 12px rgba(0, 122, 255, 0.05);
+    transform: scale(1.001);
   }
   100% {
-    box-shadow: none;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.12); /* 恢复到普通便签的阴影 */
+    transform: scale(1);
   }
 }
 
