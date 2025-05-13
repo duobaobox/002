@@ -15,6 +15,14 @@
   transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
+/* 便签高亮状态 */
+.note.note-highlight {
+  box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.5),
+    0 0 8px rgba(255, 107, 107, 0.3);
+  transform: scale(1.01);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
 /* 节点按钮 - 更像节点软件的连接点 */
 .note-node-button {
   position: absolute;
@@ -186,7 +194,15 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
-/* 连接线容器 */
+/* 插槽高亮状态 */
+.note-slot.slot-highlight {
+  transform: scale(1.1);
+  box-shadow: 0 2px 6px rgba(255, 107, 107, 0.5);
+  border-color: rgba(255, 255, 255, 1);
+  background-color: rgba(255, 107, 107, 0.9);
+}
+
+/* 连接线容器 - 已由Leader-Line库接管，仅保留占位区域 */
 .connections-container {
   position: fixed;
   top: 0;
@@ -194,41 +210,33 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 10000; /* 确保在插槽容器上方 */
+  z-index: 10; /* 确保在插槽容器上方但不要太高，避免影响其他UI交互 */
 }
 
-/* SVG容器样式 */
-#connections-svg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none; /* 容器本身不接收事件 */
+/* Leader-Line特定样式 - 控制SVG渲染层 */
+.leader-line {
+  z-index: 9990 !important; /* 确保比底部栏低但比普通元素高 */
 }
 
-/* 但连接线可以接收事件 */
-#connections-svg path {
-  pointer-events: stroke; /* 只在线条上接收事件 */
+/* leader-line 容器样式 */
+.connection-line-container {
+  pointer-events: auto !important;
 }
 
-/* 连接线样式 - 更像节点软件的连接线 */
-.connection-line {
-  stroke: #4285f4;
-  stroke-width: 2.5; /* 增加线宽 */
-  fill: none;
-  stroke-dasharray: 0; /* 实线 */
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.15)); /* 增强阴影 */
-  opacity: 0.85; /* 增加不透明度 */
-  transition: all 0.2s ease;
-  pointer-events: stroke; /* 只在线条上接收事件 */
-  cursor: pointer;
+/* 增强Leader-Line的视觉效果 */
+.leader-line path {
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.15)); /* 添加阴影效果 */
+  transition: stroke-width 0.2s ease, filter 0.2s ease;
 }
 
-/* 连接线悬停效果 */
-.connection-line:hover {
-  stroke: #1a73e8;
-  stroke-width: 3.5; /* 增加线宽 */
-  opacity: 1;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)); /* 增强阴影 */
+/* 高亮状态的连接线 */
+.leader-line.highlight path {
+  stroke-width: 3.5px !important;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25)) !important;
+}
+
+/* 使连接线在便签下方但在背景上方 */
+:root {
+  --note-connection-color: #4682b4;
+  --note-connection-highlight-color: #ff6b6b;
 }

@@ -78,6 +78,12 @@ export function setupDragEvents(note, header, context) {
 
       // 触发便签层级变化事件
       dispatchCustomEvent("note-zindex-changed", { id: context.id });
+
+      // 触发便签移动开始事件，用于预测性连接线更新
+      dispatchCustomEvent("note-movement-start", {
+        id: context.id,
+        note: context,
+      });
     }
   });
 
@@ -126,23 +132,39 @@ export function setupDragEvents(note, header, context) {
       }
     }
 
+    // 计算当前移动的偏移量，用于预测性更新
+    const currentX = parseInt(note.style.left) || 0;
+    const currentY = parseInt(note.style.top) || 0;
+    const deltaX = x - currentX;
+    const deltaY = y - currentY;
+
     // 设置便签位置
     note.style.left = `${x}px`;
     note.style.top = `${y}px`;
 
     // 在拖动过程中触发便签移动事件，用于实时更新连接线
-    // 直接触发事件，不使用requestAnimationFrame，确保立即更新
-    dispatchCustomEvent("note-moving", {
-      id: context.id,
-      note: context, // 传递便签实例，避免在NodeConnectionManager中再次查找
-      immediate: true, // 标记为立即更新
-    });
+    // 使用 Event.isTrusted 区分真实鼠标事件和程序触发的事件
+    if (e.isTrusted) {
+      dispatchCustomEvent("note-moving", {
+        id: context.id,
+        note: context, // 传递便签实例，避免在NodeConnectionManager中再次查找
+        immediate: true, // 标记为立即更新
+        deltaX: deltaX, // 添加移动偏移量，用于实时更新
+        deltaY: deltaY,
+      });
+    }
   });
 
   window.addEventListener("mouseup", () => {
     if (context.isDragging) {
       // 便签移动完成后触发事件，通知服务器更新数据
       dispatchCustomEvent("note-moved", { id: context.id });
+
+      // 触发便签移动结束事件
+      dispatchCustomEvent("note-movement-end", {
+        id: context.id,
+        note: context,
+      });
     }
     context.isDragging = false;
   });

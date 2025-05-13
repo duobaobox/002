@@ -17,6 +17,7 @@
     "express-rate-limit": "^7.1.5",
     "express-session": "^1.17.3",
     "helmet": "^7.1.0",
+    "leader-line": "^1.0.8",
     "openai": "^4.90.0",
     "sqlite3": "5.1.7",
     "swagger-jsdoc": "^6.2.8",

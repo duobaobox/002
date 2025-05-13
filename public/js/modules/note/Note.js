@@ -481,28 +481,18 @@ export class Note {
    * 切换便签连接状态
    */
   toggleConnection() {
-    if (nodeConnectionManager.isNoteConnected(this)) {
-      // 如果已连接，断开连接
-      nodeConnectionManager.disconnectNote(this);
-      this.isConnected = false;
+    // 使用新的NodeConnectionManager接口
+    const connected = nodeConnectionManager.toggleConnection(this);
+    this.isConnected = connected;
 
-      // 更新节点按钮样式
-      if (this.element) {
-        const nodeButton = this.element.querySelector(".note-node-button");
-        if (nodeButton) {
-          nodeButton.classList.remove("connected");
-        }
-      }
-    } else {
-      // 如果未连接，建立连接
-      nodeConnectionManager.connectNote(this);
-      this.isConnected = true;
-
-      // 更新节点按钮样式
-      if (this.element) {
-        const nodeButton = this.element.querySelector(".note-node-button");
-        if (nodeButton) {
+    // 更新节点按钮样式
+    if (this.element) {
+      const nodeButton = this.element.querySelector(".note-node-button");
+      if (nodeButton) {
+        if (connected) {
           nodeButton.classList.add("connected");
+        } else {
+          nodeButton.classList.remove("connected");
         }
       }
     }
