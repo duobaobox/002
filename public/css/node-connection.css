@@ -28,8 +28,8 @@
   position: absolute;
   bottom: 10px;
   left: 10px; /* 放在便签左下角 */
-  width: 22px; /* 减小尺寸 */
-  height: 22px;
+  width: 20px; /* 统一大小 */
+  height: 20px; /* 统一大小 */
   border-radius: 50%; /* 圆形按钮 */
   background-color: rgba(66, 133, 244, 0.85);
   border: 2px solid rgba(255, 255, 255, 0.9);
@@ -37,10 +37,7 @@
   cursor: pointer;
   z-index: 10;
   display: none; /* 默认隐藏，选中时显示 */
-  align-items: center;
-  justify-content: center;
   transition: all 0.2s ease;
-  font-size: 10px;
 }
 
 .note-node-button:hover {
@@ -54,24 +51,19 @@
   background-color: rgba(66, 133, 244, 1);
 }
 
+/* 移除内部箭头图标 */
 .note-node-button::before {
-  content: "⟱";
-  display: block;
-  font-size: 12px;
-  color: #fff;
-  line-height: 1;
-  text-align: center;
-  font-weight: bold;
+  content: none;
 }
 
 /* 选中的便签显示节点按钮 */
 .note.selected .note-node-button {
-  display: flex;
+  display: block;
 }
 
 /* 已连接状态的节点按钮 - 始终显示且样式不同 */
 .note-node-button.connected {
-  display: flex !important; /* 使用!important确保优先级，始终显示 */
+  display: block !important; /* 使用!important确保优先级，始终显示 */
   background-color: rgba(52, 168, 83, 0.9); /* 增加不透明度 */
   border-color: rgba(255, 255, 255, 0.95); /* 增加边框不透明度 */
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* 增强阴影 */
@@ -83,9 +75,9 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
+/* 移除连接点的内部图标 */
 .note-node-button.connected::before {
-  content: "⟰";
-  font-weight: bold;
+  content: none;
 }
 
 /* 底部插槽区域 - 位于底部控制栏上方 */
@@ -123,15 +115,12 @@
 
 /* 插槽样式 - 简化为圆形节点 */
 .note-slot {
-  width: 24px; /* 稍微增大尺寸 */
-  height: 24px; /* 稍微增大尺寸 */
-  margin: 0 6px; /* 增加间距 */
+  width: 20px; /* 统一大小 */
+  height: 20px; /* 统一大小 */
+  margin: 0 6px; /* 保持间距 */
   background-color: rgba(66, 133, 244, 0.9); /* 增加不透明度 */
   border: 2px solid rgba(255, 255, 255, 0.95); /* 增加边框不透明度 */
   border-radius: 50%; /* 圆形 */
-  display: flex;
-  align-items: center;
-  justify-content: center;
   position: relative;
   flex-shrink: 0;
   transition: all 0.2s ease;
@@ -147,28 +136,23 @@
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* 增强阴影 */
 }
 
-/* 插槽内容 - 显示向上箭头 */
+/* 移除插槽内部图标 */
 .note-slot::before {
-  content: "⟰"; /* 向上箭头 */
-  font-size: 12px;
-  color: #fff;
-  line-height: 1;
-  text-align: center;
-  font-weight: bold;
+  content: none;
 }
 
 /* 插槽移除按钮 - 悬停时显示 */
 .slot-remove {
   position: absolute;
-  right: -6px;
-  top: -6px;
-  width: 14px;
-  height: 14px;
+  right: -5px;
+  top: -5px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background-color: rgba(234, 67, 53, 0.9); /* 红色背景 */
   border: 1px solid rgba(255, 255, 255, 0.9);
   color: white;
-  font-size: 9px;
+  font-size: 8px;
   display: none; /* 默认隐藏 */
   align-items: center;
   justify-content: center;
@@ -213,6 +197,19 @@
   z-index: 10; /* 确保在插槽容器上方但不要太高，避免影响其他UI交互 */
 }
 
+/* 使用CSS变量定义配色 */
+:root {
+  --note-connection-color: rgba(70, 130, 180, 0.7); /* 半透明海军蓝 */
+  --note-connection-highlight-color: rgba(
+    255,
+    107,
+    107,
+    0.8
+  ); /* 半透明粉红色 */
+  --note-connection-size: 2px; /* 连接线粗细 */
+  --note-connection-highlight-size: 3px; /* 高亮连接线粗细 */
+}
+
 /* Leader-Line特定样式 - 控制SVG渲染层 */
 .leader-line {
   z-index: 9990 !important; /* 确保比底部栏低但比普通元素高 */
@@ -225,14 +222,16 @@
 
 /* 增强Leader-Line的视觉效果 */
 .leader-line path {
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.15)); /* 添加阴影效果 */
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1)); /* 轻微阴影效果 */
   transition: stroke-width 0.2s ease, filter 0.2s ease;
+  opacity: 0.85; /* 稍微透明 */
 }
 
 /* 高亮状态的连接线 */
 .leader-line.highlight path {
-  stroke-width: 3.5px !important;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25)) !important;
+  stroke-width: var(--note-connection-highlight-size) !important;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.15)) !important;
+  opacity: 1 !important;
 }
 
 /* 使连接线在便签下方但在背景上方 */

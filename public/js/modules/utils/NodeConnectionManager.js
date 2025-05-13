@@ -44,14 +44,16 @@ export class NodeConnectionManager {
 
     // 连接线选项配置
     this.lineOptions = {
-      color: "var(--note-connection-color, #4682b4)",
-      size: 2,
+      color: "var(--note-connection-color, rgba(70, 130, 180, 0.7))",
+      size: "var(--note-connection-size, 2)",
       path: "fluid", // 流体路径，自动调整为最佳路径
       startSocket: "bottom",
       endSocket: "top",
       startSocketGravity: 25,
       endSocketGravity: 25,
-      dash: { animation: true }, // 添加虚线动画效果
+      startPlug: "behind", // 起点没有箭头
+      endPlug: "behind", // 终点没有箭头
+      dash: { animation: true, len: 10, gap: 5 }, // 添加虚线动画效果
     };
 
     // 初始化
@@ -431,9 +433,14 @@ export class NodeConnectionManager {
         line._originalColor = line.color;
       }
 
+      if (!line._originalSize) {
+        line._originalSize = line.size;
+      }
+
       // 设置高亮颜色
-      line.color = "var(--note-connection-highlight-color, #ff6b6b)";
-      line.size = 3; // 增加线条粗细
+      line.color =
+        "var(--note-connection-highlight-color, rgba(255, 107, 107, 0.8))";
+      line.size = "var(--note-connection-highlight-size, 3)"; // 增加线条粗细
 
       // 添加高亮类名
       if (line.element) {
@@ -462,10 +469,17 @@ export class NodeConnectionManager {
     if (!note || !note.id) return;
 
     const line = this.connectionLines.get(note.id);
-    if (line && line._originalColor) {
+    if (line) {
       // 恢复原始颜色
-      line.color = line._originalColor;
-      line.size = this.lineOptions.size;
+      if (line._originalColor) {
+        line.color = line._originalColor;
+      }
+
+      if (line._originalSize) {
+        line.size = line._originalSize;
+      } else {
+        line.size = "var(--note-connection-size, 2)";
+      }
 
       // 移除高亮类名
       if (line.element) {
