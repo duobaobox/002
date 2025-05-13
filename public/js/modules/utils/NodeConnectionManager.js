@@ -44,8 +44,8 @@ export class NodeConnectionManager {
 
     // 连接线选项配置
     this.lineOptions = {
-      color: "var(--note-connection-color, rgba(70, 130, 180, 0.7))",
-      size: "var(--note-connection-size, 2)",
+      color: "var(--note-connection-color, rgba(110, 150, 190, 0.55))", // 更淡雅的蓝色，降低不透明度
+      size: "var(--note-connection-size, 1.5)", // 更细的线条
       path: "fluid", // 流体路径，自动调整为最佳路径
       startSocket: "bottom",
       endSocket: "top",
@@ -53,7 +53,7 @@ export class NodeConnectionManager {
       endSocketGravity: 25,
       startPlug: "behind", // 起点没有箭头
       endPlug: "behind", // 终点没有箭头
-      dash: { animation: true, len: 10, gap: 5 }, // 添加虚线动画效果
+      dash: { animation: true, len: 7, gap: 4 }, // 更精致的虚线参数
     };
 
     // 初始化
@@ -73,6 +73,17 @@ export class NodeConnectionManager {
     // 确保SVG容器存在
     if (!this.svgContainer) {
       console.warn("SVG容器不存在，部分功能可能无法正常工作");
+    }
+
+    // 获取插槽列表容器和清除按钮
+    this.slotsList = document.getElementById("slots-list");
+    this.clearAllButton = document.getElementById("clear-all-connections");
+
+    // 绑定清除所有连接按钮事件
+    if (this.clearAllButton) {
+      this.clearAllButton.addEventListener("click", () => {
+        this.clearAllConnections();
+      });
     }
 
     // 监听窗口大小变化
@@ -259,8 +270,8 @@ export class NodeConnectionManager {
       this.connectedNotes.push(note);
     }
 
-    // 创建连接线
-    this.createConnection(note);
+    // 先确保创建插槽，然后再创建连接线
+    this.createSlot(note);
 
     // 添加节点按钮连接状态
     const nodeButton = note.element.querySelector(".note-node-button");
@@ -268,35 +279,65 @@ export class NodeConnectionManager {
       nodeButton.classList.add("connected");
     }
 
-    // 触发便签已连接事件
-    dispatchCustomEvent("note-connection-established", {
-      note: note,
-    });
+    // 延迟创建连接线，确保插槽已经在DOM中
+    setTimeout(() => {
+      this.createConnection(note);
+
+      // 触发便签已连接事件
+      dispatchCustomEvent("note-connection-established", {
+        note: note,
+      });
+
+      // 同时触发note-connected事件，以确保App.js中的监听器能够捕获
+      dispatchCustomEvent("note-connected", {
+        note: note,
+      });
+    }, 50);
   }
 
   /**
    * 创建连接线
    * @param {Object} note - 便签对象
+   * @param {number} retryCount - 重试计数，默认为0
+   * @param {number} maxRetries - 最大重试次数，默认为3
    */
-  createConnection(note) {
+  createConnection(note, retryCount = 0, maxRetries = 3) {
     if (!note || !note.id || !note.element) return;
 
     // 获取便签节点按钮
     const nodeButton = note.element.querySelector(".note-node-button");
-    if (!nodeButton) return;
+    if (!nodeButton) {
+      console.error(`找不到便签ID为${note.id}的节点按钮`);
+      return;
+    }
 
     // 获取对应的插槽
     const slot = this.slotsContainer.querySelector(
       `.note-slot[data-note-id="${note.id}"]`
     );
-    if (!slot) {
-      console.warn(`找不到便签ID为${note.id}的插槽，尝试创建插槽`);
-      this.createSlot(note);
 
-      // 在下一帧尝试再次创建连接线，确保插槽已创建
-      window.requestAnimationFrame(() => {
-        this.createConnection(note);
-      });
+    if (!slot) {
+      if (retryCount < maxRetries) {
+        console.warn(
+          `找不到便签ID为${note.id}的插槽，重试中...(${
+            retryCount + 1
+          }/${maxRetries})`
+        );
+
+        // 尝试再次创建插槽
+        this.createSlot(note);
+
+        // 增加重试间隔时间，给DOM更多时间更新
+        const retryDelay = 100 * Math.pow(2, retryCount); // 指数退避策略
+
+        setTimeout(() => {
+          this.createConnection(note, retryCount + 1, maxRetries);
+        }, retryDelay);
+      } else {
+        console.error(
+          `达到最大重试次数，无法为便签ID ${note.id} 创建连接线：找不到插槽元素`
+        );
+      }
       return;
     }
 
@@ -336,9 +377,15 @@ export class NodeConnectionManager {
         } catch (error) {
           console.error("刷新新建连接线失败:", error);
         }
-      }, 10);
+      }, 20);
+
+      console.log(`成功创建便签ID为${note.id}的连接线`);
     } catch (error) {
-      console.error("创建连接线失败:", error);
+      console.error(`创建连接线失败 (便签ID: ${note.id}):`, error, {
+        nodeButton: nodeButton,
+        slot: slot,
+        exists: !!slot,
+      });
     }
   }
 
@@ -439,8 +486,8 @@ export class NodeConnectionManager {
 
       // 设置高亮颜色
       line.color =
-        "var(--note-connection-highlight-color, rgba(255, 107, 107, 0.8))";
-      line.size = "var(--note-connection-highlight-size, 3)"; // 增加线条粗细
+        "var(--note-connection-highlight-color, rgba(249, 132, 121, 0.65))";
+      line.size = "var(--note-connection-highlight-size, 2)"; // 稍微增加线条粗细
 
       // 添加高亮类名
       if (line.element) {
@@ -645,29 +692,11 @@ export class NodeConnectionManager {
    */
   connectNote(note) {
     if (!this.isConnected(note)) {
-      // 创建插槽
-      this.createSlot(note);
-
       // 添加连接
       this.addConnection(note);
 
-      // 显示插槽区域
-      if (this.slotsContainer) {
-        this.slotsContainer.classList.add("visible");
-      }
-
-      // 添加节点按钮连接状态
-      const nodeButton = note.element.querySelector(".note-node-button");
-      if (nodeButton) {
-        nodeButton.classList.add("connected");
-      }
-
-      // 发送一次连接完成事件，确保UI更新
-      window.requestAnimationFrame(() => {
-        this.refreshConnection(note);
-        // 触发连接事件
-        dispatchCustomEvent("note-connected", { note });
-      });
+      // 触发连接事件
+      dispatchCustomEvent("note-connected", { note });
     }
   }
 
@@ -700,22 +729,79 @@ export class NodeConnectionManager {
   }
 
   /**
+   * 清除所有连接
+   */
+  clearAllConnections() {
+    // 创建连接便签列表的副本，因为在移除过程中会修改原数组
+    const notesToRemove = [...this.connectedNotes];
+
+    // 遍历所有连接的便签并移除连接
+    notesToRemove.forEach((note) => {
+      this.disconnectNote(note);
+    });
+
+    // 如果移除后还有连接存在，记录警告
+    if (this.connectedNotes.length > 0) {
+      console.warn("清除所有连接后仍有连接存在:", this.connectedNotes.length);
+
+      // 强制清空列表
+      this.connectedNotes = [];
+
+      // 移除所有连接线
+      this.connectionLines.forEach((line) => {
+        if (line && typeof line.remove === "function") {
+          line.remove();
+        }
+      });
+      this.connectionLines.clear();
+
+      // 清空插槽列表
+      if (this.slotsList) {
+        this.slotsList.innerHTML = "";
+      }
+    }
+
+    // 触发自定义事件，通知所有连接已清除
+    dispatchCustomEvent("all-connections-cleared", {});
+
+    // 隐藏插槽容器
+    if (this.slotsContainer) {
+      this.slotsContainer.classList.remove("visible");
+    }
+
+    console.log("已清除所有便签连接");
+  }
+
+  /**
    * 创建插槽
    * @param {Object} note - 便签对象
+   * @returns {HTMLElement|null} 创建的插槽元素或null
    */
   createSlot(note) {
-    if (!note || !note.id) return;
+    if (!note || !note.id) return null;
+
+    // 检查插槽列表容器是否存在
+    if (!this.slotsList) {
+      this.slotsList = document.getElementById("slots-list");
+      if (!this.slotsList) {
+        console.error("插槽列表容器不存在，无法创建插槽");
+        return null;
+      }
+    }
 
     // 检查插槽是否已存在
-    const existingSlot = this.slotsContainer.querySelector(
+    const existingSlot = this.slotsList.querySelector(
       `.note-slot[data-note-id="${note.id}"]`
     );
-    if (existingSlot) return;
+    if (existingSlot) return existingSlot;
 
     // 创建插槽元素
     const slot = document.createElement("div");
     slot.className = "note-slot connected";
     slot.dataset.noteId = note.id;
+
+    // 设置索引序号，用于显示
+    slot.dataset.index = this.connectedNotes.indexOf(note) + 1;
 
     // 添加标题作为提示信息
     const noteTitle = note.title || `便签 ${note.id}`;
@@ -744,17 +830,31 @@ export class NodeConnectionManager {
     // 组装插槽
     slot.appendChild(removeBtn);
 
-    // 添加到插槽容器
-    this.slotsContainer.appendChild(slot);
+    // 添加到插槽列表容器
+    this.slotsList.appendChild(slot);
 
     // 确保插槽区域可见
     this.slotsContainer.classList.add("visible");
 
-    // 当DOM结构变化后，强制更新所有连接线以确保正确连接
-    // 使用setTimeout确保DOM更新后再重新计算连接线位置
-    setTimeout(() => {
-      this.refreshAllConnections();
-    }, 10);
+    console.log(`成功创建便签ID为${note.id}的插槽`);
+
+    // 更新所有插槽的序号
+    this.updateSlotIndexes();
+
+    return slot;
+  }
+
+  /**
+   * 更新所有插槽的序号
+   */
+  updateSlotIndexes() {
+    // 获取所有插槽
+    const slots = this.slotsList.querySelectorAll(".note-slot");
+
+    // 更新每个插槽的序号
+    slots.forEach((slot, index) => {
+      slot.dataset.index = index + 1;
+    });
   }
 
   /**
@@ -764,16 +864,31 @@ export class NodeConnectionManager {
   removeSlot(note) {
     if (!note || !note.id) return;
 
-    const slot = this.slotsContainer.querySelector(
+    if (!this.slotsList) {
+      this.slotsList = document.getElementById("slots-list");
+    }
+
+    if (!this.slotsList) return;
+
+    const slot = this.slotsList.querySelector(
       `.note-slot[data-note-id="${note.id}"]`
     );
+
     if (slot) {
       slot.remove();
+
+      // 更新剩余插槽的序号
+      this.updateSlotIndexes();
 
       // 强制更新所有连接线，确保剩余连接线位置正确
       setTimeout(() => {
         this.refreshAllConnections();
       }, 10);
+
+      // 如果没有连接的便签，隐藏插槽区域
+      if (this.connectedNotes.length === 0 && this.slotsContainer) {
+        this.slotsContainer.classList.remove("visible");
+      }
     }
   }
 }

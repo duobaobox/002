@@ -170,6 +170,36 @@
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
 }
 
+/* 便签连接模式的AI生成按钮样式 */
+.ai-button.connected-mode {
+  background-color: #34a853; /* 改用绿色，与连接便签的颜色统一 */
+  position: relative;
+  overflow: visible;
+}
+
+.ai-button.connected-mode:hover {
+  background-color: #2d8e47; /* 深一点的绿色 */
+}
+
+/* 便签连接模式的指示标记 */
+.ai-button.connected-mode::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #ff5722; /* 醒目的橙色指示器 */
+  border: 1px solid white;
+}
+
+/* 连接模式下图标不变，内容添加小连接标识 */
+.ai-button.connected-mode .icon-ai:before {
+  content: "AI";
+  font-size: 10px; /* 缩小字体以容纳其他元素 */
+}
+
 .ai-button:disabled {
   background-color: #b0bec5;
   color: #e0e0e0;

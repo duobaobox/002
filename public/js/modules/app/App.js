@@ -398,12 +398,36 @@ export class App {
     document.addEventListener("note-connected", (e) => {
       console.log("便签已连接:", e.detail.note.id);
       this.updatePromptPlaceholder();
+      this.updateButtonVisibility(); // 更新按钮状态
     });
 
     // 监听便签断开连接事件
     document.addEventListener("note-disconnected", (e) => {
       console.log("便签已断开连接:", e.detail.note.id);
       this.updatePromptPlaceholder();
+      this.updateButtonVisibility(); // 更新按钮状态
+    });
+
+    // 监听新版便签连接建立事件
+    document.addEventListener("note-connection-established", (e) => {
+      console.log("便签连接已建立:", e.detail.note.id);
+      this.updatePromptPlaceholder();
+      this.updateButtonVisibility(); // 更新按钮状态
+    });
+
+    // 监听便签连接移除事件
+    document.addEventListener("note-connection-removed", (e) => {
+      console.log("便签连接已移除:", e.detail.note.id);
+      this.updatePromptPlaceholder();
+      this.updateButtonVisibility(); // 更新按钮状态
+    });
+
+    // 监听所有连接清除事件
+    document.addEventListener("all-connections-cleared", () => {
+      console.log("所有便签连接已清除");
+      this.updatePromptPlaceholder();
+      this.updateButtonVisibility(); // 更新按钮状态
+      this.showMessage("已清除所有便签连接", "info");
     });
 
     // 取消AI生成事件监听器已移除，现在直接通过AI生成按钮处理取消
@@ -684,9 +708,22 @@ export class App {
     const addButton = document.getElementById("add-note");
     const aiButton = document.getElementById("ai-generate");
 
+    // 获取连接的便签数量
+    const connectedNotes = nodeConnectionManager.getConnectedNotes();
+    const hasConnectedNotes = connectedNotes.length > 0;
+
     if (hasText) {
       addButton.style.display = "none";
       aiButton.style.display = "block";
+
+      // 根据是否有连接便签设置不同的按钮样式
+      if (hasConnectedNotes) {
+        aiButton.classList.add("connected-mode");
+        aiButton.title = `基于 ${connectedNotes.length} 个便签生成内容`;
+      } else {
+        aiButton.classList.remove("connected-mode");
+        aiButton.title = "AI生成便签";
+      }
     } else {
       addButton.style.display = "block";
       aiButton.style.display = "none";
@@ -788,7 +825,10 @@ export class App {
       this.updateButtonVisibility();
 
       // 显示成功消息
-      this.showMessage("基于连接便签生成成功", "success");
+      this.showMessage(
+        `基于 ${connectedNotes.length} 个便签生成内容成功`,
+        "success"
+      );
     } catch (error) {
       console.error("基于连接便签生成失败:", error);
       this.showMessage("生成失败: " + error.message, "error");
@@ -2708,7 +2748,7 @@ export class App {
 
     // 设置新的预连接计时器，短暂延迟后建立连接
     this.sessionManager.preconnectTimer = setTimeout(async () => {
-      // 更新连接状态为“连接中”
+      // 更新连接状态为"连接中"
       if (this.updateConnectionStatus) {
         this.updateConnectionStatus("connecting");
       }
@@ -2923,7 +2963,7 @@ export class App {
           this.sessionManager.isConnected = true;
           this.sessionManager.lastActivity = Date.now();
 
-          // 更新连接状态为“已连接”
+          // 更新连接状态为"已连接"
           if (this.updateConnectionStatus) {
             this.updateConnectionStatus("connected");
           }
@@ -3039,7 +3079,7 @@ export class App {
       this.sessionManager.isConnected = false;
       this.sessionManager.isInUse = false;
 
-      // 更新连接状态为“未连接”
+      // 更新连接状态为"未连接"
       if (this.updateConnectionStatus) {
         this.updateConnectionStatus("disconnected");
       }

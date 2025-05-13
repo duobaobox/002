@@ -17,10 +17,10 @@
 
 /* 便签高亮状态 */
 .note.note-highlight {
-  box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.5),
-    0 0 8px rgba(255, 107, 107, 0.3);
-  transform: scale(1.01);
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 0 0 1px rgba(249, 132, 121, 0.4),
+    0 0 6px rgba(249, 132, 121, 0.25);
+  transform: scale(1.005);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 
 /* 节点按钮 - 更像节点软件的连接点 */
@@ -89,14 +89,14 @@
   width: 500px; /* 与底部控制栏宽度一致 */
   max-width: 85%; /* 与底部控制栏最大宽度一致 */
   height: 40px; /* 减小高度，更加紧凑 */
-  background-color: rgba(248, 249, 250, 0.92);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.95); /* 更亮的背景 */
+  border: 1px solid rgba(0, 0, 0, 0.1); /* 更明显的边框 */
+  border-radius: 12px; /* 与底部控制栏圆角一致 */
   display: flex;
   align-items: center;
-  justify-content: center; /* 居中显示插槽 */
-  padding: 0 15px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  justify-content: flex-start; /* 左对齐，更有序 */
+  padding: 0 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08); /* 与底部控制栏阴影一致 */
   z-index: 9998; /* 确保在底部控制栏下方，但在其他元素上方 */
   transition: all 0.3s ease;
   overflow-x: auto;
@@ -106,6 +106,20 @@
   pointer-events: none; /* 默认不接收事件 */
 }
 
+/* 自定义滚动条 */
+.slots-container::-webkit-scrollbar {
+  height: 3px;
+}
+
+.slots-container::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.slots-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 /* 显示插槽区域 */
 .slots-container.visible {
   opacity: 1; /* 显示 */
@@ -113,44 +127,92 @@
   pointer-events: auto; /* 接收事件 */
 }
 
-/* 插槽样式 - 简化为圆形节点 */
+/* 连接插槽标题 */
+.slots-title {
+  font-size: 11px;
+  color: #666;
+  margin-right: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+/* 插槽容器内的列表区域 */
+.slots-list {
+  display: flex;
+  align-items: center;
+  flex-grow: 1;
+  overflow-x: auto;
+  padding: 0 5px;
+  scrollbar-width: none; /* 隐藏滚动条 */
+}
+
+.slots-list::-webkit-scrollbar {
+  display: none; /* 隐藏滚动条 */
+}
+
+/* 清除所有连接的按钮 */
+.clear-all-connections {
+  padding: 1px 8px;
+  background-color: #f8f8f8;
+  color: #666;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 11px;
+  cursor: pointer;
+  margin-left: auto; /* 推到右侧 */
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  height: 22px;
+  transition: all 0.2s ease;
+}
+
+.clear-all-connections:hover {
+  background-color: #f1f1f1;
+  color: #ea4335;
+  border-color: #ea4335;
+}
+
+.clear-all-connections::before {
+  content: "×";
+  font-size: 12px;
+  margin-right: 3px;
+  font-weight: bold;
+}
+
+/* 插槽样式 - 优化为更现代的设计 */
 .note-slot {
   width: 20px; /* 统一大小 */
   height: 20px; /* 统一大小 */
-  margin: 0 6px; /* 保持间距 */
-  background-color: rgba(66, 133, 244, 0.9); /* 增加不透明度 */
-  border: 2px solid rgba(255, 255, 255, 0.95); /* 增加边框不透明度 */
+  margin: 0 5px; /* 调整间距 */
+  background-color: rgba(66, 133, 244, 0.85); /* 蓝色 */
+  border: 2px solid white;
   border-radius: 50%; /* 圆形 */
   position: relative;
   flex-shrink: 0;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* 增强阴影 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
   cursor: pointer;
   z-index: 1; /* 确保插槽在容器内部的层级 */
 }
 
 /* 已连接的插槽 */
 .note-slot.connected {
-  background-color: rgba(52, 168, 83, 0.9); /* 增加不透明度 */
-  border: 2px solid rgba(255, 255, 255, 0.95); /* 增加边框不透明度 */
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* 增强阴影 */
+  background-color: rgba(52, 168, 83, 0.85); /* 绿色 */
+  border: 2px solid white;
 }
 
-/* 移除插槽内部图标 */
-.note-slot::before {
-  content: none;
-}
-
-/* 插槽移除按钮 - 悬停时显示 */
+/* 插槽移除按钮 - 更精致的设计 */
 .slot-remove {
   position: absolute;
-  right: -5px;
-  top: -5px;
-  width: 12px;
-  height: 12px;
+  right: -3px;
+  top: -3px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background-color: rgba(234, 67, 53, 0.9); /* 红色背景 */
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  border: 1px solid white;
   color: white;
   font-size: 8px;
   display: none; /* 默认隐藏 */
@@ -158,7 +220,7 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.15s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   z-index: 2;
 }
 
@@ -172,6 +234,18 @@
   transform: scale(1.1);
 }
 
+/* 添加序号标记在插槽上 */
+.note-slot::after {
+  content: attr(data-index);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 9px;
+  color: white;
+  font-weight: bold;
+}
+
 /* 插槽悬停效果 */
 .note-slot:hover {
   transform: scale(1.1);
@@ -180,10 +254,10 @@
 
 /* 插槽高亮状态 */
 .note-slot.slot-highlight {
-  transform: scale(1.1);
-  box-shadow: 0 2px 6px rgba(255, 107, 107, 0.5);
+  transform: scale(1.08);
+  box-shadow: 0 1px 4px rgba(249, 132, 121, 0.3);
   border-color: rgba(255, 255, 255, 1);
-  background-color: rgba(255, 107, 107, 0.9);
+  background-color: rgba(249, 132, 121, 0.8);
 }
 
 /* 连接线容器 - 已由Leader-Line库接管，仅保留占位区域 */
@@ -199,15 +273,15 @@
 
 /* 使用CSS变量定义配色 */
 :root {
-  --note-connection-color: rgba(70, 130, 180, 0.7); /* 半透明海军蓝 */
+  --note-connection-color: rgba(110, 150, 190, 0.55); /* 淡雅蓝色，半透明 */
   --note-connection-highlight-color: rgba(
-    255,
-    107,
-    107,
-    0.8
-  ); /* 半透明粉红色 */
-  --note-connection-size: 2px; /* 连接线粗细 */
-  --note-connection-highlight-size: 3px; /* 高亮连接线粗细 */
+    249,
+    132,
+    121,
+    0.65
+  ); /* 柔和的粉红色 */
+  --note-connection-size: 1.5px; /* 更细的连接线 */
+  --note-connection-highlight-size: 2px; /* 稍微粗一些的高亮线 */
 }
 
 /* Leader-Line特定样式 - 控制SVG渲染层 */
@@ -222,15 +296,15 @@
 
 /* 增强Leader-Line的视觉效果 */
 .leader-line path {
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1)); /* 轻微阴影效果 */
-  transition: stroke-width 0.2s ease, filter 0.2s ease;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.05)); /* 更轻微的阴影效果 */
+  transition: stroke-width 0.3s ease, filter 0.3s ease, opacity 0.3s ease;
   opacity: 0.85; /* 稍微透明 */
 }
 
 /* 高亮状态的连接线 */
 .leader-line.highlight path {
   stroke-width: var(--note-connection-highlight-size) !important;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.15)) !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1)) !important;
   opacity: 1 !important;
 }
 
