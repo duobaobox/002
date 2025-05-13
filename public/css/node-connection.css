@@ -20,8 +20,8 @@
   position: absolute;
   bottom: 10px;
   left: 10px; /* 放在便签左下角 */
-  width: 20px; /* 减小尺寸 */
-  height: 20px;
+  width: 22px; /* 减小尺寸 */
+  height: 22px;
   border-radius: 50%; /* 圆形按钮 */
   background-color: rgba(66, 133, 244, 0.85);
   border: 2px solid rgba(255, 255, 255, 0.9);
@@ -65,105 +65,121 @@
 .note-node-button.connected {
   background-color: rgba(52, 168, 83, 0.85);
   border-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.note-node-button.connected:hover {
+  background-color: rgba(52, 168, 83, 0.95);
 }
 
 .note-node-button.connected::before {
   content: "⟰";
+  font-weight: bold;
 }
 
-/* 底部插槽区域 - 调整位置到底部状态栏上方 */
+/* 底部插槽区域 - 位于底部控制栏上方 */
 .slots-container {
   position: fixed;
-  bottom: 45px; /* 调整位置，确保在底部状态栏上方 */
+  bottom: 110px; /* 位于底部控制栏上方，确保不会被遮挡 */
   left: 50%;
-  transform: translateX(-50%) translateY(100%); /* 水平居中并默认隐藏 */
+  transform: translateX(-50%); /* 水平居中 */
   width: 500px; /* 与底部控制栏宽度一致 */
   max-width: 85%; /* 与底部控制栏最大宽度一致 */
-  height: 50px; /* 稍微减小高度 */
-  background-color: rgba(248, 249, 250, 0.95);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 12px 12px 0 0; /* 顶部圆角 */
+  height: 40px; /* 减小高度，更加紧凑 */
+  background-color: rgba(248, 249, 250, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center; /* 居中显示插槽 */
   padding: 0 15px;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
   z-index: 9998; /* 确保在底部控制栏下方，但在其他元素上方 */
-  transition: transform 0.3s ease;
+  transition: all 0.3s ease;
   overflow-x: auto;
   scrollbar-width: thin;
+  opacity: 0; /* 默认隐藏 */
+  visibility: hidden; /* 默认隐藏 */
+  pointer-events: none; /* 默认不接收事件 */
 }
 
 /* 显示插槽区域 */
 .slots-container.visible {
-  transform: translateX(-50%) translateY(0); /* 保持水平居中并显示 */
+  opacity: 1; /* 显示 */
+  visibility: visible; /* 显示 */
+  pointer-events: auto; /* 接收事件 */
 }
 
-/* 插槽样式 - 更像节点软件的卡槽 */
+/* 插槽样式 - 简化为圆形节点 */
 .note-slot {
-  min-width: 80px; /* 减小宽度 */
-  height: 32px; /* 减小高度 */
-  margin: 0 5px; /* 减小间距 */
-  background-color: #f0f2f5;
-  border: 1px solid #d0d7de;
-  border-radius: 4px;
+  width: 22px; /* 与节点按钮尺寸一致 */
+  height: 22px; /* 与节点按钮尺寸一致 */
+  margin: 0 6px; /* 增加间距 */
+  background-color: rgba(66, 133, 244, 0.85); /* 与节点按钮颜色一致 */
+  border: 2px solid rgba(255, 255, 255, 0.9); /* 与节点按钮边框一致 */
+  border-radius: 50%; /* 圆形 */
   display: flex;
   align-items: center;
-  padding: 0 8px;
+  justify-content: center;
   position: relative;
   flex-shrink: 0;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15); /* 与节点按钮阴影一致 */
+  cursor: pointer;
 }
 
 /* 已连接的插槽 */
 .note-slot.connected {
-  border: 1px solid #4285f4;
-  background-color: #e8f0fe;
-  box-shadow: 0 1px 4px rgba(66, 133, 244, 0.3);
+  background-color: rgba(52, 168, 83, 0.85); /* 与已连接节点按钮颜色一致 */
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* 插槽标题 - 简化显示 */
-.slot-title {
-  font-size: 11px;
-  color: #444;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 60px;
-  font-weight: 500;
+/* 插槽内容 - 显示向上箭头 */
+.note-slot::before {
+  content: "⟰"; /* 向上箭头 */
+  font-size: 12px;
+  color: #fff;
+  line-height: 1;
+  text-align: center;
+  font-weight: bold;
 }
 
-/* 插槽移除按钮 - 更紧凑 */
+/* 插槽移除按钮 - 悬停时显示 */
 .slot-remove {
   position: absolute;
-  right: 4px;
-  top: 50%;
-  transform: translateY(-50%);
+  right: -6px;
+  top: -6px;
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background-color: rgba(240, 242, 245, 0.8);
-  border: 1px solid #d0d7de;
-  color: #666;
+  background-color: rgba(234, 67, 53, 0.9); /* 红色背景 */
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  color: white;
   font-size: 9px;
-  display: flex;
+  display: none; /* 默认隐藏 */
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+}
+
+/* 悬停时显示移除按钮 */
+.note-slot:hover .slot-remove {
+  display: flex;
 }
 
 .slot-remove:hover {
-  background-color: #e8e8e8;
-  color: #333;
-  transform: translateY(-50%) scale(1.1);
+  background-color: rgba(211, 47, 47, 1);
+  transform: scale(1.1);
 }
 
 /* 插槽悬停效果 */
 .note-slot:hover {
-  border-color: #4285f4;
-  box-shadow: 0 2px 5px rgba(66, 133, 244, 0.2);
+  transform: scale(1.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 /* 连接线容器 */
@@ -173,14 +189,12 @@
   left: 0;
   width: 100%;
   height: 100%;
-  pointer-events: none; /* 容器本身不接收事件 */
+  pointer-events: none;
   z-index: 999;
 }
 
 /* 连接线样式 - 更像节点软件的连接线 */
 .connection-line {
-  pointer-events: stroke; /* 只在线条上接收事件 */
-  cursor: pointer;
   stroke: #4285f4;
   stroke-width: 2;
   fill: none;
@@ -188,6 +202,8 @@
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
   opacity: 0.8;
   transition: all 0.2s ease;
+  pointer-events: stroke; /* 只在线条上接收事件 */
+  cursor: pointer;
 }
 
 /* 连接线悬停效果 */

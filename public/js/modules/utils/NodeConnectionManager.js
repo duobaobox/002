@@ -186,21 +186,26 @@ export class NodeConnectionManager {
     slot.className = "note-slot connected";
     slot.dataset.noteId = note.id;
 
-    // 创建插槽标题
-    const title = document.createElement("div");
-    title.className = "slot-title";
-    title.textContent = note.title || `便签 ${note.id}`;
+    // 添加标题作为提示信息
+    const noteTitle = note.title || `便签 ${note.id}`;
+    slot.title = noteTitle; // 鼠标悬停时显示便签标题
 
     // 创建移除按钮
     const removeBtn = document.createElement("div");
     removeBtn.className = "slot-remove";
     removeBtn.innerHTML = "×";
-    removeBtn.addEventListener("click", () => {
+    removeBtn.addEventListener("click", (e) => {
+      e.stopPropagation(); // 阻止事件冒泡
       this.disconnectNote(note);
     });
 
+    // 添加点击插槽的事件处理
+    slot.addEventListener("click", () => {
+      // 可以添加点击插槽时的行为，例如高亮对应的便签
+      console.log(`点击了便签插槽: ${noteTitle}`);
+    });
+
     // 组装插槽
-    slot.appendChild(title);
     slot.appendChild(removeBtn);
 
     // 添加到插槽容器
@@ -274,29 +279,39 @@ export class NodeConnectionManager {
 
     const slotRect = slot.getBoundingClientRect();
 
-    // 计算连接线路径 - 从左下角节点按钮中心到插槽顶部中心
+    // 计算连接线路径 - 从左下角节点按钮中心到插槽中心
     const startX = nodeRect.left + nodeRect.width / 2;
     const startY = nodeRect.top + nodeRect.height / 2;
     const endX = slotRect.left + slotRect.width / 2;
-    const endY = slotRect.top + 2; // 稍微偏移，使线条连接到插槽边框上
+    const endY = slotRect.top + slotRect.height / 2; // 连接到插槽中心
 
     // 创建贝塞尔曲线路径 - 调整控制点使曲线更自然
     const dx = endX - startX;
     const dy = endY - startY;
 
     // 计算控制点 - 使用更自然的曲线
-    // 对于向上的连接，使用更平滑的曲线
+    // 由于插槽位置较高，需要调整控制点计算方式
     let controlX1, controlY1, controlX2, controlY2;
 
+    // 计算距离
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // 根据距离调整控制点
     if (dy < 0) {
       // 向上连接（便签在插槽下方）
       // 第一个控制点：从便签节点垂直向上
       controlX1 = startX;
-      controlY1 = startY + dy * 0.4; // 向上40%距离
+      controlY1 = startY + dy * 0.25; // 向上25%距离，更平滑的曲线
 
       // 第二个控制点：从插槽垂直向下
       controlX2 = endX;
-      controlY2 = endY - dy * 0.2; // 向下20%距离
+      controlY2 = endY - dy * 0.25; // 向下25%距离，更平滑的曲线
+
+      // 对于较长的连接线，进一步调整控制点
+      if (distance > 300) {
+        controlY1 = startY + dy * 0.2;
+        controlY2 = endY - dy * 0.2;
+      }
     } else {
       // 向下连接（便签在插槽上方）
       // 使用更平缓的曲线
