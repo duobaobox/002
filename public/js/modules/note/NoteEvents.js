@@ -129,6 +129,14 @@ export function setupDragEvents(note, header, context) {
     // 设置便签位置
     note.style.left = `${x}px`;
     note.style.top = `${y}px`;
+
+    // 在拖动过程中触发便签移动事件，用于实时更新连接线
+    // 直接触发事件，不使用requestAnimationFrame，确保立即更新
+    dispatchCustomEvent("note-moving", {
+      id: context.id,
+      note: context, // 传递便签实例，避免在NodeConnectionManager中再次查找
+      immediate: true, // 标记为立即更新
+    });
   });
 
   window.addEventListener("mouseup", () => {
@@ -242,6 +250,14 @@ export function setupResizeEvents(note, resizeHandle, context) {
     const textarea = note.querySelector(".note-content");
     const scrollbarThumb = note.querySelector(".scrollbar-thumb");
     updateScrollbar(textarea, scrollbarThumb);
+
+    // 在调整大小过程中触发事件，用于实时更新连接线
+    // 直接触发事件，不使用requestAnimationFrame，确保立即更新
+    dispatchCustomEvent("note-resizing", {
+      id: context.id,
+      note: context, // 传递便签实例，避免在NodeConnectionManager中再次查找
+      immediate: true, // 标记为立即更新
+    });
   });
 
   window.addEventListener("mouseup", () => {

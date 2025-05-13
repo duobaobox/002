@@ -51,12 +51,62 @@ export class NodeConnectionManager {
 
     // 监听窗口大小变化，更新连接线
     window.addEventListener("resize", () => {
-      this.updateAllConnections();
+      this.updateAllConnections(true); // 使用requestAnimationFrame
     });
 
     // 监听画布变换事件，更新连接线
     document.addEventListener("canvas-transform-updated", () => {
-      this.updateAllConnections();
+      this.updateAllConnections(true); // 使用requestAnimationFrame
+    });
+
+    // 监听便签移动完成事件，更新连接线
+    document.addEventListener("note-moved", () => {
+      this.updateAllConnections(true); // 使用requestAnimationFrame
+    });
+
+    // 监听便签移动中事件，实时更新连接线
+    document.addEventListener("note-moving", (e) => {
+      if (e.detail && e.detail.immediate) {
+        // 如果标记为立即更新，则直接更新指定便签的连接线
+        if (e.detail.note) {
+          this.updateConnection(e.detail.note);
+        } else {
+          // 如果没有提供便签实例，则通过ID查找
+          const noteId = e.detail.id;
+          const note = this.connectedNotes.find((n) => n.id === noteId);
+          if (note) {
+            this.updateConnection(note);
+          }
+        }
+      } else {
+        // 否则使用requestAnimationFrame更新所有连接线
+        this.updateAllConnections(true);
+      }
+    });
+
+    // 监听便签调整大小事件，实时更新连接线
+    document.addEventListener("note-resizing", (e) => {
+      if (e.detail && e.detail.immediate) {
+        // 如果标记为立即更新，则直接更新指定便签的连接线
+        if (e.detail.note) {
+          this.updateConnection(e.detail.note);
+        } else {
+          // 如果没有提供便签实例，则通过ID查找
+          const noteId = e.detail.id;
+          const note = this.connectedNotes.find((n) => n.id === noteId);
+          if (note) {
+            this.updateConnection(note);
+          }
+        }
+      } else {
+        // 否则使用requestAnimationFrame更新所有连接线
+        this.updateAllConnections(true);
+      }
+    });
+
+    // 监听便签调整大小完成事件，更新连接线
+    document.addEventListener("note-resized", () => {
+      this.updateAllConnections(true); // 使用requestAnimationFrame
     });
 
     console.log("节点连接管理器初始化完成");
@@ -235,6 +285,27 @@ export class NodeConnectionManager {
     path.classList.add("connection-line");
     path.dataset.noteId = note.id;
 
+    // 设置路径属性
+    path.setAttribute("stroke-linecap", "round"); // 圆形线帽
+    path.setAttribute("stroke-linejoin", "round"); // 圆形连接
+
+    // 添加交互事件
+    path.addEventListener("mouseover", () => {
+      path.style.strokeWidth = "3.5px";
+      path.style.opacity = "1";
+    });
+
+    path.addEventListener("mouseout", () => {
+      path.style.strokeWidth = "";
+      path.style.opacity = "";
+    });
+
+    path.addEventListener("click", (e) => {
+      // 可以添加点击连接线的行为，例如高亮对应的便签
+      console.log(`点击了连接线: ${note.id}`);
+      e.stopPropagation();
+    });
+
     // 添加到SVG容器
     this.svgContainer.appendChild(path);
 
@@ -243,6 +314,12 @@ export class NodeConnectionManager {
 
     // 更新连接线路径
     this.updateConnection(note);
+
+    // 添加连接状态类到节点按钮
+    const nodeButton = note.element.querySelector(".note-node-button");
+    if (nodeButton) {
+      nodeButton.classList.add("connected");
+    }
   }
 
   /**
@@ -252,8 +329,20 @@ export class NodeConnectionManager {
   removeConnection(note) {
     const path = this.connectionLines.get(note.id);
     if (path) {
+      // 移除事件监听器
+      path.removeEventListener("mouseover", null);
+      path.removeEventListener("mouseout", null);
+      path.removeEventListener("click", null);
+
+      // 移除路径元素
       path.remove();
       this.connectionLines.delete(note.id);
+
+      // 移除节点按钮的连接状态
+      const nodeButton = note.element.querySelector(".note-node-button");
+      if (nodeButton) {
+        nodeButton.classList.remove("connected");
+      }
     }
   }
 
@@ -269,21 +358,30 @@ export class NodeConnectionManager {
     const nodeButton = note.element.querySelector(".note-node-button");
     if (!nodeButton) return;
 
-    const nodeRect = nodeButton.getBoundingClientRect();
-
     // 获取插槽位置
     const slot = this.slotsContainer.querySelector(
       `.note-slot[data-note-id="${note.id}"]`
     );
     if (!slot) return;
 
+    // 获取Canvas实例
+    const canvas = window.canvasInstance;
+
+    // 获取节点按钮和插槽的DOM位置
+    const nodeRect = nodeButton.getBoundingClientRect();
     const slotRect = slot.getBoundingClientRect();
 
     // 计算连接线路径 - 从左下角节点按钮中心到插槽中心
-    const startX = nodeRect.left + nodeRect.width / 2;
-    const startY = nodeRect.top + nodeRect.height / 2;
-    const endX = slotRect.left + slotRect.width / 2;
-    const endY = slotRect.top + slotRect.height / 2; // 连接到插槽中心
+    let startX, startY, endX, endY;
+
+    // 使用DOM位置计算，但考虑SVG容器的位置偏移
+    const svgRect = this.svgContainer.getBoundingClientRect();
+
+    // 计算相对于SVG容器的坐标
+    startX = nodeRect.left + nodeRect.width / 2 - svgRect.left;
+    startY = nodeRect.top + nodeRect.height / 2 - svgRect.top;
+    endX = slotRect.left + slotRect.width / 2 - svgRect.left;
+    endY = slotRect.top + slotRect.height / 2 - svgRect.top; // 连接到插槽中心
 
     // 创建贝塞尔曲线路径 - 调整控制点使曲线更自然
     const dx = endX - startX;
@@ -336,11 +434,25 @@ export class NodeConnectionManager {
 
   /**
    * 更新所有连接线
+   * @param {boolean} useRAF - 是否使用requestAnimationFrame (默认: false)
    */
-  updateAllConnections() {
-    this.connectedNotes.forEach((note) => {
-      this.updateConnection(note);
-    });
+  updateAllConnections(useRAF = false) {
+    if (useRAF) {
+      // 使用requestAnimationFrame确保平滑更新
+      if (!this.updateAnimationFrame) {
+        this.updateAnimationFrame = requestAnimationFrame(() => {
+          this.connectedNotes.forEach((note) => {
+            this.updateConnection(note);
+          });
+          this.updateAnimationFrame = null;
+        });
+      }
+    } else {
+      // 直接更新
+      this.connectedNotes.forEach((note) => {
+        this.updateConnection(note);
+      });
+    }
   }
 
   /**

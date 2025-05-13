@@ -61,15 +61,18 @@
   display: flex;
 }
 
-/* 已连接状态的节点按钮 */
+/* 已连接状态的节点按钮 - 始终显示且样式不同 */
 .note-node-button.connected {
-  background-color: rgba(52, 168, 83, 0.85);
-  border-color: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  display: flex !important; /* 使用!important确保优先级，始终显示 */
+  background-color: rgba(52, 168, 83, 0.9); /* 增加不透明度 */
+  border-color: rgba(255, 255, 255, 0.95); /* 增加边框不透明度 */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* 增强阴影 */
 }
 
 .note-node-button.connected:hover {
   background-color: rgba(52, 168, 83, 0.95);
+  transform: scale(1.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 .note-node-button.connected::before {
@@ -93,7 +96,7 @@
   align-items: center;
   justify-content: center; /* 居中显示插槽 */
   padding: 0 15px;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   z-index: 9998; /* 确保在底部控制栏下方，但在其他元素上方 */
   transition: all 0.3s ease;
   overflow-x: auto;
@@ -112,11 +115,11 @@
 
 /* 插槽样式 - 简化为圆形节点 */
 .note-slot {
-  width: 22px; /* 与节点按钮尺寸一致 */
-  height: 22px; /* 与节点按钮尺寸一致 */
+  width: 24px; /* 稍微增大尺寸 */
+  height: 24px; /* 稍微增大尺寸 */
   margin: 0 6px; /* 增加间距 */
-  background-color: rgba(66, 133, 244, 0.85); /* 与节点按钮颜色一致 */
-  border: 2px solid rgba(255, 255, 255, 0.9); /* 与节点按钮边框一致 */
+  background-color: rgba(66, 133, 244, 0.9); /* 增加不透明度 */
+  border: 2px solid rgba(255, 255, 255, 0.95); /* 增加边框不透明度 */
   border-radius: 50%; /* 圆形 */
   display: flex;
   align-items: center;
@@ -124,15 +127,16 @@
   position: relative;
   flex-shrink: 0;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15); /* 与节点按钮阴影一致 */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* 增强阴影 */
   cursor: pointer;
+  z-index: 1; /* 确保插槽在容器内部的层级 */
 }
 
 /* 已连接的插槽 */
 .note-slot.connected {
-  background-color: rgba(52, 168, 83, 0.85); /* 与已连接节点按钮颜色一致 */
-  border: 2px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  background-color: rgba(52, 168, 83, 0.9); /* 增加不透明度 */
+  border: 2px solid rgba(255, 255, 255, 0.95); /* 增加边框不透明度 */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* 增强阴影 */
 }
 
 /* 插槽内容 - 显示向上箭头 */
@@ -190,17 +194,32 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 999;
+  z-index: 10000; /* 确保在插槽容器上方 */
+}
+
+/* SVG容器样式 */
+#connections-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* 容器本身不接收事件 */
+}
+
+/* 但连接线可以接收事件 */
+#connections-svg path {
+  pointer-events: stroke; /* 只在线条上接收事件 */
 }
 
 /* 连接线样式 - 更像节点软件的连接线 */
 .connection-line {
   stroke: #4285f4;
-  stroke-width: 2;
+  stroke-width: 2.5; /* 增加线宽 */
   fill: none;
   stroke-dasharray: 0; /* 实线 */
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
-  opacity: 0.8;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.15)); /* 增强阴影 */
+  opacity: 0.85; /* 增加不透明度 */
   transition: all 0.2s ease;
   pointer-events: stroke; /* 只在线条上接收事件 */
   cursor: pointer;
@@ -209,6 +228,7 @@
 /* 连接线悬停效果 */
 .connection-line:hover {
   stroke: #1a73e8;
-  stroke-width: 3;
+  stroke-width: 3.5; /* 增加线宽 */
   opacity: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)); /* 增强阴影 */
 }
