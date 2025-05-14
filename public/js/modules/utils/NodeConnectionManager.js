@@ -148,6 +148,21 @@ export class NodeConnectionManager {
       this.selectedNote = null;
     });
 
+    // 添加页面可见性变化事件处理
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) {
+        // 页面变为可见时刷新所有连接线
+        console.log("页面变为可见，刷新所有连接线");
+        this.forceUpdateAllConnections();
+
+        // 可见性变化时不再触发连接事件，只更新连接线位置
+        // 避免触发不必要的事件导致重复生成便签
+      }
+    });
+
+    // 将管理器实例暴露给全局作用域，方便App类访问
+    window.nodeConnectionManager = this;
+
     console.log("节点连接管理器初始化完成");
   }
 
@@ -279,19 +294,24 @@ export class NodeConnectionManager {
       nodeButton.classList.add("connected");
     }
 
+    // 只在初始添加时触发一次note-connected事件
+    const isInitialConnection = !this.connectionLines.has(note.id);
+    if (isInitialConnection) {
+      dispatchCustomEvent("note-connected", {
+        note: note,
+      });
+    }
+
     // 延迟创建连接线，确保插槽已经在DOM中
     setTimeout(() => {
       this.createConnection(note);
 
-      // 触发便签已连接事件
+      // 触发便签已连接事件 - 这是创建连接线后的特定事件
       dispatchCustomEvent("note-connection-established", {
         note: note,
       });
 
-      // 同时触发note-connected事件，以确保App.js中的监听器能够捕获
-      dispatchCustomEvent("note-connected", {
-        note: note,
-      });
+      // 不再重复触发note-connected事件
     }, 50);
   }
 
@@ -402,14 +422,24 @@ export class NodeConnectionManager {
     // 销毁连接线
     const line = this.connectionLines.get(note.id);
     if (line) {
-      line.remove(); // Leader-Line提供的移除方法
+      try {
+        line.remove(); // Leader-Line提供的移除方法
+      } catch (error) {
+        console.warn(`移除连接线失败 (便签ID: ${note.id}):`, error);
+      }
       this.connectionLines.delete(note.id);
     }
 
-    // 移除节点按钮连接状态
-    const nodeButton = note.element.querySelector(".note-node-button");
-    if (nodeButton) {
-      nodeButton.classList.remove("connected");
+    // 安全地移除节点按钮连接状态
+    try {
+      if (note.element) {
+        const nodeButton = note.element.querySelector(".note-node-button");
+        if (nodeButton) {
+          nodeButton.classList.remove("connected");
+        }
+      }
+    } catch (error) {
+      console.warn(`移除节点按钮连接状态失败 (便签ID: ${note.id}):`, error);
     }
 
     // 触发便签连接断开事件
@@ -705,17 +735,28 @@ export class NodeConnectionManager {
    * @param {Object} note - 便签对象
    */
   disconnectNote(note) {
-    if (this.isConnected(note)) {
+    if (!note || !note.id) return;
+
+    // 检查便签是否已连接
+    if (!this.isConnected(note)) return;
+
+    try {
       // 移除连接
       this.removeConnection(note);
 
       // 移除插槽
       this.removeSlot(note);
 
-      // 移除节点按钮连接状态
-      const nodeButton = note.element.querySelector(".note-node-button");
-      if (nodeButton) {
-        nodeButton.classList.remove("connected");
+      // 安全地移除节点按钮连接状态
+      try {
+        if (note.element) {
+          const nodeButton = note.element.querySelector(".note-node-button");
+          if (nodeButton) {
+            nodeButton.classList.remove("connected");
+          }
+        }
+      } catch (error) {
+        // 忽略错误，便签可能已被删除
       }
 
       // 如果没有连接的便签，隐藏插槽区域
@@ -725,6 +766,8 @@ export class NodeConnectionManager {
 
       // 触发断开连接事件
       dispatchCustomEvent("note-disconnected", { note });
+    } catch (error) {
+      console.warn(`断开便签连接失败 (便签ID: ${note.id}):`, error);
     }
   }
 

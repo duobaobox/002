@@ -21,6 +21,10 @@ import nodeConnectionManager from "../utils/NodeConnectionManager.js";
  */
 export class App {
   constructor() {
+    // 设置自定义事件
+    this.customEvents = {};
+
+    // 初始化便签数组
     this.notes = [];
     this.canvas = new Canvas();
     this.nextId = 1;
@@ -29,6 +33,15 @@ export class App {
     this.updateDebounceTimers = {};
     // 设置防抖延迟时间(毫秒)
     this.updateDebounceDelay = 1000;
+
+    // 当前备份区域元素
+    this.backupStatusArea = null;
+
+    // 注册清理任务 - 在页面卸载前关闭所有连接
+    this.registerConnectionCleanupTask();
+
+    // 创建并初始化设置模态框
+    this.initSettingsModal();
 
     // AI 预连接相关属性
     this.preconnectTimer = null; // 预连接定时器
@@ -75,20 +88,39 @@ export class App {
       showConnectionStatus: false, // 默认不显示连接状态
     };
 
-    // 注册定期清理任务，确保不活跃的连接被释放
-    this.registerConnectionCleanupTask();
-
-    // 从服务器加载便签数据
-    this.loadNotes();
-
-    this.initEventListeners();
-    this.updateButtonVisibility();
-    this.initSettingsModal(); // 新增初始化设置弹窗
-    this.checkAuth(); // 检查认证状态
-
     // 初始化邀请码管理
     this.inviteCodes = [];
     this.inviteApiAvailable = false; // 标记API是否可用
+
+    // 更新按钮可见性
+    this.updateButtonVisibility();
+
+    // 检查认证状态
+    this.checkAuth();
+
+    // 初始化事件监听器 (只初始化一次)
+    this.initEventListeners().then(() => {
+      console.log("事件监听器初始化完成");
+
+      // 初始化完成后添加延迟检查便签连接状态
+      setTimeout(() => {
+        if (window.nodeConnectionManager) {
+          const connectedNotes =
+            window.nodeConnectionManager.getConnectedNotes();
+          if (connectedNotes && connectedNotes.length > 0) {
+            console.log(
+              "App初始化：检测到已连接便签数量:",
+              connectedNotes.length
+            );
+            this.updatePromptPlaceholder();
+            this.updateButtonVisibility();
+          }
+        }
+      }, 1000);
+
+      // 加载便签数据 (只在事件监听器初始化完成后加载一次)
+      this.loadNotes();
+    });
   }
 
   // 检查认证状态
@@ -347,15 +379,40 @@ export class App {
           }
         });
       } else {
-        // 检查是否有连接的便签
-        const connectedNotes = nodeConnectionManager.getConnectedNotes();
-        if (connectedNotes.length > 0) {
-          // 如果有连接的便签，使用连接便签生成
-          this.generateFromConnectedNotes();
-        } else {
-          // 否则使用普通生成
-          this.generateAiNote();
+        // 确保nodeConnectionManager已初始化
+        if (!window.nodeConnectionManager) {
+          console.warn("节点连接管理器未初始化，尝试获取实例");
+          // 尝试从window对象获取实例
+          const nodeConnectionManagerInstance = window.nodeConnectionManager;
+          if (!nodeConnectionManagerInstance) {
+            console.error("无法获取节点连接管理器实例");
+            this.showMessage("连接功能暂不可用，请刷新页面重试", "error");
+            return;
+          }
         }
+
+        // 强制刷新一次连接状态，确保获取最新连接列表
+        if (window.nodeConnectionManager) {
+          window.nodeConnectionManager.forceUpdateAllConnections();
+        }
+
+        // 延迟50ms确保连接状态已更新
+        setTimeout(() => {
+          // 获取连接的便签
+          const connectedNotes = window.nodeConnectionManager
+            ? window.nodeConnectionManager.getConnectedNotes()
+            : [];
+
+          console.log(`检测到 ${connectedNotes.length} 个连接的便签`);
+
+          if (connectedNotes.length > 0) {
+            // 如果有连接的便签，使用连接便签生成
+            this.generateFromConnectedNotes();
+          } else {
+            // 否则使用普通生成
+            this.generateAiNote();
+          }
+        }, 50);
       }
     });
 
@@ -454,8 +511,35 @@ export class App {
           // Shift+Enter 触发生成
           e.preventDefault();
           const hasText = promptElement.value.trim().length > 0;
+
           if (hasText) {
-            this.generateAiNote();
+            // 确保nodeConnectionManager已初始化
+            if (!window.nodeConnectionManager) {
+              console.warn("快捷键生成：节点连接管理器未初始化");
+              this.generateAiNote();
+              return;
+            }
+
+            // 强制刷新一次连接状态，确保获取最新连接列表
+            window.nodeConnectionManager.forceUpdateAllConnections();
+
+            // 延迟50ms确保连接状态已更新
+            setTimeout(() => {
+              // 获取连接的便签
+              const connectedNotes = window.nodeConnectionManager
+                ? window.nodeConnectionManager.getConnectedNotes()
+                : [];
+
+              console.log(`快捷键检测到 ${connectedNotes.length} 个连接的便签`);
+
+              if (connectedNotes.length > 0) {
+                // 如果有连接的便签，使用连接便签生成
+                this.generateFromConnectedNotes();
+              } else {
+                // 否则使用普通生成
+                this.generateAiNote();
+              }
+            }, 50);
           } else {
             this.addEmptyNote();
           }
@@ -708,8 +792,15 @@ export class App {
     const addButton = document.getElementById("add-note");
     const aiButton = document.getElementById("ai-generate");
 
-    // 获取连接的便签数量
-    const connectedNotes = nodeConnectionManager.getConnectedNotes();
+    // 安全地获取连接的便签数量
+    let connectedNotes = [];
+    if (window.nodeConnectionManager) {
+      try {
+        connectedNotes = window.nodeConnectionManager.getConnectedNotes() || [];
+      } catch (e) {
+        console.warn("获取连接便签失败:", e);
+      }
+    }
     const hasConnectedNotes = connectedNotes.length > 0;
 
     if (hasText) {
@@ -733,7 +824,17 @@ export class App {
   // 更新提示框占位文本
   updatePromptPlaceholder() {
     const promptElement = document.getElementById("ai-prompt");
-    const connectedNotes = nodeConnectionManager.getConnectedNotes();
+    if (!promptElement) return;
+
+    // 安全地获取连接的便签
+    let connectedNotes = [];
+    if (window.nodeConnectionManager) {
+      try {
+        connectedNotes = window.nodeConnectionManager.getConnectedNotes() || [];
+      } catch (e) {
+        console.warn("获取连接便签失败:", e);
+      }
+    }
 
     if (connectedNotes.length > 0) {
       promptElement.placeholder = `基于 ${connectedNotes.length} 个便签生成内容...`;
@@ -746,7 +847,19 @@ export class App {
   async generateFromConnectedNotes() {
     const promptElement = document.getElementById("ai-prompt");
     const userPrompt = promptElement.value.trim();
-    const connectedNotes = nodeConnectionManager.getConnectedNotes();
+
+    // 直接从window对象获取最新连接状态
+    if (!window.nodeConnectionManager) {
+      this.showMessage("连接管理器未初始化，无法获取连接便签", "error");
+      return;
+    }
+
+    // 强制刷新一次连接
+    window.nodeConnectionManager.forceUpdateAllConnections();
+
+    // 获取连接的便签
+    const connectedNotes = window.nodeConnectionManager.getConnectedNotes();
+    console.log(`生成内容：检测到 ${connectedNotes.length} 个连接的便签`);
 
     if (connectedNotes.length === 0) {
       this.showMessage("没有连接的便签", "warning");
@@ -782,8 +895,8 @@ export class App {
 
       // 添加连接便签的内容
       connectedNotes.forEach((note, index) => {
-        combinedPrompt += `【便签 ${index + 1}：${note.title}】\n${
-          note.text
+        combinedPrompt += `【便签 ${index + 1}：${note.title || "无标题"}】\n${
+          note.text || "空白内容"
         }\n\n`;
       });
 
@@ -933,12 +1046,22 @@ export class App {
 
   // 从服务器加载便签
   async loadNotes() {
+    // 防止重复加载
+    if (this._isLoadingNotes) {
+      console.log("便签加载中，跳过重复加载");
+      return;
+    }
+
+    // 设置加载标志
+    this._isLoadingNotes = true;
+
     try {
       const response = await fetch("/api/notes");
       const data = await response.json();
 
       // 处理可能的错误（如用户被删除）
       if (this.handleApiError(response, data)) {
+        this._isLoadingNotes = false; // 重置加载标志
         return; // 错误已处理，直接返回
       }
 
@@ -948,11 +1071,20 @@ export class App {
         // 清空现有便签
         this.notes = [];
         const noteContainer = document.getElementById("note-container");
-        while (noteContainer.firstChild) {
-          noteContainer.removeChild(noteContainer.firstChild);
+
+        // 记录当前便签数量，用于检测是否清空干净
+        const currentNoteCount = noteContainer.childElementCount;
+
+        // 如果有便签，先清空，避免重复添加
+        if (currentNoteCount > 0) {
+          console.log(`清空 ${currentNoteCount} 个现有便签`);
+          while (noteContainer.firstChild) {
+            noteContainer.removeChild(noteContainer.firstChild);
+          }
         }
 
         // 添加服务器返回的便签
+        console.log(`从服务器加载 ${data.notes.length} 个便签`);
         data.notes.forEach((noteData) => {
           // 直接使用数据库中保存的坐标，Note类会正确处理坐标系转换
           // Note类的构造函数会将这些坐标视为画布坐标系中的位置
@@ -986,6 +1118,9 @@ export class App {
       }
     } catch (error) {
       console.error("加载便签时发生错误:", error);
+    } finally {
+      // 重置加载标志
+      this._isLoadingNotes = false;
     }
   }
 
@@ -1104,11 +1239,34 @@ export class App {
   // 从服务器删除便签
   async removeNote(id) {
     try {
+      // 首先从前端列表中移除便签，确保用户即时获得反馈
+      const originalNotes = [...this.notes];
+      this.notes = this.notes.filter((note) => note.id !== id);
+
       const response = await fetch(`/api/notes/${id}`, {
         method: "DELETE",
       });
 
-      const data = await response.json();
+      // 检查响应状态
+      if (response.status === 404) {
+        // 便签不存在，但已从前端移除，这是正常的
+        console.log(`便签 ${id} 在服务器上不存在，已从本地移除`);
+        return;
+      }
+
+      // 尝试解析JSON响应
+      let data;
+      try {
+        data = await response.json();
+      } catch (error) {
+        // 如果无法解析JSON (可能是空响应)，检查状态码
+        if (response.ok) {
+          console.log(`便签 ${id} 已删除 (无响应数据)`);
+          return;
+        } else {
+          throw new Error(`删除便签失败，HTTP状态码: ${response.status}`);
+        }
+      }
 
       // 处理可能的错误（如用户被删除）
       if (this.handleApiError(response, data)) {
@@ -1116,13 +1274,17 @@ export class App {
       }
 
       if (data.success) {
-        this.notes = this.notes.filter((note) => note.id !== id);
-        console.log(`便签 ${id} 已删除`);
+        console.log(`便签 ${id} 已成功删除`);
       } else {
-        console.error("删除便签失败:", data);
+        // 如果服务器返回错误，但不是404，恢复便签列表
+        console.error("删除便签失败:", data.message || "未知错误");
+        if (response.status !== 404) {
+          this.notes = originalNotes; // 恢复原始便签列表
+        }
       }
     } catch (error) {
       console.error("删除便签时出错:", error);
+      // 删除出错时不要恢复列表，因为大多数情况下便签已经被删除了
     }
   }
 
@@ -1650,6 +1812,49 @@ export class App {
     });
     document.querySelector('.nav-item[data-tab="ai"]').classList.add("active");
     document.getElementById("ai-panel").classList.add("active");
+
+    // 在初始化完成后，检查并同步已连接便签状态
+    // 这是解决初次启动服务时连接便签未响应的关键
+    setTimeout(() => {
+      if (window.nodeConnectionManager) {
+        try {
+          // 强制刷新一次连接状态
+          window.nodeConnectionManager.forceUpdateAllConnections();
+
+          // 获取连接便签并更新UI
+          const connectedNotes =
+            window.nodeConnectionManager.getConnectedNotes();
+
+          if (connectedNotes && connectedNotes.length > 0) {
+            console.log(
+              `设置初始化：检测到 ${connectedNotes.length} 个已连接便签`
+            );
+            // 更新UI状态
+            this.updatePromptPlaceholder();
+            this.updateButtonVisibility();
+
+            // 注册一个额外的延迟检查，确保连接稳定
+            setTimeout(() => {
+              // 再次强制刷新连接状态
+              window.nodeConnectionManager.forceUpdateAllConnections();
+
+              // 再次获取连接便签并确认UI状态
+              const reconfirmedNotes =
+                window.nodeConnectionManager.getConnectedNotes();
+              if (reconfirmedNotes && reconfirmedNotes.length > 0) {
+                console.log(
+                  `二次确认：检测到 ${reconfirmedNotes.length} 个已连接便签`
+                );
+                this.updatePromptPlaceholder();
+                this.updateButtonVisibility();
+              }
+            }, 1000);
+          }
+        } catch (e) {
+          console.error("连接状态检查出错:", e);
+        }
+      }
+    }, 500);
   }
 
   // 修改密码
