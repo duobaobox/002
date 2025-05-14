@@ -526,26 +526,25 @@ export class App {
             // 延迟50ms确保连接状态已更新
             setTimeout(() => {
               // 获取连接的便签
-              const connectedNotes = window.nodeConnectionManager
-                ? window.nodeConnectionManager.getConnectedNotes()
-                : [];
+              const connectedNotes =
+                window.nodeConnectionManager.getConnectedNotes();
 
-              console.log(`快捷键检测到 ${connectedNotes.length} 个连接的便签`);
-
-              if (connectedNotes.length > 0) {
-                // 如果有连接的便签，使用连接便签生成
+              if (connectedNotes && connectedNotes.length > 0) {
+                console.log(
+                  `快捷键生成：检测到 ${connectedNotes.length} 个连接的便签`
+                );
                 this.generateFromConnectedNotes();
               } else {
-                // 否则使用普通生成
                 this.generateAiNote();
               }
             }, 50);
           } else {
+            // 无文本时添加空白便签
             this.addEmptyNote();
           }
         } else {
-          // 普通回车实现换行
-          // 不阻止默认行为，让浏览器自然处理换行
+          // 普通回车键，添加换行
+          // 已由默认行为处理
         }
       }
     });
@@ -782,6 +781,35 @@ export class App {
         this.generateInviteCode();
       });
     }
+
+    // 监听连接状态变化事件
+    document.addEventListener("connections-changed", (e) => {
+      console.log("连接状态变化，更新UI");
+      // 更新占位符和按钮显示
+      this.updatePromptPlaceholder();
+      this.updateButtonVisibility();
+
+      // 更新底部栏的视觉提示
+      const connectedNotes =
+        window.nodeConnectionManager?.getConnectedNotes() || [];
+      const bottomBar = document.querySelector(".bottom-bar");
+      if (bottomBar) {
+        if (connectedNotes.length > 0) {
+          bottomBar.classList.add("connection-mode");
+        } else {
+          bottomBar.classList.remove("connection-mode");
+        }
+      }
+    });
+
+    // 初始化时检查连接状态
+    setTimeout(() => {
+      if (window.nodeConnectionManager) {
+        const connected =
+          window.nodeConnectionManager.forceUpdateAllConnections();
+        console.log(`初始化事件监听器：检测到 ${connected} 个连接的便签`);
+      }
+    }, 500);
   }
 
   // 根据输入内容更新按钮可见性
@@ -803,21 +831,38 @@ export class App {
     }
     const hasConnectedNotes = connectedNotes.length > 0;
 
-    if (hasText) {
+    // 当有便签连接时，始终禁用手动添加按钮
+    if (hasConnectedNotes) {
+      // 无论是否有文本输入，都隐藏添加按钮，显示AI生成按钮
       addButton.style.display = "none";
       aiButton.style.display = "block";
 
-      // 根据是否有连接便签设置不同的按钮样式
-      if (hasConnectedNotes) {
-        aiButton.classList.add("connected-mode");
-        aiButton.title = `基于 ${connectedNotes.length} 个便签生成内容`;
-      } else {
-        aiButton.classList.remove("connected-mode");
-        aiButton.title = "AI生成便签";
+      // 为AI按钮添加连接模式样式
+      aiButton.classList.add("connected-mode");
+      aiButton.title = `基于 ${connectedNotes.length} 个便签生成内容`;
+
+      // 对底部输入区域添加视觉提示
+      const bottomBar = document.querySelector(".bottom-bar");
+      if (bottomBar) {
+        bottomBar.classList.add("connection-mode");
       }
     } else {
-      addButton.style.display = "block";
-      aiButton.style.display = "none";
+      // 没有连接的便签时，恢复正常行为
+      if (hasText) {
+        addButton.style.display = "none";
+        aiButton.style.display = "block";
+        aiButton.classList.remove("connected-mode");
+        aiButton.title = "AI生成便签";
+      } else {
+        addButton.style.display = "block";
+        aiButton.style.display = "none";
+      }
+
+      // 移除底部栏的连接模式样式
+      const bottomBar = document.querySelector(".bottom-bar");
+      if (bottomBar) {
+        bottomBar.classList.remove("connection-mode");
+      }
     }
   }
 
@@ -837,9 +882,29 @@ export class App {
     }
 
     if (connectedNotes.length > 0) {
-      promptElement.placeholder = `基于 ${connectedNotes.length} 个便签生成内容...`;
+      // 更加详细和有指导性的占位文本
+      const noteCount = connectedNotes.length;
+      promptElement.placeholder = `请输入指令，总结这 ${noteCount} 个便签的内容...`;
+
+      // 为输入框添加连接模式样式
+      promptElement.classList.add("connection-input-mode");
+
+      // 更新便签标题
+      const noteTitles = connectedNotes
+        .map((note) => note.title || "无标题便签")
+        .join(", ");
+      if (noteTitles.length > 50) {
+        promptElement.title = `连接的便签: ${noteTitles.substring(0, 47)}...`;
+      } else {
+        promptElement.title = `连接的便签: ${noteTitles}`;
+      }
     } else {
+      // 恢复默认占位文本
       promptElement.placeholder = "输入提示或直接添加便签...";
+
+      // 移除连接模式样式
+      promptElement.classList.remove("connection-input-mode");
+      promptElement.title = "";
     }
   }
 

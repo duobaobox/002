@@ -88,22 +88,24 @@
   transform: translateX(-50%); /* 水平居中 */
   width: 500px; /* 与底部控制栏宽度一致 */
   max-width: 85%; /* 与底部控制栏最大宽度一致 */
-  height: 40px; /* 减小高度，更加紧凑 */
-  background-color: rgba(255, 255, 255, 0.95); /* 更亮的背景 */
-  border: 1px solid rgba(0, 0, 0, 0.1); /* 更明显的边框 */
-  border-radius: 12px; /* 与底部控制栏圆角一致 */
+  height: 52px; /* 提供足够空间 */
+  background-color: rgba(255, 255, 255, 0.98); /* 更不透明的背景 */
+  border: 1px solid rgba(0, 0, 0, 0.08); /* 更精细的边框 */
+  border-radius: 14px; /* 略微增加圆角 */
   display: flex;
-  align-items: center;
-  justify-content: flex-start; /* 左对齐，更有序 */
-  padding: 0 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08); /* 与底部控制栏阴影一致 */
+  align-items: center; /* 垂直居中 */
+  justify-content: flex-start; /* 左对齐 */
+  padding: 0 14px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03); /* 更精致的阴影 */
   z-index: 9998; /* 确保在底部控制栏下方，但在其他元素上方 */
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1); /* 平滑过渡 */
   overflow-x: auto;
   scrollbar-width: thin;
   opacity: 0; /* 默认隐藏 */
   visibility: hidden; /* 默认隐藏 */
   pointer-events: none; /* 默认不接收事件 */
+  backdrop-filter: blur(5px); /* 磨砂玻璃效果 */
+  -webkit-backdrop-filter: blur(5px);
 }
 
 /* 自定义滚动条 */
@@ -125,26 +127,33 @@
   opacity: 1; /* 显示 */
   visibility: visible; /* 显示 */
   pointer-events: auto; /* 接收事件 */
+  transform: translateX(-50%) translateY(0); /* 无位移动画 */
 }
 
 /* 连接插槽标题 */
 .slots-title {
-  font-size: 11px;
-  color: #666;
-  margin-right: 10px;
+  font-size: 12px;
+  color: #555;
+  margin-right: 14px;
   white-space: nowrap;
   flex-shrink: 0;
-  font-weight: 500;
+  font-weight: 600; /* 稍微加粗 */
+  margin-top: 0; /* 移除顶部边距 */
+  letter-spacing: 0.2px; /* 字母间距 */
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8); /* 微妙的文字阴影 */
 }
 
 /* 插槽容器内的列表区域 */
 .slots-list {
   display: flex;
-  align-items: center;
+  align-items: center; /* 改为垂直居中 */
   flex-grow: 1;
   overflow-x: auto;
-  padding: 0 5px;
+  padding: 0 8px;
   scrollbar-width: none; /* 隐藏滚动条 */
+  height: 100%; /* 填充整个容器高度 */
+  padding-top: 0; /* 移除顶部内边距 */
+  gap: 10px; /* 插槽之间的间距 */
 }
 
 .slots-list::-webkit-scrollbar {
@@ -153,31 +162,41 @@
 
 /* 清除所有连接的按钮 */
 .clear-all-connections {
-  padding: 1px 8px;
+  padding: 3px 10px;
   background-color: #f8f8f8;
   color: #666;
-  border: 1px solid #ddd;
-  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
   font-size: 11px;
+  font-weight: 500;
   cursor: pointer;
   margin-left: auto; /* 推到右侧 */
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  height: 22px;
-  transition: all 0.2s ease;
+  height: 24px;
+  transition: all 0.25s ease;
+  margin-top: 0; /* 移除顶部边距 */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); /* 微妙的阴影 */
 }
 
 .clear-all-connections:hover {
   background-color: #f1f1f1;
   color: #ea4335;
-  border-color: #ea4335;
+  border-color: rgba(234, 67, 53, 0.5);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px); /* 悬停时微微上浮 */
+}
+
+.clear-all-connections:active {
+  transform: translateY(0); /* 点击时恢复位置 */
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
 }
 
 .clear-all-connections::before {
   content: "×";
-  font-size: 12px;
-  margin-right: 3px;
+  font-size: 14px;
+  margin-right: 4px;
   font-weight: bold;
 }
 
@@ -185,53 +204,61 @@
 .note-slot {
   width: 20px; /* 统一大小 */
   height: 20px; /* 统一大小 */
-  margin: 0 5px; /* 调整间距 */
+  margin: 0; /* 使用gap属性控制间距 */
   background-color: rgba(66, 133, 244, 0.85); /* 蓝色 */
   border: 2px solid white;
   border-radius: 50%; /* 圆形 */
   position: relative;
   flex-shrink: 0;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.03);
   cursor: pointer;
   z-index: 1; /* 确保插槽在容器内部的层级 */
+  margin-top: 0; /* 移除顶部边距 */
 }
 
 /* 已连接的插槽 */
 .note-slot.connected {
-  background-color: rgba(52, 168, 83, 0.85); /* 绿色 */
-  border: 2px solid white;
+  background-color: rgba(52, 168, 83, 0.9); /* 绿色，增加不透明度 */
+  border: 2px solid rgba(255, 255, 255, 0.95);
 }
 
 /* 插槽移除按钮 - 更精致的设计 */
 .slot-remove {
   position: absolute;
-  right: -3px;
-  top: -3px;
-  width: 10px;
-  height: 10px;
+  right: -4px;
+  top: -6px; /* 保持在上方 */
+  width: 14px; /* 增加大小 */
+  height: 14px; /* 增加大小 */
   border-radius: 50%;
-  background-color: rgba(234, 67, 53, 0.9); /* 红色背景 */
+  background-color: rgba(234, 67, 53, 0.95); /* 红色背景，更醒目 */
   border: 1px solid white;
   color: white;
-  font-size: 8px;
+  font-size: 10px; /* 字体大小 */
   display: none; /* 默认隐藏 */
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.15s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-  z-index: 2;
+  transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15); /* 增强阴影 */
+  z-index: 10; /* 增加z-index确保显示在最上层 */
+  transform: scale(0.9); /* 初始缩小，悬停时放大 */
 }
 
 /* 悬停时显示移除按钮 */
 .note-slot:hover .slot-remove {
   display: flex;
+  transform: scale(1); /* 悬停时恢复大小，有动画效果 */
 }
 
 .slot-remove:hover {
   background-color: rgba(211, 47, 47, 1);
-  transform: scale(1.1);
+  transform: scale(1.15);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slot-remove:active {
+  transform: scale(0.95);
 }
 
 /* 添加序号标记在插槽上 */
@@ -241,21 +268,23 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 9px;
+  font-size: 10px; /* 稍大字体 */
   color: white;
   font-weight: bold;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1); /* 微妙的文字阴影 */
 }
 
 /* 插槽悬停效果 */
 .note-slot:hover {
   transform: scale(1.1);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
 }
 
 /* 插槽高亮状态 */
 .note-slot.slot-highlight {
   transform: scale(1.08);
-  box-shadow: 0 1px 4px rgba(249, 132, 121, 0.3);
+  box-shadow: 0 2px 6px rgba(249, 132, 121, 0.3),
+    0 0 0 1px rgba(249, 132, 121, 0.2);
   border-color: rgba(255, 255, 255, 1);
   background-color: rgba(249, 132, 121, 0.8);
 }
@@ -312,4 +341,53 @@
 :root {
   --note-connection-color: #4682b4;
   --note-connection-highlight-color: #ff6b6b;
+}
+
+/* 连接模式下的底部栏样式 */
+.bottom-bar.connection-mode {
+  border: 1px solid rgba(52, 168, 83, 0.2); /* 绿色边框提示 */
+  box-shadow: 0 2px 10px rgba(52, 168, 83, 0.1),
+    0 0 0 1px rgba(52, 168, 83, 0.08); /* 绿色阴影 */
+  background-color: rgba(255, 255, 255, 0.98); /* 略微调整背景 */
+  animation: connection-mode-pulse 2s infinite alternate; /* 添加轻微脉动效果 */
+}
+
+/* 连接模式下的输入框样式 */
+.ai-prompt.connection-input-mode {
+  background-color: rgba(240, 255, 240, 0.7); /* 淡绿色背景 */
+  border-color: rgba(52, 168, 83, 0.3); /* 绿色边框 */
+  color: #015d01; /* 深绿色文字 */
+  font-weight: 500; /* 稍微加粗 */
+}
+
+.ai-prompt.connection-input-mode::placeholder {
+  color: rgba(52, 168, 83, 0.7); /* 绿色占位符文本 */
+  font-weight: 500; /* 稍微加粗 */
+}
+
+/* 已连接模式下的AI生成按钮样式增强 */
+#ai-generate.connected-mode {
+  background-color: #34a853; /* 绿色背景 */
+  border-color: rgba(52, 168, 83, 0.8); /* 绿色边框 */
+  box-shadow: 0 2px 6px rgba(52, 168, 83, 0.3); /* 绿色阴影 */
+  transform: scale(1.05); /* 稍微放大 */
+  transition: all 0.3s ease;
+}
+
+#ai-generate.connected-mode:hover {
+  background-color: #2d9649; /* 悬停时深绿色 */
+  box-shadow: 0 3px 8px rgba(52, 168, 83, 0.4); /* 更明显的阴影 */
+  transform: scale(1.1); /* 悬停时更大 */
+}
+
+/* 连接模式的微妙脉动动画 */
+@keyframes connection-mode-pulse {
+  from {
+    box-shadow: 0 2px 10px rgba(52, 168, 83, 0.1),
+      0 0 0 1px rgba(52, 168, 83, 0.08);
+  }
+  to {
+    box-shadow: 0 2px 12px rgba(52, 168, 83, 0.2),
+      0 0 0 1px rgba(52, 168, 83, 0.15);
+  }
 }

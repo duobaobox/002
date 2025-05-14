@@ -230,6 +230,25 @@ export class NodeConnectionManager {
         console.error(`强制更新连接线失败 (便签ID: ${noteId}):`, error);
       }
     });
+
+    // 触发连接状态变化事件
+    dispatchCustomEvent("connections-changed", {
+      detail: { connections: this.connectedNotes },
+    });
+
+    // 自动更新界面占位符和按钮显示
+    if (typeof window.app !== "undefined") {
+      setTimeout(() => {
+        try {
+          window.app.updatePromptPlaceholder();
+          window.app.updateButtonVisibility();
+        } catch (e) {
+          console.warn("自动更新UI时出错:", e);
+        }
+      }, 50);
+    }
+
+    return this.connectedNotes.length;
   }
 
   /**
@@ -727,6 +746,17 @@ export class NodeConnectionManager {
 
       // 触发连接事件
       dispatchCustomEvent("note-connected", { note });
+
+      // 触发连接状态变化事件，用于更新UI
+      dispatchCustomEvent("connections-changed", {
+        detail: { connections: this.connectedNotes },
+      });
+
+      // 自动更新界面占位符和按钮显示
+      if (typeof window.app !== "undefined") {
+        window.app.updatePromptPlaceholder();
+        window.app.updateButtonVisibility();
+      }
     }
   }
 
@@ -766,6 +796,17 @@ export class NodeConnectionManager {
 
       // 触发断开连接事件
       dispatchCustomEvent("note-disconnected", { note });
+
+      // 触发连接状态变化事件，用于更新UI
+      dispatchCustomEvent("connections-changed", {
+        detail: { connections: this.connectedNotes },
+      });
+
+      // 自动更新界面占位符和按钮显示
+      if (typeof window.app !== "undefined") {
+        window.app.updatePromptPlaceholder();
+        window.app.updateButtonVisibility();
+      }
     } catch (error) {
       console.warn(`断开便签连接失败 (便签ID: ${note.id}):`, error);
     }
@@ -806,6 +847,17 @@ export class NodeConnectionManager {
 
     // 触发自定义事件，通知所有连接已清除
     dispatchCustomEvent("all-connections-cleared", {});
+
+    // 触发连接状态变化事件，用于更新UI
+    dispatchCustomEvent("connections-changed", {
+      detail: { connections: [] },
+    });
+
+    // 自动更新界面占位符和按钮显示
+    if (typeof window.app !== "undefined") {
+      window.app.updatePromptPlaceholder();
+      window.app.updateButtonVisibility();
+    }
 
     // 隐藏插槽容器
     if (this.slotsContainer) {
