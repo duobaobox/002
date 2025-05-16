@@ -148,6 +148,21 @@ export class NodeConnectionManager {
       this.selectedNote = null;
     });
 
+    // 监听便签删除事件，确保清理连接线
+    document.addEventListener("note-removed", (e) => {
+      if (e.detail && e.detail.id) {
+        // 查找相应的便签对象
+        const noteToRemove = this.connectedNotes.find(
+          (note) => note.id === e.detail.id
+        );
+        if (noteToRemove) {
+          console.log(`便签 ${e.detail.id} 被删除，清理相关连接线`);
+          // 断开连接，移除连接线和插槽
+          this.disconnectNote(noteToRemove);
+        }
+      }
+    });
+
     // 添加页面可见性变化事件处理
     document.addEventListener("visibilitychange", () => {
       if (!document.hidden) {
@@ -621,7 +636,8 @@ export class NodeConnectionManager {
    */
   toggleConnection(note) {
     if (this.isConnected(note)) {
-      this.removeConnection(note);
+      // 使用 disconnectNote 而不是 removeConnection，确保同时移除连接线和插槽
+      this.disconnectNote(note);
       return false;
     } else {
       this.addConnection(note);
