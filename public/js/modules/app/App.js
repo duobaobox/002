@@ -884,7 +884,7 @@ export class App {
     if (connectedNotes.length > 0) {
       // 更加详细和有指导性的占位文本
       const noteCount = connectedNotes.length;
-      promptElement.placeholder = `请输入指令，总结这 ${noteCount} 个便签的内容...`;
+      promptElement.placeholder = `请输入指令，处理这 ${noteCount} 个便签的内容...`;
 
       // 为输入框添加连接模式样式
       promptElement.classList.add("connection-input-mode");
