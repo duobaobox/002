@@ -60,15 +60,15 @@
                 <!-- 插槽将通过JavaScript动态添加 -->
             </div>
 
-            <!-- 连接模式切换开关 - 使用data-tooltip属性以支持全局tooltip -->
-            <div class="mode-toggle-container" id="connection-mode-selector"
-                data-tooltip="开启：保留原始便签并连接到新便签<br>关闭：删除原始便签，只保留新便签">
+            <!-- 连接模式切换开关 - 将tooltip移动到文本上 -->
+            <div class="mode-toggle-container" id="connection-mode-selector">
                 <input type="checkbox" id="mode-toggle" class="mode-toggle-input" checked>
                 <label for="mode-toggle" class="mode-toggle-label">
                     <span class="mode-toggle-track"></span>
                     <span class="mode-toggle-thumb"></span>
                 </label>
-                <span class="mode-toggle-text">汇总模式</span>
+                <span class="mode-toggle-text"
+                    data-tooltip="汇总模式：保留原始便签，并自动将它们连接到新便签<br>替换模式：删除原始便签，只保留新生成的便签">汇总模式</span>
             </div>
 
             <!-- 清除所有连接按钮 -->

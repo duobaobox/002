@@ -132,6 +132,20 @@ class GlobalTooltip {
   }
 
   /**
+   * 刷新元素的tooltip内容
+   * @param {HTMLElement} element - 需要刷新tooltip的元素
+   */
+  refreshElement(element) {
+    if (!element || !element.hasAttribute("data-tooltip")) return;
+
+    // 如果元素当前正在显示tooltip，则更新内容
+    if (this.tooltipElement.style.display === "block") {
+      this.tooltipElement.innerHTML = element.getAttribute("data-tooltip");
+      this.updateTooltipPosition({ currentTarget: element });
+    }
+  }
+
+  /**
    * 更新tooltip位置
    * @param {Event} event - 鼠标事件
    */
@@ -177,6 +191,8 @@ let globalTooltip;
 export function initGlobalTooltip() {
   if (!globalTooltip) {
     globalTooltip = new GlobalTooltip();
+    // 将实例暴露给window对象，便于其他模块访问
+    window.globalTooltip = globalTooltip;
   }
   return globalTooltip;
 }

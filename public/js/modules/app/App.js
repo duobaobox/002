@@ -980,6 +980,14 @@ export class App {
     if (!modeText) return;
 
     modeText.textContent = isKeepMode ? "汇总模式" : "替换模式";
+
+    // 确保tooltip内容在GlobalTooltip中更新
+    if (
+      window.globalTooltip &&
+      typeof window.globalTooltip.refreshElement === "function"
+    ) {
+      window.globalTooltip.refreshElement(modeText);
+    }
   }
 
   // 基于连接的便签生成新便签
