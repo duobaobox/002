@@ -4,11 +4,15 @@
  */
 import App from "./modules/app/App.js";
 import { initAccountDeletedNotifier } from "./modules/auth/AccountDeletedNotifier.js";
+import { initGlobalTooltip } from "./modules/utils/GlobalTooltip.js";
 
 // 当文档加载完成后初始化应用
 document.addEventListener("DOMContentLoaded", async () => {
   // 初始化应用
   window.app = new App();
+
+  // 初始化全局tooltip
+  initGlobalTooltip();
 
   // 检查用户会话，获取用户名
   try {

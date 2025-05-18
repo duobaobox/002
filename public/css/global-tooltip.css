@@ -1,0 +1,48 @@
+/**
+ * 全局Tooltip样式 - global-tooltip.css
+ */
+
+/* 全局tooltip容器 */
+.global-tooltip {
+  position: fixed;
+  z-index: 100000; /* 非常高的z-index确保显示在最上层 */
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  pointer-events: none; /* 不阻挡鼠标事件 */
+  max-width: 250px;
+  white-space: normal; /* 允许文本换行 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  display: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  line-height: 1.5;
+}
+
+/* 添加小箭头 - 默认向下的箭头（显示在元素上方时） */
+.global-tooltip::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px 5px 0;
+  border-style: solid;
+  border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
+}
+
+/* 向上的箭头（显示在元素下方时） */
+.global-tooltip.bottom::after {
+  bottom: auto;
+  top: -5px;
+  border-width: 0 5px 5px;
+  border-color: transparent transparent rgba(0, 0, 0, 0.8) transparent;
+}
+
+/* 可见状态 */
+.global-tooltip.visible {
+  opacity: 1;
+}

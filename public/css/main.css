@@ -24,6 +24,7 @@
 @import url("markdown.css");
 @import url("settings-unified.css"); /* 统一设置页面样式 */
 @import url("node-connection.css"); /* 便签节点连接功能样式 */
+@import url("global-tooltip.css"); /* 全局tooltip样式 */
 
 /* 引入工具类 */
 @import url("utils.css");

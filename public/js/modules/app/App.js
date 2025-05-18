@@ -955,6 +955,13 @@ export class App {
     // 添加事件监听器
     modeToggle.addEventListener("change", this.handleModeToggleChange);
 
+    // 点击其他区域时移除焦点
+    document.addEventListener("click", (e) => {
+      if (e.target !== modeToggle) {
+        modeToggle.blur();
+      }
+    });
+
     // 初始化文本
     this.updateModeToggleText(modeToggle.checked);
   }
@@ -962,6 +969,9 @@ export class App {
   // 处理模式切换开关变化
   handleModeToggleChange = (e) => {
     this.updateModeToggleText(e.target.checked);
+
+    // 移除焦点，防止残留样式
+    e.target.blur();
   };
 
   // 更新模式切换开关文本

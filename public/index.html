@@ -22,6 +22,8 @@
     <link rel="stylesheet" href="css/user-management.css">
     <!-- 添加连接模式样式 -->
     <link rel="stylesheet" href="css/connection-mode.css">
+    <!-- 添加全局tooltip样式 -->
+    <link rel="stylesheet" href="css/global-tooltip.css">
     <!-- 添加 marked.js 库 -->
     <script src="https://cdn.jsdelivr.net/npm/marked@3.0.8/marked.min.js"></script>
     <!-- 添加 highlight.js 用于代码高亮（可选） -->
@@ -58,15 +60,15 @@
                 <!-- 插槽将通过JavaScript动态添加 -->
             </div>
 
-            <!-- 连接模式切换开关 -->
-            <div class="mode-toggle-container tooltip" id="connection-mode-selector">
+            <!-- 连接模式切换开关 - 使用data-tooltip属性以支持全局tooltip -->
+            <div class="mode-toggle-container" id="connection-mode-selector"
+                data-tooltip="开启：保留原始便签并连接到新便签<br>关闭：删除原始便签，只保留新便签">
                 <input type="checkbox" id="mode-toggle" class="mode-toggle-input" checked>
                 <label for="mode-toggle" class="mode-toggle-label">
                     <span class="mode-toggle-track"></span>
                     <span class="mode-toggle-thumb"></span>
                 </label>
                 <span class="mode-toggle-text">汇总模式</span>
-                <span class="tooltip-text">开启：保留原始便签并连接到新便签<br>关闭：删除原始便签，只保留新便签</span>
             </div>
 
             <!-- 清除所有连接按钮 -->

@@ -31,24 +31,25 @@
   height: 0;
 }
 
-/* 切换开关轨道 */
+/* 切换开关轨道 - 使用标准样式 */
 .mode-toggle-track {
   display: inline-block;
-  width: 32px;
-  height: 16px;
-  border-radius: 10px;
-  background-color: #ccc;
+  width: 34px;
+  height: 20px;
+  border-radius: 34px;
+  background-color: rgba(234, 67, 53, 0.7); /* 替换模式为红色 */
   position: relative;
   transition: all 0.2s ease;
+  box-shadow: none; /* 确保没有阴影 */
 }
 
-/* 切换开关滑块 */
+/* 切换开关滑块 - 使用标准样式并确保居中 */
 .mode-toggle-thumb {
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background-color: white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
@@ -57,12 +58,12 @@
 
 /* 选中状态的轨道 */
 .mode-toggle-input:checked + .mode-toggle-label .mode-toggle-track {
-  background-color: rgba(52, 168, 83, 0.8);
+  background-color: rgba(52, 168, 83, 0.8); /* 汇总模式为绿色 */
 }
 
 /* 选中状态的滑块 */
 .mode-toggle-input:checked + .mode-toggle-label .mode-toggle-thumb {
-  transform: translateX(16px);
+  transform: translateX(14px); /* 调整位移距离，确保在右侧位置对齐 */
 }
 
 /* 切换开关标签 */
@@ -71,48 +72,25 @@
   align-items: center;
   cursor: pointer;
   position: relative;
+  vertical-align: middle;
 }
 
 /* 鼠标悬停效果 */
 .mode-toggle-label:hover .mode-toggle-track {
-  background-color: #bbb;
+  background-color: rgba(234, 67, 53, 0.8); /* 替换模式悬停时加深红色 */
 }
 
 .mode-toggle-input:checked + .mode-toggle-label:hover .mode-toggle-track {
-  background-color: rgba(52, 168, 83, 0.9);
+  background-color: rgba(52, 168, 83, 0.9); /* 汇总模式悬停时加深绿色 */
 }
 
-/* 聚焦效果 */
+/* 完全移除所有聚焦状态阴影 */
 .mode-toggle-input:focus + .mode-toggle-label .mode-toggle-track {
-  box-shadow: 0 0 0 2px rgba(52, 168, 83, 0.2);
+  box-shadow: none;
 }
 
-/* 提示框样式 */
-.tooltip {
-  position: relative;
-  display: inline-block;
+.mode-toggle-input:checked:focus + .mode-toggle-label .mode-toggle-track {
+  box-shadow: none;
 }
 
-.tooltip .tooltip-text {
-  visibility: hidden;
-  width: 200px;
-  background-color: rgba(0, 0, 0, 0.8);
-  color: #fff;
-  text-align: center;
-  border-radius: 6px;
-  padding: 8px;
-  position: absolute;
-  z-index: 1000;
-  bottom: 125%;
-  left: 50%;
-  transform: translateX(-50%);
-  opacity: 0;
-  transition: opacity 0.3s;
-  font-size: 11px;
-  pointer-events: none;
-}
-
-.tooltip:hover .tooltip-text {
-  visibility: visible;
-  opacity: 1;
-}
+/* 删除旧的tooltip样式，现在使用全局tooltip系统 */
