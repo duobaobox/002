@@ -114,6 +114,10 @@ export class App {
             );
             this.updatePromptPlaceholder();
             this.updateButtonVisibility();
+            this.updateConnectionModeSelector(true);
+          } else {
+            // 确保连接模式选择器初始状态为隐藏
+            this.updateConnectionModeSelector(false);
           }
         }
       }, 1000);
@@ -808,6 +812,9 @@ export class App {
         const connected =
           window.nodeConnectionManager.forceUpdateAllConnections();
         console.log(`初始化事件监听器：检测到 ${connected} 个连接的便签`);
+
+        // 初始化连接模式选择器
+        this.updateConnectionModeSelector(connected > 0);
       }
     }, 500);
   }
@@ -898,6 +905,9 @@ export class App {
       } else {
         promptElement.title = `连接的便签: ${noteTitles}`;
       }
+
+      // 显示连接模式选择器
+      this.updateConnectionModeSelector(true);
     } else {
       // 恢复默认占位文本
       promptElement.placeholder = "输入提示或直接添加便签...";
@@ -905,7 +915,61 @@ export class App {
       // 移除连接模式样式
       promptElement.classList.remove("connection-input-mode");
       promptElement.title = "";
+
+      // 隐藏连接模式选择器
+      this.updateConnectionModeSelector(false);
     }
+  }
+
+  // 更新连接模式选择器的可见性
+  updateConnectionModeSelector(show) {
+    const modeSelector = document.getElementById("connection-mode-selector");
+    if (!modeSelector) return;
+
+    if (show) {
+      modeSelector.style.display = "flex";
+
+      // 确保插槽容器也是可见的
+      const slotsContainer = document.getElementById("slots-container");
+      if (slotsContainer) {
+        slotsContainer.classList.add("visible");
+      }
+
+      // 初始化模式切换开关事件
+      this.initModeToggleEvents();
+    } else {
+      modeSelector.style.display = "none";
+    }
+  }
+
+  // 初始化模式切换开关事件
+  initModeToggleEvents() {
+    const modeToggle = document.getElementById("mode-toggle");
+    const modeText = document.querySelector(".mode-toggle-text");
+
+    if (!modeToggle || !modeText) return;
+
+    // 移除现有事件监听器，避免重复绑定
+    modeToggle.removeEventListener("change", this.handleModeToggleChange);
+
+    // 添加事件监听器
+    modeToggle.addEventListener("change", this.handleModeToggleChange);
+
+    // 初始化文本
+    this.updateModeToggleText(modeToggle.checked);
+  }
+
+  // 处理模式切换开关变化
+  handleModeToggleChange = (e) => {
+    this.updateModeToggleText(e.target.checked);
+  };
+
+  // 更新模式切换开关文本
+  updateModeToggleText(isKeepMode) {
+    const modeText = document.querySelector(".mode-toggle-text");
+    if (!modeText) return;
+
+    modeText.textContent = isKeepMode ? "汇总模式" : "替换模式";
   }
 
   // 基于连接的便签生成新便签
@@ -944,6 +1008,11 @@ export class App {
     if (this.updateConnectionStatus) {
       this.updateConnectionStatus("generating");
     }
+
+    // 获取当前选择的模式
+    const modeToggle = document.getElementById("mode-toggle");
+    const mode = modeToggle && modeToggle.checked ? "keep" : "replace"; // 选中为汇总模式，未选中为替换模式
+    console.log(`使用连接模式: ${mode}`);
 
     try {
       // 创建临时便签
@@ -987,7 +1056,7 @@ export class App {
       const colorClass = noteElement.classList[1] || "note-yellow";
 
       // 保存到服务器
-      await this.saveStreamingNoteToServer(
+      const savedNote = await this.saveStreamingNoteToServer(
         noteElement,
         fullText,
         currentX,
@@ -997,6 +1066,51 @@ export class App {
         noteWidth,
         noteHeight
       );
+
+      // 根据选择的模式处理原始便签
+      if (mode === "replace") {
+        // 替换模式：删除所有原始便签
+        console.log("替换模式：删除所有原始便签");
+        for (const note of connectedNotes) {
+          // 断开连接
+          window.nodeConnectionManager.disconnectNote(note);
+          // 删除便签
+          if (note.remove) {
+            note.remove();
+          }
+          // 从服务器删除
+          await this.removeNote(note.id);
+        }
+        this.showMessage(`已删除 ${connectedNotes.length} 个原始便签`, "info");
+      } else if (mode === "keep" && savedNote) {
+        // 汇总模式：保留原始便签，并将它们连接到新便签
+        console.log("汇总模式：保留原始便签并连接到新便签");
+
+        // 先断开所有原始便签的连接
+        for (const note of connectedNotes) {
+          window.nodeConnectionManager.disconnectNote(note);
+        }
+
+        // 找到新创建的便签实例
+        const newNote = this.notes.find((note) => note.id === savedNote.id);
+        if (newNote) {
+          // 将所有原始便签连接到新便签
+          for (const note of connectedNotes) {
+            // 选中便签以便连接
+            window.nodeConnectionManager.selectNote(note);
+            // 添加连接
+            window.nodeConnectionManager.connectNote(note);
+          }
+
+          // 选中新便签，以便用户可以看到它
+          window.nodeConnectionManager.selectNote(newNote);
+
+          this.showMessage(
+            `已将 ${connectedNotes.length} 个原始便签连接到新便签`,
+            "info"
+          );
+        }
+      }
 
       // 清空输入框
       promptElement.value = "";
@@ -1445,7 +1559,7 @@ export class App {
       const fullText = await this.generateWithSSE(prompt, noteElement);
 
       // 保存生成的内容到服务器
-      await this.saveStreamingNoteToServer(
+      const savedNote = await this.saveStreamingNoteToServer(
         noteElement,
         fullText,
         x,
@@ -1457,6 +1571,9 @@ export class App {
       // 清空输入框
       promptElement.value = "";
       this.updateButtonVisibility();
+
+      // 返回保存的便签数据
+      return savedNote;
     } catch (error) {
       console.error("生成AI便签出错:", error);
       // 确保在出错时也移除临时便签
@@ -1490,7 +1607,16 @@ export class App {
   }
 
   // 将流式生成的便签保存到服务器
-  async saveStreamingNoteToServer(noteElement, text, x, y, prompt, colorClass) {
+  async saveStreamingNoteToServer(
+    noteElement,
+    text,
+    x,
+    y,
+    prompt,
+    colorClass,
+    width,
+    height
+  ) {
     try {
       // AI标题
       const aiTitle =
@@ -1510,8 +1636,10 @@ export class App {
 
       // 获取便签的尺寸，考虑画布缩放比例
       // 将屏幕上的尺寸除以缩放比例，得到画布坐标系中的实际尺寸
-      let noteWidth = Math.round(noteElement.offsetWidth / canvasScale);
-      let noteHeight = Math.round(noteElement.offsetHeight / canvasScale);
+      let noteWidth =
+        width || Math.round(noteElement.offsetWidth / canvasScale);
+      let noteHeight =
+        height || Math.round(noteElement.offsetHeight / canvasScale);
 
       console.log("保存便签，使用当前位置和大小:", {
         x: currentX,
@@ -1546,7 +1674,7 @@ export class App {
         if (noteElement && noteElement.parentNode) {
           noteElement.remove();
         }
-        return; // 错误已处理，直接返回
+        return null; // 错误已处理，直接返回null
       }
 
       if (noteData.success && noteData.note) {
@@ -1611,6 +1739,9 @@ export class App {
         // 清空输入框
         document.getElementById("ai-prompt").value = "";
         this.updateButtonVisibility();
+
+        // 返回保存的便签数据，以便在汇总模式下使用
+        return noteData.note;
       } else {
         // 如果创建失败，也需要移除临时便签
         if (noteElement && noteElement.parentNode) {
@@ -1630,6 +1761,7 @@ export class App {
       }
       console.error("保存AI便签到服务器出错:", error);
       this.showMessage(`保存失败: ${error.message}`, "error");
+      return null;
     }
   }
 

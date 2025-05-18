@@ -805,9 +805,17 @@ export class NodeConnectionManager {
         // 忽略错误，便签可能已被删除
       }
 
-      // 如果没有连接的便签，隐藏插槽区域
+      // 如果没有连接的便签，隐藏插槽区域和连接模式选择器
       if (this.connectedNotes.length === 0 && this.slotsContainer) {
         this.slotsContainer.classList.remove("visible");
+
+        // 隐藏连接模式选择器
+        const modeSelector = document.getElementById(
+          "connection-mode-selector"
+        );
+        if (modeSelector) {
+          modeSelector.style.display = "none";
+        }
       }
 
       // 触发断开连接事件
@@ -875,9 +883,15 @@ export class NodeConnectionManager {
       window.app.updateButtonVisibility();
     }
 
-    // 隐藏插槽容器
+    // 隐藏插槽容器和连接模式选择器
     if (this.slotsContainer) {
       this.slotsContainer.classList.remove("visible");
+
+      // 隐藏连接模式选择器
+      const modeSelector = document.getElementById("connection-mode-selector");
+      if (modeSelector) {
+        modeSelector.style.display = "none";
+      }
     }
 
     console.log("已清除所有便签连接");
@@ -947,6 +961,20 @@ export class NodeConnectionManager {
     // 确保插槽区域可见
     this.slotsContainer.classList.add("visible");
 
+    // 显示连接模式选择器
+    const modeSelector = document.getElementById("connection-mode-selector");
+    if (modeSelector) {
+      modeSelector.style.display = "flex";
+
+      // 如果App实例存在，初始化模式切换开关事件
+      if (
+        typeof window.app !== "undefined" &&
+        window.app.initModeToggleEvents
+      ) {
+        window.app.initModeToggleEvents();
+      }
+    }
+
     console.log(`成功创建便签ID为${note.id}的插槽`);
 
     // 更新所有插槽的序号
@@ -996,9 +1024,17 @@ export class NodeConnectionManager {
         this.refreshAllConnections();
       }, 10);
 
-      // 如果没有连接的便签，隐藏插槽区域
+      // 如果没有连接的便签，隐藏插槽区域和连接模式选择器
       if (this.connectedNotes.length === 0 && this.slotsContainer) {
         this.slotsContainer.classList.remove("visible");
+
+        // 隐藏连接模式选择器
+        const modeSelector = document.getElementById(
+          "connection-mode-selector"
+        );
+        if (modeSelector) {
+          modeSelector.style.display = "none";
+        }
       }
     }
   }

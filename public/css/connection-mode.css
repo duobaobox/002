@@ -1,0 +1,118 @@
+/**
+ * 连接模式样式 - connection-mode.css
+ *
+ * 包含便签连接模式相关的样式，包括模式切换开关
+ */
+
+/* 模式切换容器 */
+.mode-toggle-container {
+  display: none; /* 默认隐藏 */
+  align-items: center;
+  margin-left: auto; /* 推到右侧 */
+  margin-right: 10px; /* 与清空连接按钮保持间距 */
+  height: 24px;
+  position: relative;
+}
+
+/* 模式切换文本 */
+.mode-toggle-text {
+  font-size: 11px;
+  color: #555;
+  margin-left: 6px;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+/* 隐藏原始复选框 */
+.mode-toggle-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* 切换开关轨道 */
+.mode-toggle-track {
+  display: inline-block;
+  width: 32px;
+  height: 16px;
+  border-radius: 10px;
+  background-color: #ccc;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+/* 切换开关滑块 */
+.mode-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+/* 选中状态的轨道 */
+.mode-toggle-input:checked + .mode-toggle-label .mode-toggle-track {
+  background-color: rgba(52, 168, 83, 0.8);
+}
+
+/* 选中状态的滑块 */
+.mode-toggle-input:checked + .mode-toggle-label .mode-toggle-thumb {
+  transform: translateX(16px);
+}
+
+/* 切换开关标签 */
+.mode-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+}
+
+/* 鼠标悬停效果 */
+.mode-toggle-label:hover .mode-toggle-track {
+  background-color: #bbb;
+}
+
+.mode-toggle-input:checked + .mode-toggle-label:hover .mode-toggle-track {
+  background-color: rgba(52, 168, 83, 0.9);
+}
+
+/* 聚焦效果 */
+.mode-toggle-input:focus + .mode-toggle-label .mode-toggle-track {
+  box-shadow: 0 0 0 2px rgba(52, 168, 83, 0.2);
+}
+
+/* 提示框样式 */
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip .tooltip-text {
+  visibility: hidden;
+  width: 200px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 8px;
+  position: absolute;
+  z-index: 1000;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.tooltip:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
