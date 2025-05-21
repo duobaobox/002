@@ -267,6 +267,81 @@ export class NodeConnectionManager {
   }
 
   /**
+   * 连接一组原始便签到一个新的目标便签
+   * @param {Array<Object>} originalNotes - 原始便签对象数组
+   * @param {Object} newNoteInstance - 新的目标便签对象
+   */
+  connectNotesToNewNote(originalNotes, newNoteInstance) {
+    if (
+      !originalNotes ||
+      !Array.isArray(originalNotes) ||
+      !newNoteInstance ||
+      !newNoteInstance.id ||
+      !newNoteInstance.element
+    ) {
+      console.error("connectNotesToNewNote: 无效的参数");
+      return;
+    }
+
+    originalNotes.forEach((originalNote) => {
+      if (!originalNote || !originalNote.id || !originalNote.element) {
+        console.warn(
+          `connectNotesToNewNote: 跳过无效的原始便签: ${originalNote}`
+        );
+        return;
+      }
+
+      const connectionId = `conn_${originalNote.id}_to_${newNoteInstance.id}`;
+
+      // 检查是否已存在相同的连接
+      if (this.connectionLines.has(connectionId)) {
+        console.log(`连接 ${connectionId} 已存在，跳过创建。`);
+        return;
+      }
+
+      // 获取原始便签的连接点，优先使用节点按钮
+      let startElement =
+        originalNote.element.querySelector(".note-node-button");
+      if (!startElement) {
+        startElement = originalNote.element; // 如果没有按钮，则连接整个便签元素
+      }
+
+      // 新便签的连接点
+      let endElement = newNoteInstance.element;
+
+      // 定义连接线选项，允许自动确定最佳连接点
+      const noteToNoteLineOptions = {
+        ...this.lineOptions, // 继承基础选项
+        startSocket: "auto",
+        endSocket: "auto",
+        startSocketGravity: 0, // 减少重力影响，让线条更自由
+        endSocketGravity: 0,
+        // 可以根据需要调整颜色或样式以区分这些连接
+        color: "var(--note-to-note-connection-color, rgba(100, 200, 100, 0.6))",
+        dash: false, // 直接连接线不需要虚线
+      };
+
+      try {
+        const line = new LeaderLine(
+          startElement,
+          endElement,
+          noteToNoteLineOptions
+        );
+        this.connectionLines.set(connectionId, line);
+        console.log(`创建连接: ${connectionId}`);
+      } catch (error) {
+        console.error(
+          `创建从便签 ${originalNote.id} 到 ${newNoteInstance.id} 的连接线失败:`,
+          error
+        );
+      }
+    });
+
+    // 强制更新所有连接线以确保新线正确显示
+    this.forceUpdateAllConnections();
+  }
+
+  /**
    * 安排多次连续更新
    * 在复杂变换后确保连接线正确显示
    * @param {number} times - 更新次数

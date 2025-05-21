@@ -11,16 +11,14 @@
 /* 便签选中状态 */
 .note.selected {
   box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.5), 0 0 8px rgba(0, 122, 255, 0.3);
-  transform: scale(1.01);
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  transition: box-shadow 0.2s ease;
 }
 
 /* 便签高亮状态 */
 .note.note-highlight {
   box-shadow: 0 0 0 1px rgba(249, 132, 121, 0.4),
     0 0 6px rgba(249, 132, 121, 0.25);
-  transform: scale(1.005);
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
+  transition: box-shadow 0.3s ease;
 }
 
 /* 节点按钮 - 更像节点软件的连接点 */
@@ -311,6 +309,12 @@
   ); /* 柔和的粉红色 */
   --note-connection-size: 1.5px; /* 更细的连接线 */
   --note-connection-highlight-size: 2px; /* 稍微粗一些的高亮线 */
+  --note-to-note-connection-color: rgba(
+    100,
+    200,
+    100,
+    0.6
+  ); /* 便签到便签的连接线颜色 */
 }
 
 /* Leader-Line特定样式 - 控制SVG渲染层 */

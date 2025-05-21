@@ -1112,13 +1112,11 @@ export class App {
         // 找到新创建的便签实例
         const newNote = this.notes.find((note) => note.id === savedNote.id);
         if (newNote) {
-          // 将所有原始便签连接到新便签
-          for (const note of connectedNotes) {
-            // 选中便签以便连接
-            window.nodeConnectionManager.selectNote(note);
-            // 添加连接
-            window.nodeConnectionManager.connectNote(note);
-          }
+          // 使用专门的方法将所有原始便签连接到新便签
+          window.nodeConnectionManager.connectNotesToNewNote(
+            connectedNotes,
+            newNote
+          );
 
           // 选中新便签，以便用户可以看到它
           window.nodeConnectionManager.selectNote(newNote);
