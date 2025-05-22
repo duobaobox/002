@@ -99,16 +99,21 @@ export function createEmptyAiNote() {
  * @param {string} noteId - 便签 ID
  */
 function createTempNoteContent(note, noteId) {
-  // 创建便签头部
-  const header = document.createElement("div");
-  header.className = "note-header";
+  // 创建便签内容
+  const body = document.createElement("div");
+  body.className = "note-body";
 
-  // 添加标题和关闭按钮
+  // 创建标题容器 - 与常规便签结构保持一致
+  const titleContainer = document.createElement("div");
+  titleContainer.className = "note-title-container";
+
+  // 添加标题
   const title = document.createElement("div");
   title.className = "note-title";
   title.textContent = "AI生成中...";
   title.setAttribute("title", "双击编辑标题");
 
+  // 创建关闭按钮
   const closeBtn = document.createElement("div");
   closeBtn.className = "note-close";
   closeBtn.innerHTML = "&times;";
@@ -118,13 +123,12 @@ function createTempNoteContent(note, noteId) {
     note.remove();
   });
 
-  header.appendChild(title);
-  header.appendChild(closeBtn);
-  note.appendChild(header);
+  // 添加标题和关闭按钮到标题容器
+  titleContainer.appendChild(title);
+  titleContainer.appendChild(closeBtn); // 将关闭按钮也添加到标题容器中
 
-  // 创建便签内容区域
-  const body = document.createElement("div");
-  body.className = "note-body";
+  // 首先添加标题容器到body
+  body.appendChild(titleContainer);
 
   // 创建文本区域 (隐藏在生成过程中)
   const textarea = document.createElement("textarea");
@@ -186,7 +190,7 @@ function createTempNoteContent(note, noteId) {
   document.getElementById("note-container").appendChild(note);
 
   // 设置事件处理
-  setupDragEventsForTemp(note, header);
+  setupDragEventsForTemp(note, titleContainer); // 将 titleContainer 作为拖拽句柄
   setupResizeObserverForTemp(note);
 
   // 添加点击事件，确保便签点击时提升到最上层
