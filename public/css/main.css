@@ -159,7 +159,7 @@
 .note-content.markdown {
   overflow-y: auto;
   max-height: calc(100% - 30px); /* 减去标题高度 */
-  padding: 8px;
+  padding: 12px 14px; /* 上下12px，左右14px */
 }
 
 .note-content.markdown pre {
@@ -173,7 +173,7 @@
 .markdown-preview {
   overflow-y: auto;
   max-height: calc(100% - 30px); /* 减去标题高度 */
-  padding: 8px;
+  padding: 12px 14px; /* 上下12px，左右14px */
   line-height: 1.5;
   white-space: normal; /* 确保正常换行 */
 }

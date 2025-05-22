@@ -19,10 +19,10 @@
   position: absolute;
   width: 200px;
   height: 200px;
-  border-radius: 4px;
+  border-radius: 8px; /* 增大圆角 */
   /* 优化阴影效果，增强边界感 */
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.04),
-    /* 添加细微的边框效果 */ 0 2px 4px rgba(0, 0, 0, 0.12); /* 更清晰的阴影效果 */
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.09),
+    0 4px 10px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -35,65 +35,81 @@
 }
 
 .note:hover {
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06),
-    /* 悬停时边框更明显 */ 0 4px 8px rgba(0, 0, 0, 0.15); /* 增强阴影效果 */
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.07), 0 4px 12px rgba(0, 0, 0, 0.12),
+    0 8px 16px rgba(0, 0, 0, 0.05);
 }
 
-/* 便签头部 - 调整内边距 */
-.note-header {
-  height: 30px;
-  padding: 0 2px 0 12px; /* 调整右侧内边距，使关闭按钮有更多空间 */
+/* 标题容器 - 包含标题和关闭按钮 */
+.note-title-container {
   display: flex;
   align-items: center;
-  justify-content: space-between; /* 修改为两端对齐，左侧标题，右侧关闭按钮 */
-  background-color: rgba(0, 0, 0, 0.05);
-  cursor: move;
+  padding: 12px; /* 统一上下左右内边距 */
+  background-color: transparent;
+  z-index: 2;
+  cursor: move; /* 标题容器也可拖动 */
   user-select: none;
-  z-index: 1;
+  border-top-left-radius: 8px; /* 上部圆角 */
+  border-top-right-radius: 8px; /* 上部圆角 */
+  min-height: 36px; /* 确保最小高度容纳元素 */
+  overflow: hidden; /* 防止内容溢出 */
+  position: relative; /* 为绝对定位的关闭按钮提供参考 */
 }
 
 /* 启用便签标题 */
 .note-title {
-  display: block; /* 显示标题 */
+  display: inline-block; /* 使宽度自适应内容 */
   font-size: 13px;
   font-weight: 500;
   color: rgba(0, 0, 0, 0.6);
-  max-width: 70%; /* 限制标题宽度，避免过长 */
+  max-width: calc(100% - 40px); /* 留出关闭按钮的空间和间距 */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  background-color: rgba(0, 0, 0, 0.04); /* 添加灰色底色 */
+  padding: 4px 8px; /* 增加内边距 */
+  border-radius: 4px; /* 圆角 */
 }
 
 /* 可编辑状态的标题 */
 .note-title.editing {
   cursor: text;
-  background-color: rgba(255, 255, 255, 0.5);
-  border-radius: 3px;
-  padding: 0 5px;
+  background-color: rgba(255, 255, 255, 0.7); /* 编辑时背景更亮 */
+  border-radius: 4px;
+  padding: 4px 8px; /* 保持与非编辑状态相同的内边距 */
   min-width: 60px;
+  display: inline-block; /* 与非编辑状态保持一致 */
   white-space: nowrap;
   outline: none;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05); /* 轻微的边框效果 */
+  max-width: calc(100% - 40px); /* 与非编辑状态保持一致 */
 }
 
-/* 关闭按钮 - 调整位置和边距 */
+/* 关闭按钮 - 调整样式 */
 .note-close {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
+  min-width: 22px; /* 确保最小宽度 */
+  flex-shrink: 0; /* 防止按钮被压缩 */
+  margin-left: 8px; /* 与标题保持间距 */
   border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.6);
-  color: #666;
+  background-color: rgba(0, 0, 0, 0.04); /* 与标题底色一致 */
+  color: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 16px;
   cursor: pointer;
   transition: all 0.2s;
-  margin-right: 5px; /* 添加右边距，使关闭按钮与边缘有一定距离 */
+  position: absolute; /* 使用绝对定位 */
+  right: 12px; /* 距离右侧12px，与容器padding对齐 */
+  top: 50%; /* 垂直居中 */
+  transform: translateY(-50%); /* 精确垂直居中 */
 }
 
 .note-close:hover {
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(0, 0, 0, 0.08); /* 悬停时稍微深一点 */
   color: #e74c3c;
+  transform: scale(1.05);
 }
 
 /* 便签内容区域容器 */
@@ -101,23 +117,26 @@
   position: relative;
   flex: 1;
   display: flex;
+  flex-direction: column;
   overflow: hidden;
+  border-radius: 8px; /* 与便签整体圆角一致 */
 }
 
 /* 文本区域 */
 .note-content {
   width: 100%;
   height: 100%;
-  padding: 10px 12px;
+  padding: 12px 14px; /* 增加内边距 */
   border: none;
   outline: none;
   resize: none;
   font-family: inherit;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6; /* 增加行高提高可读性 */
   color: rgba(0, 0, 0, 0.8);
   background-color: transparent;
   overflow-y: auto;
+  box-sizing: border-box; /* 确保padding不会增加元素总尺寸 */
   /* 隐藏原生滚动条 */
   scrollbar-width: none; /* Firefox */
 }
@@ -166,9 +185,10 @@
   bottom: 0;
   right: 0;
   width: 12px;
+  height: 12px;
   background-color: transparent; /* 移除灰色背景 */
   cursor: nwse-resize;
-  border-radius: 0 0 4px 0;
+  border-radius: 0 0 8px 0; /* 与便签圆角匹配 */
   transition: opacity 0.2s;
   z-index: 3;
   /* 添加调整大小图标 */
@@ -198,4 +218,23 @@
 }
 .note-purple {
   background-color: #f2e8f7;
+}
+
+/* Markdown预览区域 */
+.markdown-preview {
+  width: 100%;
+  height: 100%;
+  padding: 12px 14px; /* 上下12px，左右14px */
+  overflow-y: auto;
+  word-break: break-word;
+  line-height: 1.6; /* 与文本区域保持一致 */
+  color: rgba(0, 0, 0, 0.8);
+  scrollbar-width: none; /* Firefox */
+  display: none; /* 默认隐藏 */
+  box-sizing: border-box; /* 确保padding不会增加元素总尺寸 */
+}
+
+/* 隐藏Markdown预览区域的滚动条 */
+.markdown-preview::-webkit-scrollbar {
+  display: none;
 }

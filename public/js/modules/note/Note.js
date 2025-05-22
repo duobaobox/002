@@ -103,12 +103,10 @@ export class Note {
     // 先设置 this.element，这样在后续创建过程中就可以引用
     this.element = note;
 
-    // 创建便签头部、内容等UI元素
-    this.createNoteHeader(note);
+    // 只创建便签内容，不再需要头部
     this.createNoteBody(note);
 
-    // 设置拖动和缩放事件
-    setupDragEvents(note, note.querySelector(".note-header"), this);
+    // 设置缩放事件
     setupResizeEvents(note, note.querySelector(".note-resize-handle"), this);
 
     // 检查note-container是否存在，不存在则创建
@@ -170,14 +168,14 @@ export class Note {
 
     return note;
   }
-
   /**
-   * 创建便签头部
+   * 创建便签主体
    * @param {HTMLElement} note - 便签元素
    */
-  createNoteHeader(note) {
-    const header = document.createElement("div");
-    header.className = "note-header";
+  createNoteBody(note) {
+    // 创建内容容器
+    const body = document.createElement("div");
+    body.className = "note-body";
 
     // 创建便签标题
     const title = document.createElement("div");
@@ -200,20 +198,14 @@ export class Note {
       this.remove();
     });
 
-    // 组装头部
-    header.appendChild(title);
-    header.appendChild(closeBtn);
-    note.appendChild(header);
-  }
+    // 创建标题容器，包含标题和关闭按钮
+    const titleContainer = document.createElement("div");
+    titleContainer.className = "note-title-container";
+    titleContainer.appendChild(title);
+    titleContainer.appendChild(closeBtn);
 
-  /**
-   * 创建便签主体
-   * @param {HTMLElement} note - 便签元素
-   */
-  createNoteBody(note) {
-    // 创建内容容器
-    const body = document.createElement("div");
-    body.className = "note-body";
+    // 首先添加标题容器到body
+    body.appendChild(titleContainer);
 
     // 创建文本区域
     const textarea = document.createElement("textarea");
@@ -267,6 +259,7 @@ export class Note {
     });
 
     // 组装便签
+    // 在之前我们已经添加了 titleContainer
     body.appendChild(textarea);
     body.appendChild(markdownPreview);
     body.appendChild(scrollbarContainer);
@@ -277,6 +270,9 @@ export class Note {
 
     // 添加点击事件，确保点击时将便签置于最前
     this.setupNoteClickEvent(note);
+
+    // 设置标题容器的拖拽事件，因为现在标题容器也需要拖拽功能
+    setupDragEvents(note, note.querySelector(".note-title-container"), this);
   }
 
   /**
