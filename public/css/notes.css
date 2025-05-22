@@ -109,7 +109,7 @@
 .note-close:hover {
   background-color: rgba(0, 0, 0, 0.08); /* 悬停时稍微深一点 */
   color: #e74c3c;
-  transform: scale(1.05);
+  transform: translateY(-50%); /* 保持垂直居中，移除scale */
 }
 
 /* 便签内容区域容器 */
