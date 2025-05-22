@@ -330,20 +330,55 @@ export class Canvas {
     document.querySelector(".canvas-container").appendChild(zoomControls);
   }
 
+  // 通用缩放方法 - 接受缩放因子和缩放中心点
+  zoom(newScale, centerX, centerY) {
+    // 确保缩放比例在允许范围内
+    newScale = Math.min(Math.max(newScale, this.minScale), this.maxScale);
+
+    // 如果缩放比例没有变化，则不执行任何操作
+    if (newScale === this.scale) return;
+
+    // 保存旧的缩放比例
+    const oldScale = this.scale;
+
+    // 设置新的缩放比例
+    this.scale = newScale;
+
+    // 计算缩放比例变化
+    const scaleFactor = this.scale / oldScale;
+
+    // 调整偏移量，以保持缩放中心点不变
+    this.offset.x = centerX - (centerX - this.offset.x) * scaleFactor;
+    this.offset.y = centerY - (centerY - this.offset.y) * scaleFactor;
+
+    // 应用变换
+    this.applyTransform();
+  }
+
   // 缩小画布
   zoomOut() {
-    if (this.scale > this.minScale) {
-      this.scale = Math.max(this.scale - 0.1, this.minScale);
-      this.applyTransform();
-    }
+    if (this.scale <= this.minScale) return;
+
+    // 获取画布容器的中心点
+    const canvasRect = this.canvas.getBoundingClientRect();
+    const canvasCenterX = canvasRect.width / 2;
+    const canvasCenterY = canvasRect.height / 2;
+
+    // 使用通用缩放方法，以画布中心为基准点进行缩放
+    this.zoom(this.scale - 0.1, canvasCenterX, canvasCenterY);
   }
 
   // 放大画布
   zoomIn() {
-    if (this.scale < this.maxScale) {
-      this.scale = Math.min(this.scale + 0.1, this.maxScale);
-      this.applyTransform();
-    }
+    if (this.scale >= this.maxScale) return;
+
+    // 获取画布容器的中心点
+    const canvasRect = this.canvas.getBoundingClientRect();
+    const canvasCenterX = canvasRect.width / 2;
+    const canvasCenterY = canvasRect.height / 2;
+
+    // 使用通用缩放方法，以画布中心为基准点进行缩放
+    this.zoom(this.scale + 0.1, canvasCenterX, canvasCenterY);
   }
 
   // 重置缩放 - 以当前屏幕中心为基准
@@ -520,26 +555,14 @@ export class Canvas {
           const mouseX = e.clientX - rect.left;
           const mouseY = e.clientY - rect.top;
 
-          // 缩放前的值
-          const oldScale = this.scale;
+          // 计算目标缩放值
+          const newScale =
+            e.deltaY < 0
+              ? Math.min(this.scale + 0.1, this.maxScale) // 向上滚动，放大
+              : Math.max(this.scale - 0.1, this.minScale); // 向下滚动，缩小
 
-          if (e.deltaY < 0) {
-            // 向上滚动，放大
-            this.zoomIn();
-          } else {
-            // 向下滚动，缩小
-            this.zoomOut();
-          }
-
-          // 缩放比例变化
-          const scaleFactor = this.scale / oldScale;
-
-          // 调整偏移量以保持鼠标指向的点不变
-          this.offset.x = mouseX - (mouseX - this.offset.x) * scaleFactor;
-          this.offset.y = mouseY - (mouseY - this.offset.y) * scaleFactor;
-
-          // 应用变换
-          this.applyTransform();
+          // 直接使用通用缩放方法，以鼠标位置为中心点
+          this.zoom(newScale, mouseX, mouseY);
         }
       },
       { passive: false }

@@ -37,18 +37,28 @@ export class ShareCanvas {
 
   // 缩小画布
   zoomOut() {
-    if (this.scale > this.minScale) {
-      this.scale = Math.max(this.scale - 0.1, this.minScale);
-      this.applyTransform();
-    }
+    if (this.scale <= this.minScale) return;
+
+    // 获取画布容器的中心点
+    const canvasRect = this.canvas.getBoundingClientRect();
+    const canvasCenterX = canvasRect.width / 2;
+    const canvasCenterY = canvasRect.height / 2;
+
+    // 使用通用缩放方法，以画布中心为基准点进行缩放
+    this.zoom(this.scale - 0.1, canvasCenterX, canvasCenterY);
   }
 
   // 放大画布
   zoomIn() {
-    if (this.scale < this.maxScale) {
-      this.scale = Math.min(this.scale + 0.1, this.maxScale);
-      this.applyTransform();
-    }
+    if (this.scale >= this.maxScale) return;
+
+    // 获取画布容器的中心点
+    const canvasRect = this.canvas.getBoundingClientRect();
+    const canvasCenterX = canvasRect.width / 2;
+    const canvasCenterY = canvasRect.height / 2;
+
+    // 使用通用缩放方法，以画布中心为基准点进行缩放
+    this.zoom(this.scale + 0.1, canvasCenterX, canvasCenterY);
   }
 
   // 重置缩放 - 以当前屏幕中心为基准
@@ -58,23 +68,8 @@ export class ShareCanvas {
     const canvasCenterX = canvasRect.width / 2;
     const canvasCenterY = canvasRect.height / 2;
 
-    // 保存旧的缩放比例，用于计算偏移量调整
-    const oldScale = this.scale;
-
-    // 设置新的缩放比例为1.0（100%）
-    this.scale = 1.0;
-
-    // 计算缩放比例变化
-    const scaleFactor = this.scale / oldScale;
-
-    // 调整偏移量，以保持屏幕中心点不变
-    this.offset.x =
-      canvasCenterX - (canvasCenterX - this.offset.x) * scaleFactor;
-    this.offset.y =
-      canvasCenterY - (canvasCenterY - this.offset.y) * scaleFactor;
-
-    // 应用变换
-    this.applyTransform();
+    // 使用通用缩放方法，以画布中心为基准点重置缩放比例为1.0
+    this.zoom(1.0, canvasCenterX, canvasCenterY);
 
     // 检查是否有便签，如果没有便签则不需要进一步处理
     const notes = document.querySelectorAll(".note");
@@ -120,6 +115,31 @@ export class ShareCanvas {
     this.offset.y = offsetY;
 
     // 再次应用变换
+    this.applyTransform();
+  }
+
+  // 缩放操作通用方法 - 接受缩放因子和缩放中心点
+  zoom(newScale, centerX, centerY) {
+    // 确保缩放比例在允许范围内
+    newScale = Math.min(Math.max(newScale, this.minScale), this.maxScale);
+
+    // 如果缩放比例没有变化，则不执行任何操作
+    if (newScale === this.scale) return;
+
+    // 保存旧的缩放比例
+    const oldScale = this.scale;
+
+    // 设置新的缩放比例
+    this.scale = newScale;
+
+    // 计算缩放比例变化
+    const scaleFactor = this.scale / oldScale;
+
+    // 调整偏移量，以保持缩放中心点不变
+    this.offset.x = centerX - (centerX - this.offset.x) * scaleFactor;
+    this.offset.y = centerY - (centerY - this.offset.y) * scaleFactor;
+
+    // 应用变换
     this.applyTransform();
   }
 
@@ -212,26 +232,14 @@ export class ShareCanvas {
           const mouseX = e.clientX - rect.left;
           const mouseY = e.clientY - rect.top;
 
-          // 缩放前的值
-          const oldScale = this.scale;
+          // 计算目标缩放值
+          const newScale =
+            e.deltaY < 0
+              ? Math.min(this.scale + 0.1, this.maxScale) // 向上滚动，放大
+              : Math.max(this.scale - 0.1, this.minScale); // 向下滚动，缩小
 
-          if (e.deltaY < 0) {
-            // 向上滚动，放大
-            this.zoomIn();
-          } else {
-            // 向下滚动，缩小
-            this.zoomOut();
-          }
-
-          // 缩放比例变化
-          const scaleFactor = this.scale / oldScale;
-
-          // 调整偏移量以保持鼠标指向的点不变
-          this.offset.x = mouseX - (mouseX - this.offset.x) * scaleFactor;
-          this.offset.y = mouseY - (mouseY - this.offset.y) * scaleFactor;
-
-          // 应用变换
-          this.applyTransform();
+          // 直接使用通用缩放方法，以鼠标位置为中心点
+          this.zoom(newScale, mouseX, mouseY);
         }
         // 如果鼠标在便签上，允许正常滚动便签内容
         else if (isOverNote) {
@@ -310,28 +318,14 @@ export class ShareCanvas {
           const canvasCenterX = centerX - rect.left;
           const canvasCenterY = centerY - rect.top;
 
-          // 缩放前的值
-          const oldScale = this.scale;
-
           // 计算新的缩放值
-          this.scale = Math.min(
+          const newScale = Math.min(
             Math.max(this.scale * scaleFactor, this.minScale),
             this.maxScale
           );
 
-          // 计算实际应用的缩放比例
-          const appliedScaleFactor = this.scale / oldScale;
-
-          // 调整偏移量以保持中心点不变
-          this.offset.x =
-            canvasCenterX -
-            (canvasCenterX - this.offset.x) * appliedScaleFactor;
-          this.offset.y =
-            canvasCenterY -
-            (canvasCenterY - this.offset.y) * appliedScaleFactor;
-
-          // 应用变换
-          this.applyTransform();
+          // 使用通用缩放方法，以双指中心点为基准点进行缩放
+          this.zoom(newScale, canvasCenterX, canvasCenterY);
         }
 
         lastTouchDistance = currentDistance;
