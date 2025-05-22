@@ -15,6 +15,25 @@ export function initPasswordToggle(
   const passwordInput = document.getElementById(passwordInputId);
 
   if (togglePasswordBtn && passwordInput) {
+    // 防止浏览器注入自己的控件
+    setTimeout(() => {
+      const style = document.createElement("style");
+      style.textContent = `
+        input#${passwordInputId}::-ms-reveal,
+        input#${passwordInputId}::-ms-clear,
+        input#${passwordInputId}::-webkit-contacts-auto-fill-button,
+        input#${passwordInputId}::-webkit-credentials-auto-fill-button {
+          visibility: hidden;
+          display: none !important;
+          pointer-events: none;
+          height: 0;
+          width: 0;
+          margin: 0;
+        }
+      `;
+      document.head.appendChild(style);
+    }, 100);
+
     togglePasswordBtn.addEventListener("click", function () {
       // 切换密码可见性
       const type =

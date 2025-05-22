@@ -296,6 +296,19 @@ body {
   display: block;
 }
 
+/* 隐藏浏览器自动注入的密码显示控件 */
+input::-ms-reveal,
+input::-ms-clear,
+input::-webkit-contacts-auto-fill-button,
+input::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  display: none !important;
+  pointer-events: none;
+  height: 0;
+  width: 0;
+  margin: 0;
+}
+
 .forgot-password {
   text-align: right;
   margin-top: 8px;
