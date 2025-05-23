@@ -4,7 +4,7 @@
   "description": "InfinityNotes - 无限便签，一个结合了无限画布和 AI 能力的便签应用",
   "main": "server/server.js",
   "scripts": {
-    "start": "node server/server.js & sleep 2 && open -a 'Microsoft Edge' http://localhost:3000",
+    "start": "node server/server.js",
     "dev": "nodemon server/server.js",
     "lint": "eslint server/**/*.js public/js/**/*.js",
     "test": "echo \"Error: no test specified\" && exit 1"

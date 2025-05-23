@@ -69,6 +69,14 @@
   cursor: not-allowed;
 }
 
+/* 对话框按钮区域样式 */
+.share-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
 /* 画布名称容器样式 */
 .canvas-name-container {
   margin: 16px 0;
@@ -207,7 +215,8 @@
   font-weight: 500;
 }
 
-.share-actions {
+.share-actions,
+.share-dialog-actions {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
